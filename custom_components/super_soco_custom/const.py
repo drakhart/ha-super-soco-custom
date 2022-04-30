@@ -1,6 +1,5 @@
 from homeassistant.components.device_tracker import SOURCE_TYPE_GPS
 from homeassistant.const import (
-    Platform,
     DEGREE,
     DEVICE_CLASS_BATTERY,
     DEVICE_CLASS_POWER,
@@ -19,10 +18,10 @@ DOMAIN = "super_soco_custom"
 NAME = "Super Soco Custom"
 MANUFACTURER = "Super Soco"
 PLATFORMS = [
-    Platform.BINARY_SENSOR,
-    Platform.DEVICE_TRACKER,
-    Platform.SENSOR,
-    Platform.SWITCH,
+    "binary_sensor",
+    "device_tracker",
+    "sensor",
+    "switch",
 ]
 
 # General
