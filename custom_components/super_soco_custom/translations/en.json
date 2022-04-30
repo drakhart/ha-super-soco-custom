@@ -10,7 +10,7 @@
         },
         "step": {
             "user": {
-                "description": "Please enter the same login details as in Super Soco's official app.<br/><br/>*Please note that Super Soco does not allow more than one client at a time, so any open session in the app will be closed each time entities are updated by this integration. You can adjust the update interval later on by clicking on Configure.*",
+                "description": "Please enter the same login details as in Super Soco's official app.\n\n*Please note that Super Soco does not allow more than one client at a time, so any open session in the app will be closed each time entities are updated by this integration. You can adjust the update interval later on by clicking on Configure.*",
                 "data": {
                     "password": "Password",
                     "phone_number": "Phone number",

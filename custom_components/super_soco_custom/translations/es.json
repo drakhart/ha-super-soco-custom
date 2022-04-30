@@ -10,7 +10,7 @@
         },
         "step": {
             "user": {
-                "description": "Introduce las mismas credenciales de acceso que en la app oficial de Super Soco.<br/><br/>*Ten en cuenta que Super Soco no permite más de un cliente a la vez, por lo que se cerrará cualquier sesión abierta en la app cada vez que esta integración actualice las entidades. Podrás ajustar el intervalo de actualización más adelante haciendo click en Configurar.*",
+                "description": "Introduce las mismas credenciales de acceso que en la app oficial de Super Soco.\n\n*Ten en cuenta que Super Soco no permite más de un cliente a la vez, por lo que se cerrará cualquier sesión abierta en la app cada vez que esta integración actualice las entidades. Podrás ajustar el intervalo de actualización más adelante haciendo click en Configurar.*",
                 "data": {
                     "password": "Contraseña",
                     "phone_number": "Número de teléfono",
