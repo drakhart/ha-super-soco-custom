@@ -1,7 +1,7 @@
 {
   "name": "Super Soco Custom",
   "hacs": "1.6.0",
-  "homeassistant": "0.118.0",
+  "homeassistant": "2022.4.7",
   "render_readme": true,
   "domains": [
     "binary_sensor",
