@@ -11,5 +11,7 @@
     "codeowners": [
       "@Drakhart"
     ],
+    "documentation": "https://github.com/drakhart/ha-super-soco-custom",
+    "issue_tracker": "https://github.com/drakhart/ha-super-soco-custom/issues",
     "iot_class": "cloud_polling"
 }
