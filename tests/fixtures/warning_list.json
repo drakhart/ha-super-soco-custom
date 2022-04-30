@@ -1,0 +1,12 @@
+{
+  "status": "200",
+  "data": {
+    "list": [
+      {
+        "title": "Warning title",
+        "content": "Warning content",
+        "createTime": "01/01/2022 00:00AM"
+      }
+    ]
+  }
+}

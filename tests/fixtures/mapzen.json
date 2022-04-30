@@ -1,0 +1,13 @@
+{
+  "results": [
+    {
+      "dataset": "mapzen",
+      "elevation": 283.0,
+      "location": {
+        "lat": 41.390205,
+        "lng": 2.154007
+      }
+    }
+  ],
+  "status": "OK"
+}

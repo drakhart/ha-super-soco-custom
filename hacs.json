@@ -1,10 +1,12 @@
 {
-    "name": "Integration blueprint",
-    "hacs": "1.6.0",
-    "domains": [
-        "binary_sensor",
-        "sensor",
-        "switch"
-    ],
-    "homeassistant": "0.118.0"
+  "name": "Super Soco Custom",
+  "hacs": "1.6.0",
+  "homeassistant": "0.118.0",
+  "render_readme": true,
+  "domains": [
+    "binary_sensor",
+    "device_tracker",
+    "sensor",
+    "switch"
+  ]
 }

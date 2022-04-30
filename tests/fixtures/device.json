@@ -1,0 +1,21 @@
+{
+  "status": "200",
+  "data": {
+    "isWarnPush": 0,
+    "historyLocusSwitch": 1,
+    "nowElec": 100,
+    "endurance": 70,
+    "lock": 0,
+    "gsm": 3,
+    "gps": 4,
+    "latitude": 41.390205,
+    "longitude": 2.154007,
+    "powerStatus": 0,
+    "voltage": 0,
+    "lastGpsTime": "01/01/2022 00:00AM",
+    "status": 0,
+    "accumulativeRim": 0,
+    "sleep": 0,
+    "mileages": 0.0
+  }
+}

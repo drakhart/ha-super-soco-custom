@@ -1,16 +1,21 @@
-"""Test integration_blueprint config flow."""
-from unittest.mock import patch
+"""Test super_soco_custom config flow."""
+import pytest
 
 from homeassistant import config_entries, data_entry_flow
-import pytest
+
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.integration_blueprint.const import (
-    BINARY_SENSOR,
+from unittest.mock import patch
+
+from custom_components.super_soco_custom.const import (
     DOMAIN,
-    PLATFORMS,
-    SENSOR,
-    SWITCH,
+    NAME,
+    OPT_EMAIL,
+    OPT_ENABLE_ALTITUDE_ENTITY,
+    OPT_ENABLE_LAST_TRIP_ENTITIES,
+    OPT_ENABLE_LAST_WARNING_ENTITY,
+    OPT_ENABLE_REVERSE_GEOCODING_ENTITY,
+    OPT_UPDATE_INTERVAL,
 )
 
 from .const import MOCK_CONFIG
@@ -23,10 +28,10 @@ from .const import MOCK_CONFIG
 def bypass_setup_fixture():
     """Prevent setup."""
     with patch(
-        "custom_components.integration_blueprint.async_setup",
+        "custom_components.super_soco_custom.async_setup",
         return_value=True,
     ), patch(
-        "custom_components.integration_blueprint.async_setup_entry",
+        "custom_components.super_soco_custom.async_setup_entry",
         return_value=True,
     ):
         yield
@@ -35,7 +40,15 @@ def bypass_setup_fixture():
 # Here we simiulate a successful config flow from the backend.
 # Note that we use the `bypass_get_data` fixture here because
 # we want the config flow validation to succeed during the test.
-async def test_successful_config_flow(hass, bypass_get_data):
+async def test_successful_config_flow(
+    hass,
+    bypass_get_device,
+    bypass_get_mapzen,
+    bypass_get_tracking_history_list,
+    bypass_get_user,
+    bypass_get_warning_list,
+    bypass_login,
+):
     """Test a successful config flow."""
     # Initialize a config flow
     result = await hass.config_entries.flow.async_init(
@@ -55,16 +68,15 @@ async def test_successful_config_flow(hass, bypass_get_data):
     # Check that the config flow is complete and a new entry is created with
     # the input data
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "test_username"
+    assert result["title"] == NAME
     assert result["data"] == MOCK_CONFIG
     assert result["result"]
 
 
 # In this case, we want to simulate a failure during the config flow.
-# We use the `error_on_get_data` mock instead of `bypass_get_data`
-# (note the function parameters) to raise an Exception during
-# validation of the input config.
-async def test_failed_config_flow(hass, error_on_get_data):
+# We use the `auth_error_on_login` (note the function parameters) to
+# raise an Exception during validation of the input config.
+async def test_failed_config_flow(hass, auth_error_on_login):
     """Test a failed config flow due to credential validation failure."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -78,7 +90,7 @@ async def test_failed_config_flow(hass, error_on_get_data):
     )
 
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
-    assert result["errors"] == {"base": "auth"}
+    assert result["errors"] == {"base": "invalid_auth"}
 
 
 # Our config flow also has an options flow, so we must test it as well.
@@ -99,12 +111,21 @@ async def test_options_flow(hass):
     # Enter some fake data into the form
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        user_input={platform: platform != SENSOR for platform in PLATFORMS},
+        user_input={
+            OPT_UPDATE_INTERVAL: 5,
+        },
     )
 
     # Verify that the flow finishes
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "test_username"
+    assert result["title"] == NAME
 
     # Verify that the options were updated
-    assert entry.options == {BINARY_SENSOR: True, SENSOR: False, SWITCH: True}
+    assert entry.options == {
+        OPT_UPDATE_INTERVAL: 5,
+        OPT_EMAIL: "",
+        OPT_ENABLE_ALTITUDE_ENTITY: True,
+        OPT_ENABLE_LAST_TRIP_ENTITIES: True,
+        OPT_ENABLE_LAST_WARNING_ENTITY: True,
+        OPT_ENABLE_REVERSE_GEOCODING_ENTITY: False,
+    }

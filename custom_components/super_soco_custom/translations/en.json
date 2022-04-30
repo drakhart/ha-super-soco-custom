@@ -1,0 +1,44 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Device is already configured"
+        },
+        "error": {
+            "cannot_connect": "Failed to connect",
+            "invalid_auth": "Invalid authentication",
+            "unknown": "Unexpected error"
+        },
+        "step": {
+            "user": {
+                "description": "Please enter the same login details as in Super Soco's official app.<br/><br/>*Please note that Super Soco does not allow more than one client at a time, so any open session in the app will be closed each time entities are updated by this integration. You can adjust the update interval later on by clicking on Configure.*",
+                "data": {
+                    "password": "Password",
+                    "phone_number": "Phone number",
+                    "phone_prefix": "Phone prefix"
+                }
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "user": {
+                "data": {
+                    "email": "Email",
+                    "enable_altitude_entity": "Enable altitude entity",
+                    "enable_last_trip_entities": "Enable last trip entities",
+                    "enable_last_warning_entity": "Enable last warning entity",
+                    "enable_reverse_geocoding_entity": "Enable reverse geocoding entity",
+                    "update_interval": "Update interval in minutes"
+                },
+                "data_description": {
+                    "email": "Email for Open Street Maps API; only required if reverse geocoding is enabled (please read https://nominatim.org/release-docs/develop/api/Reverse/#other to know more)",
+                    "enable_altitude_entity": "Downloads additional data from Open Topo Data using the Mapzen dataset",
+                    "enable_last_trip_entities": "Downloads additional data from Super Soco; only available if native history is enabled; will be updated every 10 minutes at most",
+                    "enable_last_warning_entity": "Downloads additional data from Super Soco",
+                    "enable_reverse_geocoding_entity": "Downloads additional data from Open Street Maps",
+                    "update_interval": "Only when the vehicle is powered off; when it's on the interval will be 10 seconds"
+                }
+            }
+        }
+    }
+}

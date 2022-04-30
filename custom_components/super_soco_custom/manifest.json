@@ -1,0 +1,15 @@
+{
+    "version": "1.0.0-beta.0",
+    "domain": "super_soco_custom",
+    "name": "Super Soco Custom",
+    "config_flow": true,
+    "requirements": [],
+    "ssdp": [],
+    "zeroconf": [],
+    "homekit": {},
+    "dependencies": [],
+    "codeowners": [
+      "@Drakhart"
+    ],
+    "iot_class": "cloud_polling"
+}

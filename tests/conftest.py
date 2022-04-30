@@ -1,4 +1,4 @@
-"""Global fixtures for integration_blueprint integration."""
+"""Global fixtures for super_soco_custom integration."""
 # Fixtures allow you to replace functions with a Mock object. You can perform
 # many options via the Mock to reflect a particular behavior from the original
 # function that you want to see without going through the function's actual logic.
@@ -14,9 +14,14 @@
 #
 # See here for more info: https://docs.pytest.org/en/latest/fixture.html (note that
 # pytest includes fixtures OOB which you can use as defined on this page)
+import json
+import pytest
+
+from pytest_homeassistant_custom_component.common import load_fixture
+
 from unittest.mock import patch
 
-import pytest
+from custom_components.super_soco_custom.config_flow import InvalidAuth
 
 pytest_plugins = "pytest_homeassistant_custom_component"
 
@@ -40,24 +45,73 @@ def skip_notifications_fixture():
         yield
 
 
-# This fixture, when used, will result in calls to async_get_data to return None. To have the call
-# return a value, we would add the `return_value=<VALUE_TO_RETURN>` parameter to the patch call.
-@pytest.fixture(name="bypass_get_data")
-def bypass_get_data_fixture():
-    """Skip calls to get data from API."""
+# Fixtures to return mocked data from API calls
+@pytest.fixture(name="bypass_get_device")
+def bypass_get_device_fixture():
+    """Skip calls to get device from Super Soco API."""
     with patch(
-        "custom_components.integration_blueprint.IntegrationBlueprintApiClient.async_get_data"
+        "custom_components.super_soco_custom.SuperSocoAPI.get_device",
+        return_value=json.loads(load_fixture("device.json")),
     ):
         yield
 
 
-# In this fixture, we are forcing calls to async_get_data to raise an Exception. This is useful
-# for exception handling.
-@pytest.fixture(name="error_on_get_data")
-def error_get_data_fixture():
-    """Simulate error when retrieving data from API."""
+@pytest.fixture(name="bypass_get_mapzen")
+def bypass_get_mapzen():
+    """Skip calls to get Mapzen from Open Topo Data API."""
     with patch(
-        "custom_components.integration_blueprint.IntegrationBlueprintApiClient.async_get_data",
-        side_effect=Exception,
+        "custom_components.super_soco_custom.OpenTopoDataAPI.get_mapzen",
+        return_value=json.loads(load_fixture("mapzen.json")),
+    ):
+        yield
+
+
+@pytest.fixture(name="bypass_get_tracking_history_list")
+def bypass_get_tracking_history_list_fixture():
+    """Skip calls to get tracking history list from Super Soco API."""
+    with patch(
+        "custom_components.super_soco_custom.SuperSocoAPI.get_tracking_history_list",
+        return_value=json.loads(load_fixture("tracking_history_list.json")),
+    ):
+        yield
+
+
+@pytest.fixture(name="bypass_get_user")
+def bypass_get_user_fixture():
+    """Skip calls to get user from Super Soco API."""
+    with patch(
+        "custom_components.super_soco_custom.SuperSocoAPI.get_user",
+        return_value=json.loads(load_fixture("user.json")),
+    ):
+        yield
+
+
+@pytest.fixture(name="bypass_get_warning_list")
+def bypass_get_warning_fixture():
+    """Skip calls to get warning list from Super Soco API."""
+    with patch(
+        "custom_components.super_soco_custom.SuperSocoAPI.get_warning_list",
+        return_value=json.loads(load_fixture("warning_list.json")),
+    ):
+        yield
+
+
+@pytest.fixture(name="bypass_login")
+def bypass_login_fixture():
+    """Skip calls to get device from Super Soco API."""
+    with patch(
+        "custom_components.super_soco_custom.SuperSocoAPI.login",
+        return_value=json.loads(load_fixture("login.json")),
+    ):
+        yield
+
+
+# Fixtures to return exceptions from API calls
+@pytest.fixture(name="auth_error_on_login")
+def auth_error_login_fixture():
+    """Simulate auth error when logging in to Super Soco API."""
+    with patch(
+        "custom_components.super_soco_custom.SuperSocoAPI.login",
+        side_effect=InvalidAuth,
     ):
         yield

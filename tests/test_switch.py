@@ -1,44 +1,84 @@
-"""Test integration_blueprint switch."""
-from unittest.mock import call, patch
-
+"""Test super_soco_custom switch."""
 from homeassistant.components.switch import SERVICE_TURN_OFF, SERVICE_TURN_ON
-from homeassistant.const import ATTR_ENTITY_ID
+from homeassistant.const import Platform, ATTR_ENTITY_ID
+
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.integration_blueprint import async_setup_entry
-from custom_components.integration_blueprint.const import DEFAULT_NAME, DOMAIN, SWITCH
+from unittest.mock import call, patch
+
+from custom_components.super_soco_custom import async_setup_entry
+from custom_components.super_soco_custom.const import DOMAIN
 
 from .const import MOCK_CONFIG
 
 
-async def test_switch_services(hass):
+async def test_switch_services(
+    hass,
+    bypass_get_device,
+    bypass_get_mapzen,
+    bypass_get_tracking_history_list,
+    bypass_get_user,
+    bypass_get_warning_list,
+    bypass_login,
+):
     """Test switch services."""
     # Create a mock entry so we don't have to go through config flow
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
     assert await async_setup_entry(hass, config_entry)
     await hass.async_block_till_done()
 
-    # Functions/objects can be patched directly in test code as well and can be used to test
-    # additional things, like whether a function was called or what arguments it was called with
+    # Assert that the on/off services are called for push notifications switch
     with patch(
-        "custom_components.integration_blueprint.IntegrationBlueprintApiClient.async_set_title"
-    ) as title_func:
+        "custom_components.super_soco_custom.SuperSocoAPI.set_push_notifications"
+    ) as push_func:
         await hass.services.async_call(
-            SWITCH,
+            Platform.SWITCH,
             SERVICE_TURN_OFF,
-            service_data={ATTR_ENTITY_ID: f"{SWITCH}.{DEFAULT_NAME}_{SWITCH}"},
+            service_data={
+                ATTR_ENTITY_ID: f"{Platform.SWITCH}.super_soco_ts_native_push_notifications"
+            },
             blocking=True,
         )
-        assert title_func.called
-        assert title_func.call_args == call("foo")
+        assert push_func.called
+        assert push_func.call_args == call(False)
 
-        title_func.reset_mock()
+        push_func.reset_mock()
 
         await hass.services.async_call(
-            SWITCH,
+            Platform.SWITCH,
             SERVICE_TURN_ON,
-            service_data={ATTR_ENTITY_ID: f"{SWITCH}.{DEFAULT_NAME}_{SWITCH}"},
+            service_data={
+                ATTR_ENTITY_ID: f"{Platform.SWITCH}.super_soco_ts_native_push_notifications"
+            },
             blocking=True,
         )
-        assert title_func.called
-        assert title_func.call_args == call("bar")
+        assert push_func.called
+        assert push_func.call_args == call(True)
+
+    # Assert that the on/off services are called for tracking history switch
+    with patch(
+        "custom_components.super_soco_custom.SuperSocoAPI.set_tracking_history"
+    ) as push_func:
+        await hass.services.async_call(
+            Platform.SWITCH,
+            SERVICE_TURN_OFF,
+            service_data={
+                ATTR_ENTITY_ID: f"{Platform.SWITCH}.super_soco_ts_native_tracking_history"
+            },
+            blocking=True,
+        )
+        assert push_func.called
+        assert push_func.call_args == call(False)
+
+        push_func.reset_mock()
+
+        await hass.services.async_call(
+            Platform.SWITCH,
+            SERVICE_TURN_ON,
+            service_data={
+                ATTR_ENTITY_ID: f"{Platform.SWITCH}.super_soco_ts_native_tracking_history"
+            },
+            blocking=True,
+        )
+        assert push_func.called
+        assert push_func.call_args == call(True)

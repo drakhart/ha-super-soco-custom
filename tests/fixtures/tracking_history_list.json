@@ -1,0 +1,18 @@
+{
+  "status": "200",
+  "data": {
+    "list": [
+      {
+        "beginTime": "01/01/2022 00:00AM",
+        "beginLatitude": 0,
+        "beginLongitude": 0,
+        "endTime": "01/01/2022 12:00PM",
+        "endLatitude": 0,
+        "endLongitude": 0,
+        "avgSpeed": "0",
+        "rideDistance": "0",
+        "rideTime": "0"
+      }
+    ]
+  }
+}

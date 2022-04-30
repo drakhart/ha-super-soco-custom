@@ -1,1 +1,1 @@
-"""Tests for integration_blueprint integration."""
+"""Tests for super_soco_custom integration."""
