@@ -11,6 +11,8 @@ Custom component for integrating your Super Soco motorcycle into Home Assistant.
 ![Example][img-example]
 
 ## Disclaimers
+> This integration is based on Super Soco's API, so it needs a combination of official GSM/GPS module and active SIM contract that's currently working and sending data to Super Soco servers. If this is not your case then sadly there's little to no chance that this integration will working for you. To put it simple: if your mobile app is not working, this won't work either.
+
 > Please note that Super Soco does not allow more than one client at a time, so any open session in the official app will be closed each time entities are updated by this integration (same as if you'd log in from a new device).
 
 > This integration is not officially a part of Super Soco or Vmoto. Additionally, this is NOT endorsed by Super Soco in any way. Super Soco is a trademark of Vmoto.
@@ -47,7 +49,7 @@ custom_components/super_soco_custom/switch.py
 ```
 
 ## Configuration
-Configuration is done in the UI; go to "Configuration" -> "Integrations" click "+" and search for "Super Soco Custom", then enter your login credentials as you would do in the official app:
+Configuration is done in the UI; go to "Configuration" -> "Integrations" click "+ Add Integration" and search for "Super Soco Custom", then enter your login credentials as you would do in the official app:
 
 ![Setup][img-setup]
 
@@ -72,7 +74,7 @@ A total of 28 entities are included as follows:
 - Current GPS accuracy
 - Last GPS fix time
 - Last warning time* with title and content
-- Last trip time*, distance* and average speed* (requires native tracking history to be enabled)
+- Last trip time*, distance* and average speed* (requires native tracking history to be enabled; updates every 10 minutes at most)
 - Agreement (SIM card validity) start and end time
 - Image URLs for both the vehicle and its logo
 - Switches to enable/disable native tracking history and push notifications
@@ -85,12 +87,14 @@ A total of 28 entities are included as follows:
 *&ast; These entities include extra attributes with more details.*
 
 ## Known limitations
+- Only one vehicle can be seen by this integration (I'm not lucky enough to own two Super Socos, so I don't know how would that look in the API responses)
 - Vehicle diagnose can't be initiated from this integration, nor the resulting report be shown in HA (AFAIK the API doesn't provide any methods for these)
 - Vehicle model seen by this integration may not match the actual model (the same issue happens in the official app if your module has been replaced with another one intended for a different model)
 
 ## Roadmap
 - Increase test coverage
 - Add altitude and reverse geocoding cache
+- Allow speed threshold customization (this is used to filter out unwanted GPS noise when the vehicle is virtually still)
 - Allow update interval customization while the vehicle is powered on (instead of forcing a 10 seconds interval)
 - Allow powering the vehicle on and off remotely (just kidding, AFAIK it can't be done via API!)
 
@@ -109,9 +113,9 @@ If you want to contribute to this please read the [Contribution guidelines](CONT
 [hacs]: https://hacs.xyz
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange?style=for-the-badge
 [homeassistant]: https://www.home-assistant.io/
-[img-config]: images/config.png
-[img-example]: images/example.png
-[img-setup]: images/setup.png
+[img-config]: https://raw.githubusercontent.com/drakhart/ha-super-soco-custom/master/images/config.png
+[img-example]: https://raw.githubusercontent.com/drakhart/ha-super-soco-custom/master/images/example.png
+[img-setup]: https://raw.githubusercontent.com/drakhart/ha-super-soco-custom/master/images/setup.png
 [license-shield]: https://img.shields.io/github/license/drakhart/ha-super-soco-custom?style=for-the-badge
 [license]: https://github.com/drakhart/ha-super-soco-custom/blob/master/LICENSE
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Brian%20Baidal%20%40drakhart-blue?style=for-the-badge
