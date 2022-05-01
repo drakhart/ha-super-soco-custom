@@ -11,14 +11,14 @@ Custom component for integrating your Super Soco motorcycle into Home Assistant.
 ![Example][img-example]
 
 ## Disclaimers
-> This integration is based on Super Soco's API, so it needs a combination of official GSM/GPS module and active SIM contract that's currently working and sending data to Super Soco servers. If this is not your case then sadly there's little to no chance that this integration will working for you. To put it simple: if your mobile app is not working, this won't work either.
+> This integration is based on Super Soco's API, so it needs a combination of official GSM/GPS module and active SIM contract that's currently working and sending data to Super Soco servers. If this is not your case then sadly there's little to no chance that this integration will work for you. To put it simple: if your mobile app is not working, this won't work either.
 
-> Please note that Super Soco does not allow more than one client at a time, so any open session in the official app will be closed each time entities are updated by this integration (same as if you'd log in from a new device).
+> Please note that Super Soco does not allow more than one client at a time, so any open session in the official app will be closed each time entities are updated by this integration (same as if you'd log in from a new device). You can still log into the app between entity updates, and configure the update interval in the Configure section of this integration.
 
 > This integration is not officially a part of Super Soco or Vmoto. Additionally, this is NOT endorsed by Super Soco in any way. Super Soco is a trademark of Vmoto.
 
 ## Installation
-You can install this either using [HACS][hacs] or manually copying files:
+You can install this either using [HACS][hacs] (as a custom integration until this is merged into the default list) or manually copying files:
 
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` directory (folder) there, you need to create it.
