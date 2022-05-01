@@ -1,8 +1,6 @@
 # Super Soco Custom
 
-[![hacs][hacsbadge]][hacs]
-[![GitHub Release][releases-shield]][releases]
-[![GitHub Activity][commits-shield]][commits]
+[![hacs][hacsbadge]][hacs] [![GitHub Release][releases-shield]][releases] [![GitHub Activity][commits-shield]][commits]
 
 [![License][license-shield]][license] [![Project Maintenance][maintenance-shield]][user_profile]
 
@@ -108,7 +106,7 @@ If you want to contribute to this please read the [Contribution guidelines](CONT
 
 
 [blueprint]: https://github.com/custom-components/integration_blueprint
-[commits-shield]: https://img.shields.io/github/commit-activity/y/drakhart/ha-super-soco-custom?style=for-the-badge
+[commits-shield]: https://img.shields.io/github/commit-activity/y/drakhart/ha-super-soco-custom.svg?style=for-the-badge
 [commits]: https://github.com/drakhart/ha-super-soco-custom/commits/master
 [hacs]: https://hacs.xyz
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange?style=for-the-badge
@@ -116,12 +114,12 @@ If you want to contribute to this please read the [Contribution guidelines](CONT
 [img-config]: https://raw.githubusercontent.com/drakhart/ha-super-soco-custom/master/images/config.png
 [img-example]: https://raw.githubusercontent.com/drakhart/ha-super-soco-custom/master/images/example.png
 [img-setup]: https://raw.githubusercontent.com/drakhart/ha-super-soco-custom/master/images/setup.png
-[license-shield]: https://img.shields.io/github/license/drakhart/ha-super-soco-custom?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/drakhart/ha-super-soco-custom.svg?style=for-the-badge
 [license]: https://github.com/drakhart/ha-super-soco-custom/blob/master/LICENSE
-[maintenance-shield]: https://img.shields.io/badge/maintainer-Brian%20Baidal%20%40drakhart-blue?style=for-the-badge
+[maintenance-shield]: https://img.shields.io/badge/maintainer-Brian%20Baidal%20%40drakhart-red.svg?style=for-the-badge
 [openstreetmap]: https://www.openstreetmap.org/
 [opentopodata]: https://www.opentopodata.org/
-[releases-shield]: https://img.shields.io/github/release/drakhart/ha-super-soco-custom?style=for-the-badge
+[releases-shield]: https://img.shields.io/github/v/release/drakhart/ha-super-soco-custom.svg?style=for-the-badge&color=yellowgreen&sort=semver&include_prereleases
 [releases]: https://github.com/drakhart/ha-super-soco-custom/releases
 [telegram]: https://t.me/supersocospain
 [user_profile]: https://github.com/drakhart
