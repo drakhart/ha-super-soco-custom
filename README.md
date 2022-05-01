@@ -6,7 +6,7 @@
 
 [![License][license-shield]][license] [![Project Maintenance][maintenance-shield]][user_profile]
 
-Custom component to integrate your Super Soco motorcycle into Home Assistant. It provides meaningful data like power status, battery percentage, location and a lot more.
+Custom component for integrating your Super Soco motorcycle into Home Assistant. It provides meaningful data like power status, battery percentage, location and a lot more.
 
 ![Example][img-example]
 
