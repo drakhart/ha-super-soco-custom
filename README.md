@@ -16,7 +16,7 @@ Custom component for integrating your Super Soco motorcycle into Home Assistant.
 > This integration is not officially a part of Super Soco or Vmoto. Additionally, this is NOT endorsed by Super Soco in any way. Super Soco is a trademark of Vmoto.
 
 ## Installation
-You can install this either using [HACS][hacs] (as a custom integration until this is merged into the default list) or manually copying files:
+You can install this either using [HACS][hacs] (recommended way) or manually copying files:
 
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` directory (folder) there, you need to create it.
@@ -109,7 +109,7 @@ If you want to contribute to this please read the [Contribution guidelines](CONT
 [commits-shield]: https://img.shields.io/github/commit-activity/y/drakhart/ha-super-soco-custom.svg?style=for-the-badge
 [commits]: https://github.com/drakhart/ha-super-soco-custom/commits/master
 [hacs]: https://hacs.xyz
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange?style=for-the-badge
+[hacsbadge]: https://img.shields.io/badge/HACS-Default-orange?style=for-the-badge
 [homeassistant]: https://www.home-assistant.io/
 [img-config]: https://raw.githubusercontent.com/drakhart/ha-super-soco-custom/master/images/config.png
 [img-example]: https://raw.githubusercontent.com/drakhart/ha-super-soco-custom/master/images/example.png
