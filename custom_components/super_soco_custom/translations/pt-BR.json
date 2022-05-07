@@ -1,0 +1,44 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "O dispositivo já está configurado"
+        },
+        "error": {
+            "cannot_connect": "Falhou ao conectar",
+            "invalid_auth": "Autenticação inválida",
+            "unknown": "Erro inesperado"
+        },
+        "step": {
+            "user": {
+                "description": "Insira os mesmos detalhes de login do aplicativo oficial do Super Soco.\n\n*Observe que o Super Soco não permite mais de um cliente por vez, portanto, qualquer sessão aberta no aplicativo será fechada sempre que as entidades forem atualizadas por esta integração. Você pode ajustar o intervalo de atualização posteriormente clicando em Configurar.*",
+                "data": {
+                    "password": "Senha",
+                    "phone_number": "Número do telefone ",
+                    "phone_prefix": "Prefixo do telefone"
+                }
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "user": {
+                "data": {
+                    "email": "E-mail",
+                    "enable_altitude_entity": "Ativar entidade de altitude",
+                    "enable_last_trip_entities": "Ativar entidades de última viagem",
+                    "enable_last_warning_entity": "Ativar última entidade de aviso",
+                    "enable_reverse_geocoding_entity": "Ativar entidade de geocodificação reversa",
+                    "update_interval": "Intervalo de atualização em minutos"
+                },
+                "data_description": {
+                    "email": "E-mail para API Open Street Maps; necessário apenas se a geocodificação reversa estiver ativada (leia https://nominatim.org/release-docs/develop/api/Reverse/#other para saber mais)",
+                    "enable_altitude_entity": "Baixar dados adicionais do Open Topo Data usando o conjunto de dados Mapzen",
+                    "enable_last_trip_entities": "Baixar dados adicionais do Super Soco; disponível apenas se o histórico nativo estiver ativado; será atualizado a cada 10 minutos no máximo",
+                    "enable_last_warning_entity": "Baixar dados adicionais do Super Soco",
+                    "enable_reverse_geocoding_entity": "Transfere dados adicionais do Open Street Maps",
+                    "update_interval": "Somente quando o veículo estiver desligado; quando estiver o intervalo será de 10 segundos"
+                }
+            }
+        }
+    }
+}
