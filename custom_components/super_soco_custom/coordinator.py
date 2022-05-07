@@ -201,6 +201,11 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 )
             )
 
+            # Inject timestamp depending on last vs current position
+            data.update(
+                self._get_timestamp_data(data[DATA_LATITUDE], data[DATA_LONGITUDE])
+            )
+
             # Reduce GPS jitter if vehicle is still
             if self._last_data and data[DATA_SPEED] < SPEED_THRESHOLD_KMH:
                 _LOGGER.debug(
@@ -232,7 +237,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Cache data
             self._last_data = data
-            self._last_data[DATA_TIMESTAMP] = datetime.now().timestamp()
 
             # Set next update interval
             self._set_update_interval()
@@ -265,103 +269,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.exception(exception)
         else:
             _LOGGER.debug("Altitude data is up to date")
-
-        return data
-
-    async def _get_reverse_geocoding_data(
-        self, latitude: float, longitude: float
-    ) -> float:
-        if not self._config_entry.options.get(
-            OPT_ENABLE_REVERSE_GEOCODING_ENTITY, DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY
-        ):
-            _LOGGER.debug("Reverse geocoding entity is disabled")
-            return {DATA_REVERSE_GEOCODING: STATE_UNAVAILABLE}
-
-        data = {
-            DATA_REVERSE_GEOCODING: self._last_data.get(
-                DATA_REVERSE_GEOCODING, STATE_UNKNOWN
-            ),
-            DATA_REVERSE_GEOCODING_CITY: self._last_data.get(
-                DATA_REVERSE_GEOCODING_CITY, STATE_UNKNOWN
-            ),
-            DATA_REVERSE_GEOCODING_COUNTRY: self._last_data.get(
-                DATA_REVERSE_GEOCODING_COUNTRY, STATE_UNKNOWN
-            ),
-            DATA_REVERSE_GEOCODING_COUNTRY_CODE: self._last_data.get(
-                DATA_REVERSE_GEOCODING_COUNTRY_CODE, STATE_UNKNOWN
-            ),
-            DATA_REVERSE_GEOCODING_COUNTY: self._last_data.get(
-                DATA_REVERSE_GEOCODING_COUNTY, STATE_UNKNOWN
-            ),
-            DATA_REVERSE_GEOCODING_HOUSE_NUMBER: self._last_data.get(
-                DATA_REVERSE_GEOCODING_HOUSE_NUMBER, STATE_UNKNOWN
-            ),
-            DATA_REVERSE_GEOCODING_NEIGHBOURHOOD: self._last_data.get(
-                DATA_REVERSE_GEOCODING_NEIGHBOURHOOD, STATE_UNKNOWN
-            ),
-            DATA_REVERSE_GEOCODING_POSTCODE: self._last_data.get(
-                DATA_REVERSE_GEOCODING_POSTCODE, STATE_UNKNOWN
-            ),
-            DATA_REVERSE_GEOCODING_ROAD: self._last_data.get(
-                DATA_REVERSE_GEOCODING_ROAD, STATE_UNKNOWN
-            ),
-            DATA_REVERSE_GEOCODING_STATE: self._last_data.get(
-                DATA_REVERSE_GEOCODING_STATE, STATE_UNKNOWN
-            ),
-            DATA_REVERSE_GEOCODING_STATE_DISTRICT: self._last_data.get(
-                DATA_REVERSE_GEOCODING_STATE_DISTRICT, STATE_UNKNOWN
-            ),
-        }
-
-        if (
-            not self._last_data
-            or self._last_data[DATA_REVERSE_GEOCODING] == STATE_UNAVAILABLE
-            or self._is_geo_cache_outdated(latitude, longitude)
-        ):
-            try:
-                _LOGGER.debug("Requesting reverse geocoding data")
-                res = await self._open_street_map_api.get_reverse(latitude, longitude)
-
-                data = {
-                    DATA_REVERSE_GEOCODING: res[DATA_DISPLAY_NAME],
-                    DATA_REVERSE_GEOCODING_CITY: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_CITY,
-                        res[DATA_ADDRESS].get(
-                            DATA_REVERSE_GEOCODING_VILLAGE, STATE_UNKNOWN
-                        ),
-                    ),
-                    DATA_REVERSE_GEOCODING_COUNTRY: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_COUNTRY, STATE_UNKNOWN
-                    ),
-                    DATA_REVERSE_GEOCODING_COUNTRY_CODE: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_COUNTRY_CODE, STATE_UNKNOWN
-                    ),
-                    DATA_REVERSE_GEOCODING_COUNTY: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_COUNTY, STATE_UNKNOWN
-                    ),
-                    DATA_REVERSE_GEOCODING_HOUSE_NUMBER: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_HOUSE_NUMBER, STATE_UNKNOWN
-                    ),
-                    DATA_REVERSE_GEOCODING_NEIGHBOURHOOD: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_NEIGHBOURHOOD, STATE_UNKNOWN
-                    ),
-                    DATA_REVERSE_GEOCODING_POSTCODE: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_POSTCODE, STATE_UNKNOWN
-                    ),
-                    DATA_REVERSE_GEOCODING_ROAD: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_ROAD, STATE_UNKNOWN
-                    ),
-                    DATA_REVERSE_GEOCODING_STATE: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_STATE, STATE_UNKNOWN
-                    ),
-                    DATA_REVERSE_GEOCODING_STATE_DISTRICT: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_STATE_DISTRICT, STATE_UNKNOWN
-                    ),
-                }
-            except Exception as exception:
-                _LOGGER.exception(exception)
-        else:
-            _LOGGER.debug("Reverse geocoding data is up to date")
 
         return data
 
@@ -509,33 +416,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
         return data
 
-    def _get_speed_and_course_data(self, latitude: float, longitude: float) -> dict:
-        data = {
-            DATA_COURSE: self._last_data.get(DATA_COURSE, DEFAULT_FLOAT),
-            DATA_SPEED: self._last_data.get(DATA_SPEED, DEFAULT_FLOAT),
-        }
-
-        if self._last_data:
-            dist_m = calculate_distance(
-                self._last_data[DATA_LATITUDE],
-                self._last_data[DATA_LONGITUDE],
-                latitude,
-                longitude,
-            )
-            time_s = datetime.now().timestamp() - self._last_data[DATA_TIMESTAMP]
-
-            data[DATA_SPEED] = round(
-                dist_m / time_s * KMH_IN_A_MS, SPEED_ROUNDING_ZEROES
-            )
-            data[DATA_COURSE] = calculate_course(
-                self._last_data[DATA_LATITUDE],
-                self._last_data[DATA_LONGITUDE],
-                latitude,
-                longitude,
-            )
-
-        return data
-
     async def _get_last_warning_data(self) -> dict:
         if not self._config_entry.options.get(
             OPT_ENABLE_LAST_WARNING_ENTITY, DEFAULT_ENABLE_LAST_WARNING_ENTITY
@@ -579,6 +459,146 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.exception(exception)
         else:
             _LOGGER.debug("Last warning data is up to date")
+
+        return data
+
+    async def _get_reverse_geocoding_data(
+        self, latitude: float, longitude: float
+    ) -> float:
+        if not self._config_entry.options.get(
+            OPT_ENABLE_REVERSE_GEOCODING_ENTITY, DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY
+        ):
+            _LOGGER.debug("Reverse geocoding entity is disabled")
+            return {DATA_REVERSE_GEOCODING: STATE_UNAVAILABLE}
+
+        data = {
+            DATA_REVERSE_GEOCODING: self._last_data.get(
+                DATA_REVERSE_GEOCODING, STATE_UNKNOWN
+            ),
+            DATA_REVERSE_GEOCODING_CITY: self._last_data.get(
+                DATA_REVERSE_GEOCODING_CITY, STATE_UNKNOWN
+            ),
+            DATA_REVERSE_GEOCODING_COUNTRY: self._last_data.get(
+                DATA_REVERSE_GEOCODING_COUNTRY, STATE_UNKNOWN
+            ),
+            DATA_REVERSE_GEOCODING_COUNTRY_CODE: self._last_data.get(
+                DATA_REVERSE_GEOCODING_COUNTRY_CODE, STATE_UNKNOWN
+            ),
+            DATA_REVERSE_GEOCODING_COUNTY: self._last_data.get(
+                DATA_REVERSE_GEOCODING_COUNTY, STATE_UNKNOWN
+            ),
+            DATA_REVERSE_GEOCODING_HOUSE_NUMBER: self._last_data.get(
+                DATA_REVERSE_GEOCODING_HOUSE_NUMBER, STATE_UNKNOWN
+            ),
+            DATA_REVERSE_GEOCODING_NEIGHBOURHOOD: self._last_data.get(
+                DATA_REVERSE_GEOCODING_NEIGHBOURHOOD, STATE_UNKNOWN
+            ),
+            DATA_REVERSE_GEOCODING_POSTCODE: self._last_data.get(
+                DATA_REVERSE_GEOCODING_POSTCODE, STATE_UNKNOWN
+            ),
+            DATA_REVERSE_GEOCODING_ROAD: self._last_data.get(
+                DATA_REVERSE_GEOCODING_ROAD, STATE_UNKNOWN
+            ),
+            DATA_REVERSE_GEOCODING_STATE: self._last_data.get(
+                DATA_REVERSE_GEOCODING_STATE, STATE_UNKNOWN
+            ),
+            DATA_REVERSE_GEOCODING_STATE_DISTRICT: self._last_data.get(
+                DATA_REVERSE_GEOCODING_STATE_DISTRICT, STATE_UNKNOWN
+            ),
+        }
+
+        if (
+            not self._last_data
+            or self._last_data[DATA_REVERSE_GEOCODING] == STATE_UNAVAILABLE
+            or self._is_geo_cache_outdated(latitude, longitude)
+        ):
+            try:
+                _LOGGER.debug("Requesting reverse geocoding data")
+                res = await self._open_street_map_api.get_reverse(latitude, longitude)
+
+                data = {
+                    DATA_REVERSE_GEOCODING: res[DATA_DISPLAY_NAME],
+                    DATA_REVERSE_GEOCODING_CITY: res[DATA_ADDRESS].get(
+                        DATA_REVERSE_GEOCODING_CITY,
+                        res[DATA_ADDRESS].get(
+                            DATA_REVERSE_GEOCODING_VILLAGE, STATE_UNKNOWN
+                        ),
+                    ),
+                    DATA_REVERSE_GEOCODING_COUNTRY: res[DATA_ADDRESS].get(
+                        DATA_REVERSE_GEOCODING_COUNTRY, STATE_UNKNOWN
+                    ),
+                    DATA_REVERSE_GEOCODING_COUNTRY_CODE: res[DATA_ADDRESS].get(
+                        DATA_REVERSE_GEOCODING_COUNTRY_CODE, STATE_UNKNOWN
+                    ),
+                    DATA_REVERSE_GEOCODING_COUNTY: res[DATA_ADDRESS].get(
+                        DATA_REVERSE_GEOCODING_COUNTY, STATE_UNKNOWN
+                    ),
+                    DATA_REVERSE_GEOCODING_HOUSE_NUMBER: res[DATA_ADDRESS].get(
+                        DATA_REVERSE_GEOCODING_HOUSE_NUMBER, STATE_UNKNOWN
+                    ),
+                    DATA_REVERSE_GEOCODING_NEIGHBOURHOOD: res[DATA_ADDRESS].get(
+                        DATA_REVERSE_GEOCODING_NEIGHBOURHOOD, STATE_UNKNOWN
+                    ),
+                    DATA_REVERSE_GEOCODING_POSTCODE: res[DATA_ADDRESS].get(
+                        DATA_REVERSE_GEOCODING_POSTCODE, STATE_UNKNOWN
+                    ),
+                    DATA_REVERSE_GEOCODING_ROAD: res[DATA_ADDRESS].get(
+                        DATA_REVERSE_GEOCODING_ROAD, STATE_UNKNOWN
+                    ),
+                    DATA_REVERSE_GEOCODING_STATE: res[DATA_ADDRESS].get(
+                        DATA_REVERSE_GEOCODING_STATE, STATE_UNKNOWN
+                    ),
+                    DATA_REVERSE_GEOCODING_STATE_DISTRICT: res[DATA_ADDRESS].get(
+                        DATA_REVERSE_GEOCODING_STATE_DISTRICT, STATE_UNKNOWN
+                    ),
+                }
+            except Exception as exception:
+                _LOGGER.exception(exception)
+        else:
+            _LOGGER.debug("Reverse geocoding data is up to date")
+
+        return data
+
+    def _get_speed_and_course_data(self, latitude: float, longitude: float) -> dict:
+        data = {
+            DATA_COURSE: self._last_data.get(DATA_COURSE, DEFAULT_FLOAT),
+            DATA_SPEED: self._last_data.get(DATA_SPEED, DEFAULT_FLOAT),
+        }
+
+        if self._last_data:
+            dist_m = calculate_distance(
+                self._last_data[DATA_LATITUDE],
+                self._last_data[DATA_LONGITUDE],
+                latitude,
+                longitude,
+            )
+            time_s = datetime.now().timestamp() - self._last_data[DATA_TIMESTAMP]
+
+            data[DATA_SPEED] = round(
+                dist_m / time_s * KMH_IN_A_MS, SPEED_ROUNDING_ZEROES
+            )
+            data[DATA_COURSE] = calculate_course(
+                self._last_data[DATA_LATITUDE],
+                self._last_data[DATA_LONGITUDE],
+                latitude,
+                longitude,
+            )
+
+        return data
+
+    def _get_timestamp_data(self, latitude: float, longitude: float) -> dict:
+        data = {
+            DATA_TIMESTAMP: datetime.now().timestamp(),
+        }
+
+        if (
+            self._last_data
+            and latitude == self._last_data[DATA_LATITUDE]
+            and longitude == self._last_data[DATA_LONGITUDE]
+        ):
+            data = {
+                DATA_TIMESTAMP: self._last_data[DATA_TIMESTAMP],
+            }
 
         return data
 
