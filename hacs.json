@@ -2,11 +2,5 @@
   "name": "Super Soco Custom",
   "hacs": "1.6.0",
   "homeassistant": "2022.3.0",
-  "render_readme": true,
-  "domains": [
-    "binary_sensor",
-    "device_tracker",
-    "sensor",
-    "switch"
-  ]
+  "render_readme": true
 }
