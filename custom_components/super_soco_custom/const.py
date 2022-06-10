@@ -220,7 +220,7 @@ SENSORS = [
         DATA_ALARM_MODULE_BATTERY_PERCENTAGE,
         PERCENTAGE,
         "mdi:battery-charging-wireless",
-        DEVICE_CLASS_BATTERY,
+        None,
         None,
     ),
     (
