@@ -8,12 +8,15 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
+    ALARM_MODULE_MAX_VOLTAGE,
     API_GEO_PRECISION,
     CDN_BASE_URL,
     DATA_ACCUMULATIVE_RIM,
     DATA_ADDRESS,
     DATA_AGREEMENT_END_TIME,
     DATA_AGREEMENT_START_TIME,
+    DATA_ALARM_MODULE_BATTERY_PERCENTAGE,
+    DATA_ALARM_MODULE_VOLTAGE,
     DATA_ALTITUDE,
     DATA_BATTERY_PERCENTAGE,
     DATA_CONTENT,
@@ -68,7 +71,6 @@ from .const import (
     DATA_TITLE,
     DATA_TRIP_DISTANCE,
     DATA_VEHICLE_IMAGE_URL,
-    DATA_VOLTAGE,
     DATA_LAST_WARNING_MESSAGE,
     DATA_LAST_WARNING_TIME,
     DATA_LAST_WARNING_TITLE,
@@ -164,6 +166,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 DATA_AGREEMENT_START_TIME: parse_date(
                     self._user_data[DATA_DEVICE][DATA_AGREEMENT_START_TIME]
                 ),
+                DATA_ALARM_MODULE_VOLTAGE: device_data[DATA_ALARM_MODULE_VOLTAGE],
                 DATA_BATTERY_PERCENTAGE: device_data[DATA_BATTERY_PERCENTAGE],
                 DATA_TRIP_DISTANCE: round(
                     device_data[DATA_TRIP_DISTANCE], DISTANCE_ROUNDING_ZEROES
@@ -183,7 +186,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 DATA_SIGNAL_STRENGTH: device_data[DATA_SIGNAL_STRENGTH],
                 DATA_SLEEP: device_data[DATA_SLEEP],
                 DATA_VEHICLE_IMAGE_URL: f"{CDN_BASE_URL}/{self._user_data[DATA_DEVICE][DATA_VEHICLE_IMAGE_URL]}",
-                DATA_VOLTAGE: device_data[DATA_VOLTAGE],
             }
 
             # Not every API response comes with the "lock" attribute
@@ -192,6 +194,9 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Check if device is powered on
             self._is_powered_on = data[DATA_POWER_STATUS] == 1
+
+            # Inject alarm module battery data
+            data.update(self._get_alarm_module_battery_data(data[DATA_ALARM_MODULE_VOLTAGE]))
 
             # Inject speed, course and distance data
             data.update(self._get_home_data(data[DATA_LATITUDE], data[DATA_LONGITUDE]))
@@ -246,7 +251,12 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.exception(exception)
             raise UpdateFailed() from exception
 
-    async def _get_altitude_data(self, latitude: float, longitude: float) -> float:
+    def _get_alarm_module_battery_data(self, alarm_module_voltage: int) -> dict:
+        return {
+            DATA_ALARM_MODULE_BATTERY_PERCENTAGE: round(100 * (alarm_module_voltage / ALARM_MODULE_MAX_VOLTAGE)),
+        }
+
+    async def _get_altitude_data(self, latitude: float, longitude: float) -> dict:
         if not self._config_entry.options.get(
             OPT_ENABLE_ALTITUDE_ENTITY, DEFAULT_ENABLE_ALTITUDE_ENTITY
         ):

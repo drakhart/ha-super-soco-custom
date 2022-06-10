@@ -73,6 +73,7 @@ A total of 28 entities are included as follows:
 - Last GPS fix time
 - Last warning time* with title and content
 - Last trip time*, distance* and average speed* (requires native tracking history to be enabled; updates every 10 minutes at most)
+- Alarm module voltage and battery percentage
 - Agreement (SIM card validity) start and end time
 - Image URLs for both the vehicle and its logo
 - Switches to enable/disable native tracking history and push notifications
@@ -80,14 +81,13 @@ A total of 28 entities are included as follows:
   - Accumulative rim
   - Lock
   - Sleep
-  - Voltage
 
 *&ast; These entities include extra attributes with more details.*
 
 ## Known limitations
 - Only one vehicle can be seen by this integration (I'm not lucky enough to own two Super Socos, so I don't know how would that look in the API responses)
 - Vehicle diagnose can't be initiated from this integration, nor the resulting report be shown in HA (AFAIK the API doesn't provide any methods for these)
-- Vehicle model seen by this integration may not match the actual model (the same issue happens in the official app if your module has been replaced with another one intended for a different model)
+- Vehicle model seen by this integration may not match the actual model (the same issue happens in the official app if your alarm module has been replaced with another one intended for a different model)
 
 ## Roadmap
 - Increase test coverage

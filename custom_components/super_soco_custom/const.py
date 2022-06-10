@@ -26,6 +26,7 @@ PLATFORMS = [
 
 # General
 API_GEO_PRECISION = 4  # 4 decimals = 11.1 meters
+ALARM_MODULE_MAX_VOLTAGE = 6 # It goes from 0 to 6
 CDN_BASE_URL = "https://oimg.supersocoeg.com:8996"
 CONFIG_FLOW_VERSION = 1
 COURSE_ROUNDING_ZEROES = 2
@@ -78,6 +79,8 @@ DATA_ACCUMULATIVE_RIM = "accumulativeRim"
 DATA_ADDRESS = "address"
 DATA_AGREEMENT_END_TIME = "agreementEndTime"
 DATA_AGREEMENT_START_TIME = "agreemenStartTime"  # Intended typo
+DATA_ALARM_MODULE_BATTERY_PERCENTAGE = "alarm_module_battery_percentage"
+DATA_ALARM_MODULE_VOLTAGE = "voltage"
 DATA_ALTITUDE = "altitude"
 DATA_BATTERY_PERCENTAGE = "nowElec"
 DATA_CONTENT = "content"
@@ -136,7 +139,6 @@ DATA_TITLE = "title"
 DATA_TRIP_DISTANCE = "mileages"
 DATA_USER = "user"
 DATA_VEHICLE_IMAGE_URL = "imgUrl"
-DATA_VOLTAGE = "voltage"
 DATA_WIND_ROSE_COURSE = "wind_rose_course"
 
 # Error keys
@@ -201,6 +203,24 @@ SENSORS = [
         None,
         "mdi:calendar-end",
         DEVICE_CLASS_TIMESTAMP,
+        None,
+    ),
+    (
+        "alarm_module_voltage",
+        "Alarm Module Voltage",
+        DATA_ALARM_MODULE_VOLTAGE,
+        None,
+        "mdi:current-dc",
+        DEVICE_CLASS_VOLTAGE,
+        None,
+    ),
+    (
+        "alarm_module_battery_percentage",
+        "Alarm Module Battery Percentage",
+        DATA_ALARM_MODULE_BATTERY_PERCENTAGE,
+        PERCENTAGE,
+        "mdi:battery-charging-wireless",
+        DEVICE_CLASS_BATTERY,
         None,
     ),
     (
@@ -396,15 +416,6 @@ SENSORS = [
         LENGTH_KILOMETERS,
         "mdi:map-marker-distance",
         None,
-        None,
-    ),
-    (
-        "voltage",
-        "Voltage",
-        DATA_VOLTAGE,
-        None,
-        "mdi:current-dc",
-        DEVICE_CLASS_VOLTAGE,
         None,
     ),
     (
