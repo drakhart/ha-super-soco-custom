@@ -88,6 +88,7 @@ A total of 28 entities are included as follows:
 - Only one vehicle can be seen by this integration (I'm not lucky enough to own two Super Socos, so I don't know how would that look in the API responses)
 - Vehicle diagnose can't be initiated from this integration, nor the resulting report be shown in HA (AFAIK the API doesn't provide any methods for these)
 - Vehicle model seen by this integration may not match the actual model (the same issue happens in the official app if your alarm module has been replaced with another one intended for a different model)
+- Alarm module may always report a voltage level equal to zero (and hence zero battery percentage); the cause remains unknown
 
 ## Roadmap
 - Increase test coverage
