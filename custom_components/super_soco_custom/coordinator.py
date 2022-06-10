@@ -258,6 +258,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         if (
             not self._last_data
             or self._last_data[DATA_ALTITUDE] == STATE_UNAVAILABLE
+            or self._last_data[DATA_ALTITUDE] == STATE_UNKNOWN
             or self._is_geo_cache_outdated(latitude, longitude)
         ):
             try:
@@ -362,6 +363,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         if (
             not self._last_data
             or self._last_data[DATA_LAST_TRIP_RIDE_DISTANCE] == STATE_UNAVAILABLE
+            or self._last_data[DATA_LAST_TRIP_RIDE_DISTANCE] == STATE_UNKNOWN
             or (
                 not self._is_powered_on
                 and hasattr(self, "_last_trip_timestamp")
@@ -440,6 +442,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             not self._last_data
             or not self._is_powered_on
             or self._last_data[DATA_LAST_WARNING_TIME] == STATE_UNAVAILABLE
+            or self._last_data[DATA_LAST_WARNING_TIME] == STATE_UNKNOWN
         ):
             try:
                 _LOGGER.debug("Requesting last warning data")
@@ -510,6 +513,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         if (
             not self._last_data
             or self._last_data[DATA_REVERSE_GEOCODING] == STATE_UNAVAILABLE
+            or self._last_data[DATA_REVERSE_GEOCODING] == STATE_UNKNOWN
             or self._is_geo_cache_outdated(latitude, longitude)
         ):
             try:
