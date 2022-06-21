@@ -36,7 +36,7 @@
                     "enable_last_trip_entities": "Downloads additional data from Super Soco; only available if native history is enabled; will be updated every 10 minutes at most",
                     "enable_last_warning_entity": "Downloads additional data from Super Soco",
                     "enable_reverse_geocoding_entity": "Downloads additional data from Open Street Maps",
-                    "update_interval": "Only when the vehicle is powered off; when it's on the interval will be 10 seconds"
+                    "update_interval": "Only when the vehicle is powered off; when it's on the interval will be 5 seconds"
                 }
             }
         }

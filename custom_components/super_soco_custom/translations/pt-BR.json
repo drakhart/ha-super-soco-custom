@@ -36,7 +36,7 @@
                     "enable_last_trip_entities": "Baixar dados adicionais do Super Soco; disponível apenas se o histórico nativo estiver ativado; será atualizado a cada 10 minutos no máximo",
                     "enable_last_warning_entity": "Baixar dados adicionais do Super Soco",
                     "enable_reverse_geocoding_entity": "Transfere dados adicionais do Open Street Maps",
-                    "update_interval": "Somente quando o veículo estiver desligado; quando estiver o intervalo será de 10 segundos"
+                    "update_interval": "Somente quando o veículo estiver desligado; quando estiver o intervalo será de 5 segundos"
                 }
             }
         }

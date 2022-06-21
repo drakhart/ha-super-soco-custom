@@ -93,7 +93,7 @@ A total of 28 entities are included as follows:
 - Increase test coverage
 - Add altitude and reverse geocoding cache
 - Allow speed threshold customization (this is used to filter out unwanted GPS noise when the vehicle is virtually still)
-- Allow update interval customization while the vehicle is powered on (instead of forcing a 10 seconds interval)
+- Allow update interval customization while the vehicle is powered on (instead of forcing a 5 seconds interval)
 - Allow powering the vehicle on and off remotely (just kidding, AFAIK it can't be done via API!)
 
 ## Contributions are welcome!
