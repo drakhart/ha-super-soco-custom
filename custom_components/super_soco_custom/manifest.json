@@ -1,5 +1,5 @@
 {
-    "version": "1.0.0-beta.3",
+    "version": "1.0.0-beta.4",
     "domain": "super_soco_custom",
     "name": "Super Soco Custom",
     "config_flow": true,
