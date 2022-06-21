@@ -30,6 +30,7 @@ from .const import (
     DATA_DISTANCE_FROM_HOME,
     DATA_ELEVATION,
     DATA_ESTIMATED_RANGE,
+    DATA_GPS_ACCURACY_PERCENTAGE,
     DATA_GPS_ACCURACY,
     DATA_LAST_GPS_TIME,
     DATA_LAST_TRIP_BEGIN_LATITUDE,
@@ -67,6 +68,7 @@ from .const import (
     DATA_REVERSE_GEOCODING_STATE,
     DATA_REVERSE_GEOCODING_VILLAGE,
     DATA_REVERSE_GEOCODING,
+    DATA_SIGNAL_STRENGTH_PERCENTAGE,
     DATA_SIGNAL_STRENGTH,
     DATA_SPEED,
     DATA_TITLE,
@@ -83,8 +85,9 @@ from .const import (
     DIR_AWAY_FROM_HOME,
     DIR_STATIONARY,
     DIR_TOWARDS_HOME,
-    DISTANCE_ROUNDING_ZEROES,
+    DISTANCE_ROUNDING_DECIMALS,
     DOMAIN,
+    GPS_MAX_ACCURACY,
     HOME_ZONE,
     KM_IN_A_M,
     LAST_TRIP_CACHE_SECONDS,
@@ -96,11 +99,13 @@ from .const import (
     POWER_OFF_DISTANCE_THRESHOLD_METERS,
     POWER_ON_UPDATE_SECONDS,
     SECONDS_IN_A_MINUTE,
+    SIGNAL_MAX_STRENGTH,
     SWITCH_API_METHODS,
 )
 from .helpers import (
     calculate_course,
     calculate_distance,
+    calculate_percentage,
     calculate_wind_rose_course,
     parse_date,
 )
@@ -165,7 +170,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 DATA_ALARM_MODULE_VOLTAGE: device_data[DATA_ALARM_MODULE_VOLTAGE],
                 DATA_BATTERY_PERCENTAGE: device_data[DATA_BATTERY_PERCENTAGE],
                 DATA_TRIP_DISTANCE: round(
-                    device_data[DATA_TRIP_DISTANCE], DISTANCE_ROUNDING_ZEROES
+                    device_data[DATA_TRIP_DISTANCE], DISTANCE_ROUNDING_DECIMALS
                 ),
                 DATA_ESTIMATED_RANGE: device_data[DATA_ESTIMATED_RANGE],
                 DATA_GPS_ACCURACY: device_data[DATA_GPS_ACCURACY],
@@ -191,9 +196,13 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             # Check if device is powered on
             self._is_powered_on = data[DATA_POWER_STATUS] == 1
 
-            # Inject alarm module battery data
+            # Inject alarm module data
             data.update(
-                self._get_alarm_module_battery_data(data[DATA_ALARM_MODULE_VOLTAGE])
+                self._get_alarm_module_data(
+                    data[DATA_ALARM_MODULE_VOLTAGE],
+                    data[DATA_GPS_ACCURACY],
+                    data[DATA_SIGNAL_STRENGTH],
+                )
             )
 
             # Inject home and course data only if vehicle is powered on or moving noticeably
@@ -252,10 +261,21 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.exception(exception)
             raise UpdateFailed() from exception
 
-    def _get_alarm_module_battery_data(self, alarm_module_voltage: int) -> dict:
+    def _get_alarm_module_data(
+        self,
+        voltage: int,
+        gps_accuracy: int,
+        signal_strength: int,
+    ) -> dict:
         return {
-            DATA_ALARM_MODULE_BATTERY_PERCENTAGE: round(
-                100 * (alarm_module_voltage / ALARM_MODULE_MAX_VOLTAGE)
+            DATA_ALARM_MODULE_BATTERY_PERCENTAGE: calculate_percentage(
+                voltage, ALARM_MODULE_MAX_VOLTAGE
+            ),
+            DATA_GPS_ACCURACY_PERCENTAGE: calculate_percentage(
+                gps_accuracy, GPS_MAX_ACCURACY
+            ),
+            DATA_SIGNAL_STRENGTH_PERCENTAGE: calculate_percentage(
+                signal_strength, SIGNAL_MAX_STRENGTH
             ),
         }
 
@@ -300,13 +320,13 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             home_latitude = home.attributes.get(DATA_LATITUDE)
             home_longitude = home.attributes.get(DATA_LONGITUDE)
             home_radius = round(
-                home.attributes.get(DATA_RADIUS) * KM_IN_A_M, DISTANCE_ROUNDING_ZEROES
+                home.attributes.get(DATA_RADIUS) * KM_IN_A_M, DISTANCE_ROUNDING_DECIMALS
             )
 
             data[DATA_DISTANCE_FROM_HOME] = round(
                 calculate_distance(home_latitude, home_longitude, latitude, longitude)
                 * KM_IN_A_M,
-                DISTANCE_ROUNDING_ZEROES,
+                DISTANCE_ROUNDING_DECIMALS,
             )
 
             if data[DATA_DISTANCE_FROM_HOME] <= home_radius:

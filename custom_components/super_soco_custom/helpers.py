@@ -7,16 +7,10 @@ from math import acos, cos, sin, radians
 from numpy import arctan2, degrees
 
 from .const import (
-    COURSE_ROUNDING_ZEROES,
+    COURSE_ROUNDING_DECIMALS,
     DEFAULT_FLOAT,
     METERS_IN_EARTH_RADIUS,
 )
-
-
-def calculate_wind_rose_course(course: float) -> str:
-    wind_rose_brackets = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
-
-    return wind_rose_brackets[round(course / 45)]
 
 
 def calculate_course(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -35,7 +29,7 @@ def calculate_course(lat1: float, lon1: float, lat2: float, lon2: float) -> floa
     if course < 0:
         course = 360 + course
 
-    return round(course, COURSE_ROUNDING_ZEROES)
+    return round(course, COURSE_ROUNDING_DECIMALS)
 
 
 def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -62,6 +56,16 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     theta = acos(cos_theta)
 
     return METERS_IN_EARTH_RADIUS * theta
+
+
+def calculate_percentage(current: float, max: float, decimals: int = 0) -> float:
+    return min(round(100 * (current / max), decimals), 100)
+
+
+def calculate_wind_rose_course(course: float) -> str:
+    wind_rose_brackets = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
+
+    return wind_rose_brackets[round(course / 45)]
 
 
 def parse_date(date_string: str) -> datetime:

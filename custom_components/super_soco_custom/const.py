@@ -29,8 +29,9 @@ ALARM_MODULE_MAX_VOLTAGE = 6  # It goes from 0 to 6
 API_GEO_PRECISION = 4  # 4 decimals = 11.1 meters
 CDN_BASE_URL = "https://oimg.supersocoeg.com:8996"
 CONFIG_FLOW_VERSION = 1
-COURSE_ROUNDING_ZEROES = 2
-DISTANCE_ROUNDING_ZEROES = 2
+COURSE_ROUNDING_DECIMALS = 2
+DISTANCE_ROUNDING_DECIMALS = 2
+GPS_MAX_ACCURACY = 15  # It goes from 0 to 15
 HOME_ZONE = "zone.home"
 KM_IN_A_M = 0.001
 LAST_TRIP_CACHE_SECONDS = 600
@@ -38,6 +39,7 @@ METERS_IN_EARTH_RADIUS = 6378160
 POWER_OFF_DISTANCE_THRESHOLD_METERS = 16
 POWER_ON_UPDATE_SECONDS = 5
 SECONDS_IN_A_MINUTE = 60
+SIGNAL_MAX_STRENGTH = 4  # It goes from 0 to 4
 
 # Directions of travel
 DIR_ARRIVED = "arrived"
@@ -93,6 +95,7 @@ DATA_DISTANCE_FROM_HOME = "distance_from_home"
 DATA_ELEVATION = "elevation"
 DATA_ESTIMATED_RANGE = "endurance"
 DATA_GPS_ACCURACY = "gps"
+DATA_GPS_ACCURACY_PERCENTAGE = "gps_accuracy_percentage"
 DATA_LAST_GPS_TIME = "lastGpsTime"
 DATA_LAST_TRIP_BEGIN_LATITUDE = "beginLatitude"
 DATA_LAST_TRIP_BEGIN_LONGITUDE = "beginLongitude"
@@ -130,6 +133,7 @@ DATA_REVERSE_GEOCODING_STATE = "state"
 DATA_REVERSE_GEOCODING_STATE_DISTRICT = "state_district"
 DATA_REVERSE_GEOCODING_VILLAGE = "village"
 DATA_SIGNAL_STRENGTH = "gsm"
+DATA_SIGNAL_STRENGTH_PERCENTAGE = "signal_strength_percentage"
 DATA_SPEED = "sleep"  # Intended typo
 DATA_TITLE = "title"
 DATA_TRIP_DISTANCE = "mileages"
@@ -293,7 +297,9 @@ SENSORS = [
         None,
         "mdi:crosshairs-gps",
         None,
-        None,
+        {
+            "percentage": DATA_GPS_ACCURACY_PERCENTAGE,
+        },
     ),
     (
         "image",
@@ -385,7 +391,9 @@ SENSORS = [
         None,
         "mdi:signal",
         DEVICE_CLASS_SIGNAL_STRENGTH,
-        None,
+        {
+            "percentage": DATA_SIGNAL_STRENGTH_PERCENTAGE,
+        },
     ),
     (
         "speed",

@@ -68,8 +68,8 @@ A total of 28 entities are included as follows:
 - Current course in 8-point wind rose
 - Current distance from home* with direction of travel (stationary/towards/away from/arrived)
 - Current trip distance
-- Current GSM signal strength
-- Current GPS accuracy
+- Current GSM signal strength*
+- Current GPS accuracy*
 - Last GPS fix time
 - Last warning time* with title and content
 - Last trip time*, distance* and average speed* (requires native tracking history to be enabled; updates every 10 minutes at most)
