@@ -30,18 +30,6 @@ from .const import (
     DATA_DISTANCE_FROM_HOME,
     DATA_ELEVATION,
     DATA_ESTIMATED_RANGE,
-    DATA_REVERSE_GEOCODING,
-    DATA_REVERSE_GEOCODING_CITY,
-    DATA_REVERSE_GEOCODING_COUNTRY,
-    DATA_REVERSE_GEOCODING_COUNTRY_CODE,
-    DATA_REVERSE_GEOCODING_COUNTY,
-    DATA_REVERSE_GEOCODING_HOUSE_NUMBER,
-    DATA_REVERSE_GEOCODING_NEIGHBOURHOOD,
-    DATA_REVERSE_GEOCODING_POSTCODE,
-    DATA_REVERSE_GEOCODING_ROAD,
-    DATA_REVERSE_GEOCODING_STATE,
-    DATA_REVERSE_GEOCODING_STATE_DISTRICT,
-    DATA_REVERSE_GEOCODING_VILLAGE,
     DATA_GPS_ACCURACY,
     DATA_LAST_GPS_TIME,
     DATA_LAST_TRIP_BEGIN_LATITUDE,
@@ -53,6 +41,9 @@ from .const import (
     DATA_LAST_TRIP_RIDE_DISTANCE,
     DATA_LAST_TRIP_RIDE_SPEED,
     DATA_LAST_TRIP_RIDE_TIME,
+    DATA_LAST_WARNING_MESSAGE,
+    DATA_LAST_WARNING_TIME,
+    DATA_LAST_WARNING_TITLE,
     DATA_LATITUDE,
     DATA_LIST,
     DATA_LOCK,
@@ -64,22 +55,29 @@ from .const import (
     DATA_POWER_STATUS,
     DATA_RADIUS,
     DATA_RESULTS,
+    DATA_REVERSE_GEOCODING_CITY,
+    DATA_REVERSE_GEOCODING_COUNTRY_CODE,
+    DATA_REVERSE_GEOCODING_COUNTRY,
+    DATA_REVERSE_GEOCODING_COUNTY,
+    DATA_REVERSE_GEOCODING_HOUSE_NUMBER,
+    DATA_REVERSE_GEOCODING_NEIGHBOURHOOD,
+    DATA_REVERSE_GEOCODING_POSTCODE,
+    DATA_REVERSE_GEOCODING_ROAD,
+    DATA_REVERSE_GEOCODING_STATE_DISTRICT,
+    DATA_REVERSE_GEOCODING_STATE,
+    DATA_REVERSE_GEOCODING_VILLAGE,
+    DATA_REVERSE_GEOCODING,
     DATA_SIGNAL_STRENGTH,
-    DATA_SLEEP,
     DATA_SPEED,
-    DATA_TIMESTAMP,
     DATA_TITLE,
     DATA_TRIP_DISTANCE,
     DATA_VEHICLE_IMAGE_URL,
-    DATA_LAST_WARNING_MESSAGE,
-    DATA_LAST_WARNING_TIME,
-    DATA_LAST_WARNING_TITLE,
     DATA_WIND_ROSE_COURSE,
-    DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
+    DEFAULT_ENABLE_ALTITUDE_ENTITY,
     DEFAULT_ENABLE_LAST_TRIP_ENTITIES,
     DEFAULT_ENABLE_LAST_WARNING_ENTITY,
+    DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
     DEFAULT_FLOAT,
-    DEFAULT_ENABLE_ALTITUDE_ENTITY,
     DEFAULT_UPDATE_INTERVAL_MINUTES,
     DIR_ARRIVED,
     DIR_AWAY_FROM_HOME,
@@ -89,17 +87,15 @@ from .const import (
     DOMAIN,
     HOME_ZONE,
     KM_IN_A_M,
-    KMH_IN_A_MS,
     LAST_TRIP_CACHE_SECONDS,
     OPT_ENABLE_ALTITUDE_ENTITY,
-    OPT_ENABLE_REVERSE_GEOCODING_ENTITY,
     OPT_ENABLE_LAST_TRIP_ENTITIES,
     OPT_ENABLE_LAST_WARNING_ENTITY,
+    OPT_ENABLE_REVERSE_GEOCODING_ENTITY,
     OPT_UPDATE_INTERVAL,
+    POWER_OFF_DISTANCE_THRESHOLD_METERS,
     POWER_ON_UPDATE_SECONDS,
     SECONDS_IN_A_MINUTE,
-    SPEED_ROUNDING_ZEROES,
-    SPEED_THRESHOLD_KMH,
     SWITCH_API_METHODS,
 )
 from .helpers import (
@@ -184,7 +180,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 DATA_NATIVE_TRACKING_HISTORY: device_data[DATA_NATIVE_TRACKING_HISTORY],
                 DATA_POWER_STATUS: device_data[DATA_POWER_STATUS],
                 DATA_SIGNAL_STRENGTH: device_data[DATA_SIGNAL_STRENGTH],
-                DATA_SLEEP: device_data[DATA_SLEEP],
+                DATA_SPEED: device_data[DATA_SPEED],
                 DATA_VEHICLE_IMAGE_URL: f"{CDN_BASE_URL}/{self._user_data[DATA_DEVICE][DATA_VEHICLE_IMAGE_URL]}",
             }
 
@@ -196,37 +192,42 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             self._is_powered_on = data[DATA_POWER_STATUS] == 1
 
             # Inject alarm module battery data
-            data.update(self._get_alarm_module_battery_data(data[DATA_ALARM_MODULE_VOLTAGE]))
-
-            # Inject speed, course and distance data
-            data.update(self._get_home_data(data[DATA_LATITUDE], data[DATA_LONGITUDE]))
             data.update(
-                self._get_speed_and_course_data(
-                    data[DATA_LATITUDE], data[DATA_LONGITUDE]
+                self._get_alarm_module_battery_data(data[DATA_ALARM_MODULE_VOLTAGE])
+            )
+
+            # Inject home and course data only if vehicle is powered on or moving noticeably
+            if self._is_powered_on or self._is_power_off_movement_noticeable(
+                data[DATA_LATITUDE], data[DATA_LONGITUDE]
+            ):
+                # Inject home data
+                data.update(
+                    self._get_home_data(data[DATA_LATITUDE], data[DATA_LONGITUDE])
                 )
-            )
 
-            # Inject timestamp depending on last vs current position
-            data.update(
-                self._get_timestamp_data(data[DATA_LATITUDE], data[DATA_LONGITUDE])
-            )
+                # Inject course data
+                data.update(
+                    self._get_course_data(data[DATA_LATITUDE], data[DATA_LONGITUDE])
+                )
 
-            # Reduce GPS jitter if vehicle is still
-            if self._last_data and data[DATA_SPEED] < SPEED_THRESHOLD_KMH:
+            # ... otherwise use last cached data to reduce GPS jitter
+            else:
                 _LOGGER.debug(
-                    f"Current speed is lower than threshold, using last data ({data[DATA_SPEED]} < {SPEED_THRESHOLD_KMH})"
+                    f"Current powered off displacement is too small, using last cached data"
                 )
                 data.update(
                     {
                         DATA_COURSE: self._last_data[DATA_COURSE],
+                        DATA_DIR_OF_TRAVEL: self._last_data[DATA_DIR_OF_TRAVEL],
+                        DATA_DISTANCE_FROM_HOME: self._last_data[
+                            DATA_DISTANCE_FROM_HOME
+                        ],
                         DATA_LATITUDE: self._last_data[DATA_LATITUDE],
                         DATA_LONGITUDE: self._last_data[DATA_LONGITUDE],
                         DATA_SPEED: DEFAULT_FLOAT,
+                        DATA_WIND_ROSE_COURSE: self._last_data[DATA_WIND_ROSE_COURSE],
                     }
                 )
-
-            # Inject wind rose data
-            data[DATA_WIND_ROSE_COURSE] = calculate_wind_rose_course(data[DATA_COURSE])
 
             # Inject additional API data
             data.update(
@@ -253,7 +254,9 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
     def _get_alarm_module_battery_data(self, alarm_module_voltage: int) -> dict:
         return {
-            DATA_ALARM_MODULE_BATTERY_PERCENTAGE: round(100 * (alarm_module_voltage / ALARM_MODULE_MAX_VOLTAGE)),
+            DATA_ALARM_MODULE_BATTERY_PERCENTAGE: round(
+                100 * (alarm_module_voltage / ALARM_MODULE_MAX_VOLTAGE)
+            ),
         }
 
     async def _get_altitude_data(self, latitude: float, longitude: float) -> dict:
@@ -573,24 +576,12 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
         return data
 
-    def _get_speed_and_course_data(self, latitude: float, longitude: float) -> dict:
+    def _get_course_data(self, latitude: float, longitude: float) -> dict:
         data = {
             DATA_COURSE: self._last_data.get(DATA_COURSE, DEFAULT_FLOAT),
-            DATA_SPEED: self._last_data.get(DATA_SPEED, DEFAULT_FLOAT),
         }
 
         if self._last_data:
-            dist_m = calculate_distance(
-                self._last_data[DATA_LATITUDE],
-                self._last_data[DATA_LONGITUDE],
-                latitude,
-                longitude,
-            )
-            time_s = datetime.now().timestamp() - self._last_data[DATA_TIMESTAMP]
-
-            data[DATA_SPEED] = round(
-                dist_m / time_s * KMH_IN_A_MS, SPEED_ROUNDING_ZEROES
-            )
             data[DATA_COURSE] = calculate_course(
                 self._last_data[DATA_LATITUDE],
                 self._last_data[DATA_LONGITUDE],
@@ -598,21 +589,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 longitude,
             )
 
-        return data
-
-    def _get_timestamp_data(self, latitude: float, longitude: float) -> dict:
-        data = {
-            DATA_TIMESTAMP: datetime.now().timestamp(),
-        }
-
-        if (
-            self._last_data
-            and latitude == self._last_data[DATA_LATITUDE]
-            and longitude == self._last_data[DATA_LONGITUDE]
-        ):
-            data = {
-                DATA_TIMESTAMP: self._last_data[DATA_TIMESTAMP],
-            }
+        data[DATA_WIND_ROSE_COURSE] = calculate_wind_rose_course(data[DATA_COURSE])
 
         return data
 
@@ -624,6 +601,21 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             or round(longitude, API_GEO_PRECISION)
             != round(self._last_data[DATA_LONGITUDE], API_GEO_PRECISION)
         )
+
+    def _is_power_off_movement_noticeable(
+        self, latitude: float, longitude: float
+    ) -> bool:
+        if not self._last_data:
+            return True
+
+        distance = calculate_distance(
+            latitude,
+            longitude,
+            self._last_data[DATA_LATITUDE],
+            self._last_data[DATA_LONGITUDE],
+        )
+
+        return distance >= POWER_OFF_DISTANCE_THRESHOLD_METERS
 
     async def set_switch_state(self, data_key: str, state: bool) -> None:
         try:

@@ -80,7 +80,6 @@ A total of 28 entities are included as follows:
 - And some unclear entities (if you decode their meaning please share, thanks!):
   - Accumulative rim
   - Lock
-  - Sleep
 
 *&ast; These entities include extra attributes with more details.*
 
