@@ -9,7 +9,7 @@ from custom_components.super_soco_custom.const import (
 # Mock config data to be used across multiple tests
 MOCK_CONFIG = {
     CONF_PHONE_PREFIX: 34,
-    CONF_PHONE_NUMBER: 123456789,
+    CONF_PHONE_NUMBER: "123456789",
     CONF_PASSWORD: "test",
 }
 
