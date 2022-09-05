@@ -97,7 +97,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ): vol.In(PHONE_PREFIXES),
                     vol.Required(
                         CONF_PHONE_NUMBER, default=user_input[CONF_PHONE_NUMBER]
-                    ): int,
+                    ): str,
                     vol.Required(CONF_PASSWORD, default=user_input[CONF_PASSWORD]): str,
                 }
             ),
@@ -105,7 +105,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def _test_credentials(
-        self, phone_prefix: int, phone_number: int, password: str
+        self, phone_prefix: int, phone_number: str, password: str
     ) -> bool:
         try:
             session = async_create_clientsession(self.hass)

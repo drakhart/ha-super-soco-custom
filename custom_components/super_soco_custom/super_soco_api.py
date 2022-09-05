@@ -17,7 +17,7 @@ class SuperSocoAPI:
         self,
         session: aiohttp.ClientSession,
         phone_prefix: int,
-        phone_number: int,
+        phone_number: str,
         password: str,
     ) -> None:
         self._phone_prefix = phone_prefix
