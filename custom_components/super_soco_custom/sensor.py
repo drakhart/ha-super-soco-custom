@@ -78,11 +78,9 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
         return self.coordinator.data.get(self._key, DEFAULT_STRING)
 
     @property
-    def unit_of_measurement(self):
-        if self.native_value == STATE_UNAVAILABLE:
-            return None
-
-        return self._unit
+    def native_unit_of_measurement(self):
+        if self.native_value != STATE_UNAVAILABLE and self._unit != None:
+            return self._unit
 
     @property
     def icon(self):
