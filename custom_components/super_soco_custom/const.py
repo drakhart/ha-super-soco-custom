@@ -28,7 +28,7 @@ PLATFORMS = [
 ALARM_MODULE_MAX_VOLTAGE = 6  # It goes from 0 to 6
 API_GEO_PRECISION = 4  # 4 decimals = 11.1 meters
 CDN_BASE_URL = "https://oimg.supersocoeg.com:8996"
-CONFIG_FLOW_VERSION = 1
+CONFIG_FLOW_VERSION = 2
 COURSE_ROUNDING_DECIMALS = 2
 DISTANCE_ROUNDING_DECIMALS = 2
 GPS_MAX_ACCURACY = 15  # It goes from 0 to 15
@@ -36,10 +36,13 @@ HOME_ZONE = "zone.home"
 KM_IN_A_M = 0.001
 LAST_TRIP_CACHE_SECONDS = 600
 METERS_IN_EARTH_RADIUS = 6378160
+MILLISECONDS_IN_SECOND = 1000
 POWER_OFF_DISTANCE_THRESHOLD_METERS = 16
 POWER_ON_UPDATE_SECONDS = 5
 SECONDS_IN_A_MINUTE = 60
 SIGNAL_MAX_STRENGTH = 4  # It goes from 0 to 4
+SUPER_SOCO = "super_soco"
+VMOTO_SOCO = "vmoto_soco"
 
 # Directions of travel
 DIR_ARRIVED = "arrived"
@@ -53,9 +56,13 @@ DEFAULT_INTEGER = 0
 DEFAULT_STRING = ""
 
 # Configuration keys
+CONF_APP_NAME = "app_name"
+CONF_CLIENT = "client"
+CONF_LOGIN_CODE = "login_code"
 CONF_PASSWORD = "password"
 CONF_PHONE_NUMBER = "phone_number"
 CONF_PHONE_PREFIX = "phone_prefix"
+CONF_SESSION = "session"
 
 # Option keys
 OPT_EMAIL = "email"
@@ -138,7 +145,9 @@ DATA_SPEED = "sleep"  # Intended typo
 DATA_TITLE = "title"
 DATA_TRIP_DISTANCE = "mileages"
 DATA_USER = "user"
+DATA_USER_BIND_DEVICE = "userBindDevice"
 DATA_VEHICLE_IMAGE_URL = "imgUrl"
+DATA_VEHICLE_IMAGE_URL_VMOTO = "fileUrl"
 DATA_WIND_ROSE_COURSE = "wind_rose_course"
 
 # Error keys
@@ -450,7 +459,7 @@ SWITCH_API_METHODS = {
 }
 
 # Phone prefixes
-PHONE_PREFIXES = {
+PHONE_PREFIXES = {  # pylint: disable=duplicate-key
     93: "Afghanistan (93)",
     355: "Albania (355)",
     244: "Angola (244)",
@@ -667,4 +676,10 @@ PHONE_PREFIXES = {
     27: "South Africa (27)",
     260: "Zambia (260)",
     263: "Zimbabwe (263)",
+}
+
+# App names
+APP_NAMES = {
+    SUPER_SOCO: "Super Soco",
+    VMOTO_SOCO: "Vmoto Soco",
 }

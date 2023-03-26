@@ -10,6 +10,7 @@ from .const import (
     COURSE_ROUNDING_DECIMALS,
     DEFAULT_FLOAT,
     METERS_IN_EARTH_RADIUS,
+    MILLISECONDS_IN_SECOND,
 )
 
 
@@ -58,8 +59,8 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return METERS_IN_EARTH_RADIUS * theta
 
 
-def calculate_percentage(current: float, max: float, decimals: int = 0) -> float:
-    return min(round(100 * (current / max), decimals), 100)
+def calculate_percentage(current: float, maximum: float, decimals: int = 0) -> float:
+    return min(round(100 * (current / maximum), decimals), 100)
 
 
 def calculate_wind_rose_course(course: float) -> str:
@@ -71,3 +72,8 @@ def calculate_wind_rose_course(course: float) -> str:
 def parse_date(date_string: str) -> datetime:
     clean_string = re.sub("AM|PM", "+01:00", date_string)
     return datetime.strptime(clean_string, "%d/%m/%Y %H:%M%z")
+
+
+def parse_timestamp(timestampMilliseconds: int) -> datetime:
+    timestamp = timestampMilliseconds / MILLISECONDS_IN_SECOND
+    return datetime.fromtimestamp(timestamp).strftime("%d/%m/%Y %H:%M%z")

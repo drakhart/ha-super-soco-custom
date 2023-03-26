@@ -1,7 +1,7 @@
 import logging
 import voluptuous as vol
 
-from aiohttp import ClientResponseError, ServerTimeoutError
+from aiohttp import ClientResponseError, ClientSession, ServerTimeoutError
 
 from homeassistant import config_entries
 from homeassistant.core import callback
@@ -11,9 +11,14 @@ from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .const import (
+    APP_NAMES,
+    CONF_APP_NAME,
+    CONF_CLIENT,
+    CONF_LOGIN_CODE,
     CONF_PASSWORD,
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
+    CONF_SESSION,
     CONFIG_FLOW_VERSION,
     DEFAULT_ENABLE_ALTITUDE_ENTITY,
     DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
@@ -36,8 +41,10 @@ from .const import (
     OPT_ENABLE_LAST_WARNING_ENTITY,
     OPT_UPDATE_INTERVAL,
     PHONE_PREFIXES,
+    SUPER_SOCO,
 )
 from .super_soco_api import SuperSocoAPI
+from .vmoto_soco_api import VmotoSocoAPI
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,91 +53,172 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = CONFIG_FLOW_VERSION
     CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._errors = {}
+        self._session = None
+        self._client = None
+        self._user_input = {
+            CONF_APP_NAME: SUPER_SOCO,
+            CONF_PHONE_PREFIX: list(PHONE_PREFIXES.keys())[0],
+            CONF_PHONE_NUMBER: None,
+            CONF_PASSWORD: None,
+            CONF_LOGIN_CODE: None,
+        }
 
     async def async_step_user(self, user_input=None) -> FlowResult:
-        self._errors = {}
-
         if self._async_current_entries():
             return self.async_abort(reason=ERROR_ALREADY_CONFIGURED)
 
-        if user_input is not None:
-            try:
-                await self._test_credentials(
-                    user_input[CONF_PHONE_PREFIX],
-                    user_input[CONF_PHONE_NUMBER],
-                    user_input[CONF_PASSWORD],
-                )
+        return self.async_show_form(
+            step_id="app",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_APP_NAME, default=self._user_input[CONF_APP_NAME]
+                    ): vol.In(APP_NAMES),
+                    vol.Required(
+                        CONF_PHONE_PREFIX, default=self._user_input[CONF_PHONE_PREFIX]
+                    ): vol.In(PHONE_PREFIXES),
+                    vol.Required(
+                        CONF_PHONE_NUMBER, default=self._user_input[CONF_PHONE_NUMBER]
+                    ): str,
+                }
+            ),
+            errors=self._errors,
+        )
 
-                return self.async_create_entry(title=NAME, data=user_input)
-            except CannotConnect:
-                self._errors["base"] = ERROR_CANNOT_CONNECT
-            except InvalidAuth:
-                self._errors["base"] = ERROR_INVALID_AUTH
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception("Unexpected exception")
-                self._errors["base"] = ERROR_UNKNOWN
+    async def async_step_app(self, user_input=None) -> FlowResult:
+        self._user_input.update(user_input)
 
-            return await self._show_config_form(user_input)
+        if self._user_input[CONF_APP_NAME] == SUPER_SOCO:
+            return self.async_show_form(
+                step_id="login",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_PASSWORD, default=self._user_input[CONF_PASSWORD]
+                        ): str,
+                    }
+                ),
+                errors=self._errors,
+            )
 
-        # Provide defaults for form
-        user_input = {}
-        user_input[CONF_PHONE_PREFIX] = None
-        user_input[CONF_PHONE_NUMBER] = None
-        user_input[CONF_PASSWORD] = None
+        try:
+            await self._get_login_code()
 
-        return await self._show_config_form(user_input)
+            return self.async_show_form(
+                step_id="login",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_LOGIN_CODE, default=self._user_input[CONF_LOGIN_CODE]
+                        ): str,
+                    }
+                ),
+                errors=self._errors,
+            )
+        except CannotConnect:
+            self._errors["base"] = ERROR_CANNOT_CONNECT
+        except InvalidAuth:
+            self._errors["base"] = ERROR_INVALID_AUTH
+        except Exception:  # pylint: disable=broad-exception-caught
+            self._errors["base"] = ERROR_UNKNOWN
+
+        return await self.async_step_user(user_input)
+
+    async def async_step_login(self, user_input=None) -> FlowResult:
+        self._user_input.update(user_input)
+
+        try:
+            self._user_input[CONF_SESSION] = self._get_session()
+            self._user_input[CONF_CLIENT] = await self._login()
+
+            return self.async_create_entry(title=NAME, data=self._user_input)
+        except CannotConnect:
+            self._errors["base"] = ERROR_CANNOT_CONNECT
+        except InvalidAuth:
+            self._errors["base"] = ERROR_INVALID_AUTH
+        except Exception:  # pylint: disable=broad-exception-caught
+            self._errors["base"] = ERROR_UNKNOWN
+
+        return await self.async_step_user(user_input)
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
         return SuperSocoCustomOptionsFlowHandler(config_entry)
 
-    async def _show_config_form(self, user_input):  # pylint: disable=unused-argument
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_PHONE_PREFIX, default=user_input[CONF_PHONE_PREFIX]
-                    ): vol.In(PHONE_PREFIXES),
-                    vol.Required(
-                        CONF_PHONE_NUMBER, default=user_input[CONF_PHONE_NUMBER]
-                    ): str,
-                    vol.Required(CONF_PASSWORD, default=user_input[CONF_PASSWORD]): str,
-                }
-            ),
-            errors=self._errors,
-        )
-
-    async def _test_credentials(
-        self, phone_prefix: int, phone_number: str, password: str
-    ) -> bool:
+    async def _login(self):
         try:
-            session = async_create_clientsession(self.hass)
-            client = SuperSocoAPI(session, phone_prefix, phone_number, password)
+            if self._user_input[CONF_APP_NAME] == SUPER_SOCO:
+                client = self._get_super_soco_client()
+                await client.login()
+            else:
+                client = self._get_vmoto_soco_client()
+                print(
+                    await client.login(self._user_input[CONF_LOGIN_CODE])
+                )  # TODO: Remove print
 
-            await client.login()
-
-            return True
-        except ServerTimeoutError:
-            raise CannotConnect
+            return client
+        except ServerTimeoutError as exc:
+            raise CannotConnect from exc
         except ClientResponseError as error:
             if error.status == 400:
-                raise InvalidAuth
-            else:
-                raise error
+                raise InvalidAuth from error
+
+            _LOGGER.error(error)
+
+            raise error
+
+    async def _get_login_code(self) -> bool:
+        try:
+            client = self._get_vmoto_soco_client()
+
+            await client.get_login_code()
+
+            return True
+        except ServerTimeoutError as exc:
+            raise CannotConnect from exc
+        except ClientResponseError as error:
+            if error.status == 400:
+                raise InvalidAuth from error
+
+            _LOGGER.error(error)
+
+            raise error
+
+    def _get_session(self) -> ClientSession:
+        if not self._session:
+            self._session = async_create_clientsession(self.hass)
+
+        return self._session
+
+    def _get_super_soco_client(self) -> SuperSocoAPI:
+        return SuperSocoAPI(
+            self._get_session(),
+            self._user_input[CONF_PHONE_PREFIX],
+            self._user_input[CONF_PHONE_NUMBER],
+            self._user_input[CONF_PASSWORD],
+        )
+
+    def _get_vmoto_soco_client(self) -> VmotoSocoAPI:
+        return VmotoSocoAPI(
+            self._get_session(),
+            self._user_input[CONF_PHONE_PREFIX],
+            self._user_input[CONF_PHONE_NUMBER],
+        )
 
 
 class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, config_entry):
+    def __init__(self, config_entry) -> None:
         self.options = dict(config_entry.options)
 
-    async def async_step_init(self, user_input=None):  # pylint: disable=unused-argument
+    async def async_step_init(
+        self, user_input=None  # pylint: disable=unused-argument
+    ) -> FlowResult:
         return await self.async_step_user()
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input=None) -> FlowResult:
         if user_input is not None:
             self.options.update(user_input)
 
@@ -188,7 +276,7 @@ class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
             ),
         )
 
-    async def _update_options(self):
+    async def _update_options(self) -> FlowResult:
         return self.async_create_entry(title=NAME, data=self.options)
 
 

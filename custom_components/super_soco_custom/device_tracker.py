@@ -22,7 +22,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     device_trackers = []
 
     for (
-        id,
+        id,  # pylint: disable=redefined-builtin
         name,
         source_type,
         latitude_key,
@@ -35,7 +35,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             k in coordinator.data
             for k in (latitude_key, longitude_key, gps_accuracy_key)
         ):
-            _LOGGER.debug(f"Unable to set up device tracker due to missing data key")
+            _LOGGER.debug("Unable to set up device tracker due to missing data key")
         else:
             device_trackers.append(
                 SuperSocoCustomDeviceTracker(
@@ -60,7 +60,7 @@ class SuperSocoCustomDeviceTracker(SuperSocoCustomEntity, TrackerEntity):
         self,
         config_entry,
         coordinator,
-        id,
+        id,  # pylint: disable=redefined-builtin
         name,
         source_type,
         latitude_key,

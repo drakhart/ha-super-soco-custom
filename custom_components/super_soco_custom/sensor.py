@@ -20,9 +20,17 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     sensors = []
 
-    for id, name, key, unit, icon, device_class, extra_attrs in SENSORS:
+    for (
+        id,  # pylint: disable=redefined-builtin
+        name,
+        key,
+        unit,
+        icon,
+        device_class,
+        extra_attrs,
+    ) in SENSORS:
         if not key in coordinator.data:
-            _LOGGER.debug(f"Unable to set up sensor due to missing data key: {key}")
+            _LOGGER.debug("Unable to set up sensor due to missing data key: %s", key)
         else:
             sensors.append(
                 SuperSocoCustomSensor(
@@ -46,7 +54,7 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
         self,
         config_entry,
         coordinator,
-        id,
+        id,  # pylint: disable=redefined-builtin
         name,
         key,
         unit,

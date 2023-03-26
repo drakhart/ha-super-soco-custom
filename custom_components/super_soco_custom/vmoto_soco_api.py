@@ -3,29 +3,26 @@ import async_timeout
 
 from typing import Union
 
-__title__ = "super_soco_api"
+__title__ = "vmoto_soco_api"
 __version__ = "0.0.1"
 __author__ = "@Drakhart"
 __license__ = "MIT"
 
-BASE_URL = "https://eg.supersocoeg.com/rest/v1"
-JWT_PREFIX = "Bearer "
+BASE_URL = "https://app.vmotosoco-service.com/app/v1"
+JWT_PREFIX = "Quanjun "
 TIMEOUT = 5
 
 
-class SuperSocoAPI:
+class VmotoSocoAPI:
     def __init__(
         self,
         session: aiohttp.ClientSession,
         phone_prefix: int,
         phone_number: str,
-        password: str,
     ) -> None:
         self._session = session
         self._phone_prefix = phone_prefix
         self._phone_number = phone_number
-        self._password = password
-        self._token = None
 
     async def get_device(self, device_number: str) -> dict:
         url = f"{BASE_URL}/device/info/{device_number}"
@@ -33,10 +30,20 @@ class SuperSocoAPI:
 
         return await self._api_wrapper(url, headers)
 
+    async def get_login_code(self) -> dict:
+        url = f"{BASE_URL}/index/sendLogin4Code"
+        headers = await self._get_headers(False)
+        data = {
+            "phoneCode": self._phone_prefix,
+            "phone": self._phone_number,
+        }
+
+        return await self._api_wrapper(url, headers, data)
+
     async def get_tracking_history_list(
         self, page_num: int = 1, page_size: int = 20
     ) -> dict:
-        url = f"{BASE_URL}/userRunPoint/list"
+        url = f"{BASE_URL}/runTrail/list"
         headers = await self._get_headers(True)
         data = {
             "pageNum": page_num,
@@ -46,7 +53,7 @@ class SuperSocoAPI:
         return await self._api_wrapper(url, headers, data)
 
     async def get_user(self) -> dict:
-        url = f"{BASE_URL}/user/get"
+        url = f"{BASE_URL}/user/index"
         headers = await self._get_headers(True)
 
         return await self._api_wrapper(url, headers)
@@ -61,13 +68,13 @@ class SuperSocoAPI:
 
         return await self._api_wrapper(url, headers, data)
 
-    async def login(self) -> dict:
-        url = f"{BASE_URL}/login"
+    async def login(self, login_code: str) -> dict:
+        url = f"{BASE_URL}/index/loginByCode"
         headers = await self._get_headers(False)
         data = {
             "phoneCode": self._phone_prefix,
-            "phone": self._phone_number,
-            "password": self._password,
+            "userAccount": self._phone_number,
+            "loginCode": login_code,
         }
 
         res = await self._api_wrapper(url=url, headers=headers, data=data)
@@ -93,29 +100,26 @@ class SuperSocoAPI:
             res.raise_for_status()
             json = await res.json()
 
-            if json["status"] == "403":
-                await self.login()
-
-                headers = await self._get_headers(True)
-
-                return await self._api_wrapper(url, headers, data)
-            elif json["status"] != "200":
+            if json["status"] != "200":
                 res.status = int(json["status"])
                 res.raise_for_status()
 
             return json
 
     async def _get_headers(self, authz: bool) -> dict:
-        headers = {"content-type": "application/json; charset=UTF-8"}
+        headers = {
+            "content-type": "application/json; charset=UTF-8",
+            "language": "en",
+            "timezone": "0",
+            "timezonename": "GMT",
+        }
 
         if authz:
-            token = await self._get_token()
-            headers["authorization"] = f"{JWT_PREFIX}{token}"
+            headers["authorization"] = f"{JWT_PREFIX}{self._token}"
+        else:
+            headers["temptoken"] = "0EFC85FBE34ADD5A3C10314C8EADD694"
 
         return headers
 
     async def _get_token(self) -> str:
-        if not self._token:
-            await self.login()
-
         return self._token

@@ -20,9 +20,17 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     binary_sensors = []
 
-    for id, name, key, condition, icon, device_class, extra_attrs in BINARY_SENSORS:
+    for (
+        id,  # pylint: disable=redefined-builtin
+        name,
+        key,
+        condition,
+        icon,
+        device_class,
+        extra_attrs,
+    ) in BINARY_SENSORS:  # pylint: disable=redefined-builtin
         if not key in coordinator.data:
-            _LOGGER.debug(f"Unable to set up switch due to missing data key: {key}")
+            _LOGGER.debug("Unable to set up switch due to missing data key: %s", key)
         else:
             binary_sensors.append(
                 SuperSocoCustomBinarySensor(
@@ -46,7 +54,7 @@ class SuperSocoCustomBinarySensor(SuperSocoCustomEntity, BinarySensorEntity):
         self,
         config_entry,
         coordinator,
-        id,
+        id,  # pylint: disable=redefined-builtin
         name,
         key,
         condition,

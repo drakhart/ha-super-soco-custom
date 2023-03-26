@@ -9,12 +9,19 @@
             "unknown": "Unexpected error"
         },
         "step": {
-            "user": {
-                "description": "Please enter the same login details as in Super Soco's official app.\n\n*Please note that Super Soco does not allow more than one client at a time, so any open session in the app will be closed each time entities are updated by this integration. You can adjust the update interval later on by clicking on Configure.*",
+            "app": {
+                "description": "Please choose the specific Vmoto Super Soco app used to register your bike, then enter the phone prefix and number used to log in to that app.\n\n*Disclaimer: Please note that Vmoto Super Soco does not allow more than one client at a time, so any open session in the official app will be closed when using this integration.*",
                 "data": {
-                    "password": "Password",
+                    "app_name": "Application name:",
                     "phone_number": "Phone number",
                     "phone_prefix": "Phone prefix"
+                }
+            },
+            "login": {
+                "description": "Please enter:",
+                "data": {
+                    "login_code": "Verification code",
+                    "password": "Password"
                 }
             }
         }
