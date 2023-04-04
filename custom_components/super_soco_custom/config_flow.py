@@ -13,12 +13,11 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from .const import (
     APP_NAMES,
     CONF_APP_NAME,
-    CONF_CLIENT,
     CONF_LOGIN_CODE,
     CONF_PASSWORD,
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
-    CONF_SESSION,
+    CONF_TOKEN,
     CONFIG_FLOW_VERSION,
     DEFAULT_ENABLE_ALTITUDE_ENTITY,
     DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
@@ -130,8 +129,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._user_input.update(user_input)
 
         try:
-            self._user_input[CONF_SESSION] = self._get_session()
-            self._user_input[CONF_CLIENT] = await self._login()
+            self._user_input[CONF_TOKEN] = await self._login()
 
             return self.async_create_entry(title=NAME, data=self._user_input)
         except CannotConnect:
@@ -155,11 +153,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await client.login()
             else:
                 client = self._get_vmoto_soco_client()
-                print(
-                    await client.login(self._user_input[CONF_LOGIN_CODE])
-                )  # TODO: Remove print
+                await client.login(self._user_input[CONF_LOGIN_CODE])
 
-            return client
+            token = await client.get_token()
+
+            return token
         except ServerTimeoutError as exc:
             raise CannotConnect from exc
         except ClientResponseError as error:

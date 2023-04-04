@@ -12,7 +12,6 @@ from .const import (
     API_GEO_PRECISION,
     CDN_BASE_URL,
     CONF_APP_NAME,
-    CONF_CLIENT,
     DATA_ACCUMULATIVE_RIM,
     DATA_ADDRESS,
     DATA_AGREEMENT_END_TIME,
@@ -25,7 +24,7 @@ from .const import (
     DATA_COURSE,
     DATA_CREATE_TIME,
     DATA_DATA,
-    DATA_DEVICE_NUMBER,
+    DATA_DEVICE_NO,
     DATA_DEVICE,
     DATA_DIR_OF_TRAVEL,
     DATA_DISPLAY_NAME,
@@ -76,8 +75,10 @@ from .const import (
     DATA_TITLE,
     DATA_TRIP_DISTANCE,
     DATA_USER_BIND_DEVICE,
-    DATA_VEHICLE_IMAGE_URL,
+    DATA_USER_ID,
+    DATA_USER,
     DATA_VEHICLE_IMAGE_URL_VMOTO,
+    DATA_VEHICLE_IMAGE_URL,
     DATA_WIND_ROSE_COURSE,
     DEFAULT_ENABLE_ALTITUDE_ENTITY,
     DEFAULT_ENABLE_LAST_TRIP_ENTITIES,
@@ -118,6 +119,8 @@ from .helpers import (
 )
 from .open_street_map_api import OpenStreetMapAPI
 from .open_topo_data_api import OpenTopoDataAPI
+from .super_soco_api import SuperSocoAPI
+from .vmoto_soco_api import VmotoSocoAPI
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -127,12 +130,13 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         self,
         hass: HomeAssistant,
         config_entry: ConfigEntry,
+        client: SuperSocoAPI | VmotoSocoAPI,
         open_street_map_api: OpenStreetMapAPI,
         open_topo_data_api: OpenTopoDataAPI,
     ) -> None:
         self._hass = hass
         self._config_entry = config_entry
-        self._client = config_entry.data.get(CONF_CLIENT)
+        self._client = client
         self._open_street_map_api = open_street_map_api
         self._open_topo_data_api = open_topo_data_api
         self._last_data = {}
@@ -145,6 +149,8 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         self._is_powered_on = False
         self._last_trip_timestamp = None
         self._user_data = None
+        self._user_id = None
+        self._device_no = None
 
         _LOGGER.debug(
             "Setting initial update interval: %i minute(s)",
@@ -161,15 +167,16 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("Requesting user data")
                 self._user_data = (await self._client.get_user())[DATA_DATA]
 
+            self._user_id = self._user_data[DATA_USER][DATA_USER_ID]
+            self._device_no = self._user_data[DATA_DEVICE][DATA_DEVICE_NO]
+
             if self._is_app_vmoto_soco():
                 device_data = self._user_data[DATA_DEVICE]
             else:
                 _LOGGER.debug("Requesting device data")
-                device_data = (
-                    await self._client.get_device(
-                        self._user_data[DATA_DEVICE][DATA_DEVICE_NUMBER]
-                    )
-                )[DATA_DATA]
+                device_data = (await self._client.get_device(self._device_no))[
+                    DATA_DATA
+                ]
 
             data = {
                 DATA_ACCUMULATIVE_RIM: device_data[DATA_ACCUMULATIVE_RIM],

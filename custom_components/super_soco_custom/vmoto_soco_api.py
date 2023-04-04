@@ -19,10 +19,12 @@ class VmotoSocoAPI:
         session: aiohttp.ClientSession,
         phone_prefix: int,
         phone_number: str,
+        token: str = None,
     ) -> None:
         self._session = session
         self._phone_prefix = phone_prefix
         self._phone_number = phone_number
+        self._token = token
 
     async def get_device(self, device_number: str) -> dict:
         url = f"{BASE_URL}/device/info/{device_number}"
@@ -40,12 +42,17 @@ class VmotoSocoAPI:
 
         return await self._api_wrapper(url, headers, data)
 
+    async def get_token(self) -> str:
+        return self._token
+
     async def get_tracking_history_list(
-        self, page_num: int = 1, page_size: int = 20
+        self, user_id: int, device_no: str, page_num: int = 1, page_size: int = 20
     ) -> dict:
         url = f"{BASE_URL}/runTrail/list"
         headers = await self._get_headers(True)
         data = {
+            "userId": user_id,
+            "deviceNo": device_no,
             "pageNum": page_num,
             "pageSize": page_size,
         }
@@ -58,10 +65,13 @@ class VmotoSocoAPI:
 
         return await self._api_wrapper(url, headers)
 
-    async def get_warning_list(self, page_num: int = 1, page_size: int = 20) -> dict:
-        url = f"{BASE_URL}/deviceWarn/list"
+    async def get_warning_list(
+        self, user_id: int, page_num: int = 1, page_size: int = 20
+    ) -> dict:
+        url = f"{BASE_URL}/deviceWarn/findDeviceWarnPageByUserId"
         headers = await self._get_headers(True)
         data = {
+            "userId": user_id,
             "pageNum": page_num,
             "pageSize": page_size,
         }
@@ -82,17 +92,25 @@ class VmotoSocoAPI:
 
         return res
 
-    async def set_push_notifications(self, switch: bool) -> dict:
-        url = f"{BASE_URL}/deviceWarn/sw/{int(switch)}"
+    async def set_push_notifications(self, user_id: int, switch: bool) -> dict:
+        url = f"{BASE_URL}/user/setUserPrivacy"
         headers = await self._get_headers(True)
+        data = {
+            "userId": user_id,
+            "isWarnPush": {int(switch)},
+        }
 
-        return await self._api_wrapper(url, headers)
+        return await self._api_wrapper(url, headers, data)
 
-    async def set_tracking_history(self, switch: bool) -> dict:
-        url = f"{BASE_URL}/userRunPoint/sw/{int(switch)}"
+    async def set_tracking_history(self, user_id: int, switch: bool) -> dict:
+        url = f"{BASE_URL}/user/setUserPrivacy"
         headers = await self._get_headers(True)
+        data = {
+            "userId": user_id,
+            "historyLocusSwitch": {int(switch)},
+        }
 
-        return await self._api_wrapper(url, headers)
+        return await self._api_wrapper(url, headers, data)
 
     async def _api_wrapper(self, url: str, headers: dict = {}, data: dict = {}) -> dict:
         async with async_timeout.timeout(TIMEOUT):
@@ -115,11 +133,9 @@ class VmotoSocoAPI:
         }
 
         if authz:
-            headers["authorization"] = f"{JWT_PREFIX}{self._token}"
+            token = await self.get_token()
+            headers["authorization"] = f"{JWT_PREFIX}{token}"
         else:
             headers["temptoken"] = "0EFC85FBE34ADD5A3C10314C8EADD694"
 
         return headers
-
-    async def _get_token(self) -> str:
-        return self._token

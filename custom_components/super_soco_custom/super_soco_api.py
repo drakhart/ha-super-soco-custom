@@ -20,18 +20,25 @@ class SuperSocoAPI:
         phone_prefix: int,
         phone_number: str,
         password: str,
+        token: str = None,
     ) -> None:
         self._session = session
         self._phone_prefix = phone_prefix
         self._phone_number = phone_number
         self._password = password
-        self._token = None
+        self._token = token
 
     async def get_device(self, device_number: str) -> dict:
         url = f"{BASE_URL}/device/info/{device_number}"
         headers = await self._get_headers(True)
 
         return await self._api_wrapper(url, headers)
+
+    async def get_token(self) -> str:
+        if not self._token:
+            await self.login()
+
+        return self._token
 
     async def get_tracking_history_list(
         self, page_num: int = 1, page_size: int = 20
@@ -109,13 +116,7 @@ class SuperSocoAPI:
         headers = {"content-type": "application/json; charset=UTF-8"}
 
         if authz:
-            token = await self._get_token()
+            token = await self.get_token()
             headers["authorization"] = f"{JWT_PREFIX}{token}"
 
         return headers
-
-    async def _get_token(self) -> str:
-        if not self._token:
-            await self.login()
-
-        return self._token

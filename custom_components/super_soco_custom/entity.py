@@ -1,7 +1,7 @@
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
-    DATA_DEVICE_NUMBER,
+    DATA_DEVICE_NO,
     DATA_MODEL_NAME,
     DOMAIN,
     MANUFACTURER,
@@ -16,7 +16,7 @@ class SuperSocoCustomEntity(CoordinatorEntity):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, self.coordinator.data.get(DATA_DEVICE_NUMBER))},
+            "identifiers": {(DOMAIN, self.coordinator.data.get(DATA_DEVICE_NO))},
             "name": f"{MANUFACTURER} {self.coordinator.data.get(DATA_MODEL_NAME)}",
             "model": self.coordinator.data.get(DATA_MODEL_NAME),
             "manufacturer": MANUFACTURER,

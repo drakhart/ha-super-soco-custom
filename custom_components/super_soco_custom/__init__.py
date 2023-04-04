@@ -5,19 +5,24 @@ from homeassistant.core import Config, HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .super_soco_api import SuperSocoAPI
-from .open_street_map_api import OpenStreetMapAPI
-from .open_topo_data_api import OpenTopoDataAPI
 from .const import (
-    CONF_CLIENT,
-    CONF_SESSION,
+    CONF_APP_NAME,
+    CONF_PASSWORD,
+    CONF_PHONE_NUMBER,
+    CONF_PHONE_PREFIX,
+    CONF_TOKEN,
     CONFIG_FLOW_VERSION,
     DOMAIN,
     NAME,
     OPT_EMAIL,
     PLATFORMS,
+    SUPER_SOCO,
 )
 from .coordinator import SuperSocoCustomDataUpdateCoordinator
+from .open_street_map_api import OpenStreetMapAPI
+from .open_topo_data_api import OpenTopoDataAPI
+from .super_soco_api import SuperSocoAPI
+from .vmoto_soco_api import VmotoSocoAPI
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,13 +38,26 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
 
+    app_name = config_entry.data.get(CONF_APP_NAME)
+    phone_prefix = config_entry.data.get(CONF_PHONE_PREFIX)
+    phone_number = config_entry.data.get(CONF_PHONE_NUMBER)
+    password = config_entry.data.get(CONF_PASSWORD)
+    token = config_entry.data.get(CONF_TOKEN)
     email = config_entry.data.get(OPT_EMAIL)
-    session = config_entry.data.get(CONF_SESSION)
+
+    session = async_get_clientsession(hass)
+
+    if app_name == SUPER_SOCO:
+        client = SuperSocoAPI(session, phone_prefix, phone_number, password, token)
+    else:
+        client = VmotoSocoAPI(session, phone_prefix, phone_number, token)
+
     open_street_map_api = OpenStreetMapAPI(session, email)
     open_topo_data_api = OpenTopoDataAPI(session)
     coordinator = SuperSocoCustomDataUpdateCoordinator(
         hass,
         config_entry,
+        client,
         open_street_map_api,
         open_topo_data_api,
     )
