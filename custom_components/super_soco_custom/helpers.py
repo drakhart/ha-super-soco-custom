@@ -1,4 +1,5 @@
 import re
+import pytz
 
 from datetime import datetime
 
@@ -76,4 +77,4 @@ def parse_date(date_string: str) -> datetime:
 
 def parse_timestamp(timestampMilliseconds: int) -> datetime:
     timestamp = timestampMilliseconds / MILLISECONDS_IN_SECOND
-    return datetime.fromtimestamp(timestamp).strftime("%d/%m/%Y %H:%M%z")
+    return datetime.fromtimestamp(timestamp, tz=pytz.UTC)

@@ -94,16 +94,18 @@ async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     _LOGGER.info("Reloaded %s device with entry_id: %s", NAME, config_entry.entry_id)
 
 
-async def async_migrate_entry(
-    hass: HomeAssistant, config_entry: ConfigEntry  # pylint: disable=unused-argument
-) -> bool:
+async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Migrate old entry."""
-    _LOGGER.debug(
-        "Migrating %s device from version %s to version %s",
-        NAME,
-        config_entry.version,
-        CONFIG_FLOW_VERSION,
-    )
-    _LOGGER.info("Migration not required")
+    _LOGGER.debug("Migrating from version %s", config_entry.version)
+
+    if config_entry.version == 1:
+        data = {
+            CONF_APP_NAME: SUPER_SOCO,
+        }
+
+        config_entry.version = 2
+        hass.config_entries.async_update_entry(config_entry, data=data)
+
+    _LOGGER.info("Migration to version %s successful", config_entry.version)
 
     return True

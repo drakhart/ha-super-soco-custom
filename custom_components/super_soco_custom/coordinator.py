@@ -34,14 +34,16 @@ from .const import (
     DATA_GPS_ACCURACY_PERCENTAGE,
     DATA_GPS_ACCURACY,
     DATA_LAST_GPS_TIME,
+    DATA_LAST_TRIP_AVG_SPEED,
     DATA_LAST_TRIP_BEGIN_LATITUDE,
     DATA_LAST_TRIP_BEGIN_LONGITUDE,
     DATA_LAST_TRIP_BEGIN_TIME,
     DATA_LAST_TRIP_END_LATITUDE,
     DATA_LAST_TRIP_END_LONGITUDE,
     DATA_LAST_TRIP_END_TIME,
+    DATA_LAST_TRIP_MILEAGE,
+    DATA_LAST_TRIP_MINUTES,
     DATA_LAST_TRIP_RIDE_DISTANCE,
-    DATA_LAST_TRIP_RIDE_SPEED,
     DATA_LAST_TRIP_RIDE_TIME,
     DATA_LAST_WARNING_MESSAGE,
     DATA_LAST_WARNING_TIME,
@@ -399,7 +401,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             return {
                 DATA_LAST_TRIP_RIDE_DISTANCE: STATE_UNAVAILABLE,
                 DATA_LAST_TRIP_RIDE_TIME: STATE_UNAVAILABLE,
-                DATA_LAST_TRIP_RIDE_SPEED: STATE_UNAVAILABLE,
+                DATA_LAST_TRIP_AVG_SPEED: STATE_UNAVAILABLE,
             }
 
         timestamp = datetime.now().timestamp()
@@ -428,8 +430,8 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             DATA_LAST_TRIP_RIDE_TIME: self._last_data.get(
                 DATA_LAST_TRIP_RIDE_TIME, STATE_UNKNOWN
             ),
-            DATA_LAST_TRIP_RIDE_SPEED: self._last_data.get(
-                DATA_LAST_TRIP_RIDE_SPEED, STATE_UNKNOWN
+            DATA_LAST_TRIP_AVG_SPEED: self._last_data.get(
+                DATA_LAST_TRIP_AVG_SPEED, STATE_UNKNOWN
             ),
         }
 
@@ -446,38 +448,60 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         ):
             try:
                 _LOGGER.debug("Requesting last trip data")
-                res = (await self._client.get_tracking_history_list(1, 1))[DATA_DATA]
 
-                data = {
-                    DATA_LAST_TRIP_BEGIN_TIME: parse_date(
-                        res[DATA_LIST][0][DATA_LAST_TRIP_BEGIN_TIME]
-                    ),
-                    DATA_LAST_TRIP_BEGIN_LATITUDE: str(
-                        res[DATA_LIST][0][DATA_LAST_TRIP_BEGIN_LATITUDE]
-                    ),
-                    DATA_LAST_TRIP_BEGIN_LONGITUDE: str(
-                        res[DATA_LIST][0][DATA_LAST_TRIP_BEGIN_LONGITUDE]
-                    ),
-                    DATA_LAST_TRIP_END_TIME: parse_date(
-                        res[DATA_LIST][0][DATA_LAST_TRIP_END_TIME]
-                    ),
-                    DATA_LAST_TRIP_END_LATITUDE: str(
-                        res[DATA_LIST][0][DATA_LAST_TRIP_END_LATITUDE]
-                    ),
-                    DATA_LAST_TRIP_END_LONGITUDE: str(
-                        res[DATA_LIST][0][DATA_LAST_TRIP_END_LONGITUDE]
-                    ),
-                    DATA_LAST_TRIP_RIDE_DISTANCE: res[DATA_LIST][0][
-                        DATA_LAST_TRIP_RIDE_DISTANCE
-                    ],
-                    DATA_LAST_TRIP_RIDE_TIME: float(
-                        res[DATA_LIST][0][DATA_LAST_TRIP_RIDE_TIME]
+                if self._is_app_vmoto_soco():
+                    res = await self._client.get_tracking_history_list(
+                        self._user_id, self._device_no, 1, 1
                     )
-                    * SECONDS_IN_A_MINUTE,
-                    DATA_LAST_TRIP_RIDE_SPEED: res[DATA_LIST][0][
-                        DATA_LAST_TRIP_RIDE_SPEED
-                    ],
-                }
+                    trip = res[DATA_DATA][DATA_DATA][0]
+
+                    data = {
+                        DATA_LAST_TRIP_AVG_SPEED: trip[DATA_LAST_TRIP_MILEAGE] / trip[DATA_LAST_TRIP_MINUTES] * 60,
+                        DATA_LAST_TRIP_BEGIN_TIME: parse_timestamp(
+                            trip[DATA_LAST_TRIP_BEGIN_TIME]
+                        ),
+                        DATA_LAST_TRIP_END_TIME: parse_timestamp(
+                            trip[DATA_LAST_TRIP_END_TIME]
+                        ),
+                        DATA_LAST_TRIP_RIDE_DISTANCE: trip[DATA_LAST_TRIP_MILEAGE],
+                        DATA_LAST_TRIP_RIDE_TIME: float(trip[DATA_LAST_TRIP_MINUTES])
+                        * SECONDS_IN_A_MINUTE,
+                    }
+                else:
+                    res = await self._client.get_tracking_history_list(1, 1)
+                    trip = res[DATA_DATA][DATA_LIST][0]
+
+                    data = {
+                        DATA_LAST_TRIP_AVG_SPEED: trip[DATA_LAST_TRIP_AVG_SPEED],
+                        DATA_LAST_TRIP_BEGIN_TIME: parse_date(
+                            trip[DATA_LAST_TRIP_BEGIN_TIME]
+                        ),
+                        DATA_LAST_TRIP_END_TIME: parse_date(
+                            trip[DATA_LAST_TRIP_END_TIME]
+                        ),
+                        DATA_LAST_TRIP_RIDE_DISTANCE: trip[
+                            DATA_LAST_TRIP_RIDE_DISTANCE
+                        ],
+                        DATA_LAST_TRIP_RIDE_TIME: float(trip[DATA_LAST_TRIP_RIDE_TIME])
+                        * SECONDS_IN_A_MINUTE,
+                    }
+
+                data.update(
+                    {
+                        DATA_LAST_TRIP_BEGIN_LATITUDE: str(
+                            trip[DATA_LAST_TRIP_BEGIN_LATITUDE]
+                        ),
+                        DATA_LAST_TRIP_BEGIN_LONGITUDE: str(
+                            trip[DATA_LAST_TRIP_BEGIN_LONGITUDE]
+                        ),
+                        DATA_LAST_TRIP_END_LATITUDE: str(
+                            trip[DATA_LAST_TRIP_END_LATITUDE]
+                        ),
+                        DATA_LAST_TRIP_END_LONGITUDE: str(
+                            trip[DATA_LAST_TRIP_END_LONGITUDE]
+                        ),
+                    }
+                )
 
                 self._last_trip_timestamp = timestamp
             except IndexError:
@@ -517,15 +541,29 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         ):
             try:
                 _LOGGER.debug("Requesting last warning data")
-                res = (await self._client.get_warning_list(1, 1))[DATA_DATA]
+                if self._is_app_vmoto_soco():
+                    res = await self._client.get_warning_list(self._user_id, 1, 1)
+                    warning = res[DATA_DATA][DATA_DATA][0]
 
-                data = {
-                    DATA_LAST_WARNING_MESSAGE: res[DATA_LIST][0][DATA_CONTENT],
-                    DATA_LAST_WARNING_TIME: parse_date(
-                        res[DATA_LIST][0][DATA_CREATE_TIME]
-                    ),
-                    DATA_LAST_WARNING_TITLE: res[DATA_LIST][0][DATA_TITLE],
-                }
+                    data = {
+                        DATA_LAST_WARNING_TIME: parse_timestamp(
+                            warning[DATA_CREATE_TIME]
+                        ),
+                    }
+                else:
+                    res = await self._client.get_warning_list(1, 1)
+                    warning = res[DATA_DATA][DATA_LIST][0]
+
+                    data = {
+                        DATA_LAST_WARNING_TIME: parse_date(warning[DATA_CREATE_TIME]),
+                    }
+
+                data.update(
+                    {
+                        DATA_LAST_WARNING_MESSAGE: warning[DATA_CONTENT],
+                        DATA_LAST_WARNING_TITLE: warning[DATA_TITLE],
+                    }
+                )
             except IndexError:
                 _LOGGER.debug("Last warning data is empty")
             except Exception as exception:  # pylint: disable=broad-exception-caught
@@ -679,7 +717,13 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def set_switch_state(self, data_key: str, state: bool) -> None:
         try:
-            await getattr(self._client, SWITCH_API_METHODS[data_key])(state)
+            if self._is_app_vmoto_soco():
+                await getattr(self._client, SWITCH_API_METHODS[data_key])(
+                    self._user_id, state
+                )
+            else:
+                await getattr(self._client, SWITCH_API_METHODS[data_key])(state)
+
             await self.async_request_refresh()
         except KeyError:
             _LOGGER.debug("Unknown API method for data key: %s", data_key)

@@ -97,7 +97,7 @@ class VmotoSocoAPI:
         headers = await self._get_headers(True)
         data = {
             "userId": user_id,
-            "isWarnPush": {int(switch)},
+            "isWarnPush": int(switch),
         }
 
         return await self._api_wrapper(url, headers, data)
@@ -107,7 +107,7 @@ class VmotoSocoAPI:
         headers = await self._get_headers(True)
         data = {
             "userId": user_id,
-            "historyLocusSwitch": {int(switch)},
+            "historyLocusSwitch": int(switch),
         }
 
         return await self._api_wrapper(url, headers, data)

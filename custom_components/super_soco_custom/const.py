@@ -103,14 +103,16 @@ DATA_ESTIMATED_RANGE = "endurance"
 DATA_GPS_ACCURACY = "gps"
 DATA_GPS_ACCURACY_PERCENTAGE = "gps_accuracy_percentage"
 DATA_LAST_GPS_TIME = "lastGpsTime"
+DATA_LAST_TRIP_AVG_SPEED = "avgSpeed"
 DATA_LAST_TRIP_BEGIN_LATITUDE = "beginLatitude"
 DATA_LAST_TRIP_BEGIN_LONGITUDE = "beginLongitude"
 DATA_LAST_TRIP_BEGIN_TIME = "beginTime"
 DATA_LAST_TRIP_END_LATITUDE = "endLatitude"
 DATA_LAST_TRIP_END_LONGITUDE = "endLongitude"
 DATA_LAST_TRIP_END_TIME = "endTime"
+DATA_LAST_TRIP_MILEAGE = "mileage"
+DATA_LAST_TRIP_MINUTES = "minutes"
 DATA_LAST_TRIP_RIDE_DISTANCE = "rideDistance"
-DATA_LAST_TRIP_RIDE_SPEED = "avgSpeed"
 DATA_LAST_TRIP_RIDE_TIME = "rideTime"
 DATA_LAST_WARNING_MESSAGE = "lastWarningMessage"
 DATA_LAST_WARNING_TIME = "lastWarningTime"
@@ -331,7 +333,7 @@ SENSORS = [
     (
         "last_trip_average_speed",
         "Last Trip Average Speed",
-        DATA_LAST_TRIP_RIDE_SPEED,
+        DATA_LAST_TRIP_AVG_SPEED,
         SPEED_KILOMETERS_PER_HOUR,
         "mdi:speedometer",
         None,
