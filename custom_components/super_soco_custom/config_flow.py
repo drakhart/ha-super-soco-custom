@@ -56,6 +56,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
         self._session = None
         self._client = None
+        self._reauth_entry = None
         self._user_input = {
             CONF_APP_NAME: SUPER_SOCO,
             CONF_PHONE_PREFIX: list(PHONE_PREFIXES.keys())[0],
@@ -65,13 +66,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
     async def async_step_reauth(self, user_input=None) -> FlowResult:
+        self._reauth_entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
+        )
+
         return await self.async_step_user(user_input)
 
     async def async_step_user(self, user_input=None) -> FlowResult:
-        if (
-            self._async_current_entries()
-            and self.source != config_entries.SOURCE_REAUTH
-        ):
+        if self._async_current_entries() and not self._reauth_entry:
             return self.async_abort(reason=ERROR_ALREADY_CONFIGURED)
 
         if user_input:
@@ -142,6 +144,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             self._user_input[CONF_TOKEN] = await self._login()
+
+            if self._reauth_entry:
+                self.hass.config_entries.async_update_entry(
+                    self._reauth_entry, data=self._user_input
+                )
+                await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
+
+                return self.async_abort(reason="reauth_successful")
 
             return self.async_create_entry(title=NAME, data=self._user_input)
         except CannotConnect:

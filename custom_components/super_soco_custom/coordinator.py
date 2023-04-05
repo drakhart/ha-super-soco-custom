@@ -156,8 +156,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             )
         )
         self._is_powered_on = False
-        self._is_push_enabled = False
-        self._is_tracking_enabled = False
         self._last_trip_timestamp = None
         self._user_data = None
         self._user_id = None
@@ -247,8 +245,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Check if device is powered on
             self._is_powered_on = data[DATA_POWER_STATUS] == 1
-            self._is_push_enabled = data[DATA_NATIVE_PUSH_NOTIFICATIONS] == 1
-            self._is_tracking_enabled = data[DATA_NATIVE_TRACKING_HISTORY] == 1
 
             # Inject alarm module data
             data.update(
@@ -746,11 +742,15 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             if self._is_app_vmoto_soco():
                 if data_key == DATA_NATIVE_PUSH_NOTIFICATIONS:
                     await getattr(self._client, SWITCH_API_METHODS[data_key])(
-                        self._user_id, state, self._is_tracking_enabled
+                        self._user_id,
+                        state,
+                        bool(self._last_data[DATA_NATIVE_TRACKING_HISTORY]),
                     )
                 elif data_key == DATA_NATIVE_TRACKING_HISTORY:
                     await getattr(self._client, SWITCH_API_METHODS[data_key])(
-                        self._user_id, state, self._is_push_enabled
+                        self._user_id,
+                        state,
+                        bool(self._last_data[DATA_NATIVE_PUSH_NOTIFICATIONS]),
                     )
             else:
                 await getattr(self._client, SWITCH_API_METHODS[data_key])(state)
