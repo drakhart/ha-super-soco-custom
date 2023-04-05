@@ -101,6 +101,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     if config_entry.version == 1:
         data = {
             CONF_APP_NAME: SUPER_SOCO,
+            CONF_TOKEN: None,
         }
 
         config_entry.version = 2

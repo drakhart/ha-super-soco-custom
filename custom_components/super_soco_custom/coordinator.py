@@ -1,10 +1,15 @@
 import logging
 
+from aiohttp import ClientResponseError
+from asyncio import sleep
 from datetime import datetime, timedelta
 
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
+)
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -16,10 +21,10 @@ from .const import (
     DATA_ADDRESS,
     DATA_AGREEMENT_END_TIME,
     DATA_AGREEMENT_START_TIME,
-    DATA_ALARM_MODULE_BATTERY_PERCENTAGE,
+    DATA_ALARM_MODULE_BATTERY,
     DATA_ALARM_MODULE_VOLTAGE,
     DATA_ALTITUDE,
-    DATA_BATTERY_PERCENTAGE,
+    DATA_BATTERY,
     DATA_CONTENT,
     DATA_COURSE,
     DATA_CREATE_TIME,
@@ -99,6 +104,7 @@ from .const import (
     HOME_ZONE,
     KM_IN_A_M,
     LAST_TRIP_CACHE_SECONDS,
+    MINUTES_IN_AN_HOUR,
     OPT_ENABLE_ALTITUDE_ENTITY,
     OPT_ENABLE_LAST_TRIP_ENTITIES,
     OPT_ENABLE_LAST_WARNING_ENTITY,
@@ -109,6 +115,7 @@ from .const import (
     SECONDS_IN_A_MINUTE,
     SIGNAL_MAX_STRENGTH,
     SWITCH_API_METHODS,
+    SWITCH_REFRESH_SLEEP_SECONDS,
     VMOTO_SOCO,
 )
 from .helpers import (
@@ -149,6 +156,8 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             )
         )
         self._is_powered_on = False
+        self._is_push_enabled = False
+        self._is_tracking_enabled = False
         self._last_trip_timestamp = None
         self._user_data = None
         self._user_id = None
@@ -184,7 +193,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 DATA_ACCUMULATIVE_RIM: device_data[DATA_ACCUMULATIVE_RIM],
                 DATA_ALARM_MODULE_VOLTAGE: device_data[DATA_ALARM_MODULE_VOLTAGE]
                 or DEFAULT_INTEGER,
-                DATA_BATTERY_PERCENTAGE: device_data[DATA_BATTERY_PERCENTAGE],
+                DATA_BATTERY: device_data[DATA_BATTERY],
                 DATA_TRIP_DISTANCE: round(
                     device_data[DATA_TRIP_DISTANCE], DISTANCE_ROUNDING_DECIMALS
                 ),
@@ -238,6 +247,8 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Check if device is powered on
             self._is_powered_on = data[DATA_POWER_STATUS] == 1
+            self._is_push_enabled = data[DATA_NATIVE_PUSH_NOTIFICATIONS] == 1
+            self._is_tracking_enabled = data[DATA_NATIVE_TRACKING_HISTORY] == 1
 
             # Inject alarm module data
             data.update(
@@ -300,9 +311,15 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             self._set_update_interval()
 
             return data
-        except Exception as exception:
-            _LOGGER.exception(exception)
-            raise UpdateFailed() from exception
+        except ClientResponseError as error:
+            if error.status in (400, 2004):
+                _LOGGER.exception(
+                    "Authentication expired or revoked, please reauthenticate"
+                )
+                raise ConfigEntryAuthFailed from error
+        except Exception as error:
+            _LOGGER.exception(error)
+            raise UpdateFailed from error
 
     def _get_alarm_module_data(
         self,
@@ -311,7 +328,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         signal_strength: int,
     ) -> dict:
         return {
-            DATA_ALARM_MODULE_BATTERY_PERCENTAGE: calculate_percentage(
+            DATA_ALARM_MODULE_BATTERY: calculate_percentage(
                 voltage, ALARM_MODULE_MAX_VOLTAGE
             ),
             DATA_GPS_ACCURACY_PERCENTAGE: calculate_percentage(
@@ -456,16 +473,24 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                     trip = res[DATA_DATA][DATA_DATA][0]
 
                     data = {
-                        DATA_LAST_TRIP_AVG_SPEED: trip[DATA_LAST_TRIP_MILEAGE] / trip[DATA_LAST_TRIP_MINUTES] * 60,
+                        DATA_LAST_TRIP_AVG_SPEED: round(
+                            trip[DATA_LAST_TRIP_MILEAGE]
+                            / trip[DATA_LAST_TRIP_MINUTES]
+                            * MINUTES_IN_AN_HOUR,
+                            1,
+                        ),
                         DATA_LAST_TRIP_BEGIN_TIME: parse_timestamp(
                             trip[DATA_LAST_TRIP_BEGIN_TIME]
                         ),
                         DATA_LAST_TRIP_END_TIME: parse_timestamp(
                             trip[DATA_LAST_TRIP_END_TIME]
                         ),
-                        DATA_LAST_TRIP_RIDE_DISTANCE: trip[DATA_LAST_TRIP_MILEAGE],
-                        DATA_LAST_TRIP_RIDE_TIME: float(trip[DATA_LAST_TRIP_MINUTES])
-                        * SECONDS_IN_A_MINUTE,
+                        DATA_LAST_TRIP_RIDE_DISTANCE: round(
+                            trip[DATA_LAST_TRIP_MILEAGE], DISTANCE_ROUNDING_DECIMALS
+                        ),
+                        DATA_LAST_TRIP_RIDE_TIME: int(
+                            float(trip[DATA_LAST_TRIP_MINUTES]) * SECONDS_IN_A_MINUTE
+                        ),
                     }
                 else:
                     res = await self._client.get_tracking_history_list(1, 1)
@@ -482,8 +507,9 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                         DATA_LAST_TRIP_RIDE_DISTANCE: trip[
                             DATA_LAST_TRIP_RIDE_DISTANCE
                         ],
-                        DATA_LAST_TRIP_RIDE_TIME: float(trip[DATA_LAST_TRIP_RIDE_TIME])
-                        * SECONDS_IN_A_MINUTE,
+                        DATA_LAST_TRIP_RIDE_TIME: int(
+                            float(trip[DATA_LAST_TRIP_RIDE_TIME]) * SECONDS_IN_A_MINUTE
+                        ),
                     }
 
                 data.update(
@@ -718,12 +744,18 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
     async def set_switch_state(self, data_key: str, state: bool) -> None:
         try:
             if self._is_app_vmoto_soco():
-                await getattr(self._client, SWITCH_API_METHODS[data_key])(
-                    self._user_id, state
-                )
+                if data_key == DATA_NATIVE_PUSH_NOTIFICATIONS:
+                    await getattr(self._client, SWITCH_API_METHODS[data_key])(
+                        self._user_id, state, self._is_tracking_enabled
+                    )
+                elif data_key == DATA_NATIVE_TRACKING_HISTORY:
+                    await getattr(self._client, SWITCH_API_METHODS[data_key])(
+                        self._user_id, state, self._is_push_enabled
+                    )
             else:
                 await getattr(self._client, SWITCH_API_METHODS[data_key])(state)
 
+            await sleep(SWITCH_REFRESH_SLEEP_SECONDS)
             await self.async_request_refresh()
         except KeyError:
             _LOGGER.debug("Unknown API method for data key: %s", data_key)

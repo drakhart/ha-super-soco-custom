@@ -6,7 +6,6 @@ from aiohttp import ClientResponseError, ClientSession, ServerTimeoutError
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
@@ -42,6 +41,7 @@ from .const import (
     PHONE_PREFIXES,
     SUPER_SOCO,
 )
+from .errors import CannotConnect, InvalidAuth
 from .super_soco_api import SuperSocoAPI
 from .vmoto_soco_api import VmotoSocoAPI
 
@@ -64,9 +64,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_LOGIN_CODE: None,
         }
 
+    async def async_step_reauth(self, user_input=None) -> FlowResult:
+        return await self.async_step_user(user_input)
+
     async def async_step_user(self, user_input=None) -> FlowResult:
-        if self._async_current_entries():
+        if (
+            self._async_current_entries()
+            and self.source != config_entries.SOURCE_REAUTH
+        ):
             return self.async_abort(reason=ERROR_ALREADY_CONFIGURED)
+
+        if user_input:
+            self._user_input.update(user_input)
 
         return self.async_show_form(
             step_id="app",
@@ -87,7 +96,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_app(self, user_input=None) -> FlowResult:
-        self._user_input.update(user_input)
+        if user_input:
+            self._user_input.update(user_input)
 
         if self._user_input[CONF_APP_NAME] == SUPER_SOCO:
             return self.async_show_form(
@@ -120,13 +130,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._errors["base"] = ERROR_CANNOT_CONNECT
         except InvalidAuth:
             self._errors["base"] = ERROR_INVALID_AUTH
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception as error:  # pylint: disable=broad-exception-caught
+            _LOGGER.exception(error)
             self._errors["base"] = ERROR_UNKNOWN
 
         return await self.async_step_user(user_input)
 
     async def async_step_login(self, user_input=None) -> FlowResult:
-        self._user_input.update(user_input)
+        if user_input:
+            self._user_input.update(user_input)
 
         try:
             self._user_input[CONF_TOKEN] = await self._login()
@@ -136,7 +148,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._errors["base"] = ERROR_CANNOT_CONNECT
         except InvalidAuth:
             self._errors["base"] = ERROR_INVALID_AUTH
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception as error:  # pylint: disable=broad-exception-caught
+            _LOGGER.exception(error)
             self._errors["base"] = ERROR_UNKNOWN
 
         return await self.async_step_user(user_input)
@@ -276,11 +289,3 @@ class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def _update_options(self) -> FlowResult:
         return self.async_create_entry(title=NAME, data=self.options)
-
-
-class CannotConnect(HomeAssistantError):
-    pass
-
-
-class InvalidAuth(HomeAssistantError):
-    pass

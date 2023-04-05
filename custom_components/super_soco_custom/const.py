@@ -36,12 +36,14 @@ HOME_ZONE = "zone.home"
 KM_IN_A_M = 0.001
 LAST_TRIP_CACHE_SECONDS = 600
 METERS_IN_EARTH_RADIUS = 6378160
-MILLISECONDS_IN_SECOND = 1000
+MILLISECONDS_IN_A_SECOND = 1000
+MINUTES_IN_AN_HOUR = 60
 POWER_OFF_DISTANCE_THRESHOLD_METERS = 16
 POWER_ON_UPDATE_SECONDS = 5
 SECONDS_IN_A_MINUTE = 60
 SIGNAL_MAX_STRENGTH = 4  # It goes from 0 to 4
 SUPER_SOCO = "super_soco"
+SWITCH_REFRESH_SLEEP_SECONDS = 1
 VMOTO_SOCO = "vmoto_soco"
 
 # Directions of travel
@@ -85,10 +87,10 @@ DATA_ACCUMULATIVE_RIM = "accumulativeRim"
 DATA_ADDRESS = "address"
 DATA_AGREEMENT_END_TIME = "agreementEndTime"
 DATA_AGREEMENT_START_TIME = "agreemenStartTime"  # Intended typo
-DATA_ALARM_MODULE_BATTERY_PERCENTAGE = "alarm_module_battery_percentage"
+DATA_ALARM_MODULE_BATTERY = "alarm_module_battery"
 DATA_ALARM_MODULE_VOLTAGE = "voltage"
 DATA_ALTITUDE = "altitude"
-DATA_BATTERY_PERCENTAGE = "nowElec"
+DATA_BATTERY = "nowElec"
 DATA_CONTENT = "content"
 DATA_COURSE = "course"
 DATA_CREATE_TIME = "createTime"
@@ -226,9 +228,9 @@ SENSORS = [
         None,
     ),
     (
-        "alarm_module_battery_percentage",
-        "Alarm Module Battery Percentage",
-        DATA_ALARM_MODULE_BATTERY_PERCENTAGE,
+        "alarm_module_battery",
+        "Alarm Module Battery",
+        DATA_ALARM_MODULE_BATTERY,
         PERCENTAGE,
         "mdi:battery-charging-wireless",
         None,
@@ -244,9 +246,9 @@ SENSORS = [
         None,
     ),
     (
-        "battery_percentage",
-        "Battery Percentage",
-        DATA_BATTERY_PERCENTAGE,
+        "battery",
+        "Battery",
+        DATA_BATTERY,
         PERCENTAGE,
         "mdi:battery",
         DEVICE_CLASS_BATTERY,

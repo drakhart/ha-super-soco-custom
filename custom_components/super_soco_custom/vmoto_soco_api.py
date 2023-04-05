@@ -92,22 +92,28 @@ class VmotoSocoAPI:
 
         return res
 
-    async def set_push_notifications(self, user_id: int, switch: bool) -> dict:
+    async def set_push_notifications(
+        self, user_id: int, switch: bool, alt_switch: bool
+    ) -> dict:
         url = f"{BASE_URL}/user/setUserPrivacy"
         headers = await self._get_headers(True)
         data = {
             "userId": user_id,
             "isWarnPush": int(switch),
+            "historyLocusSwitch": int(alt_switch),
         }
 
         return await self._api_wrapper(url, headers, data)
 
-    async def set_tracking_history(self, user_id: int, switch: bool) -> dict:
+    async def set_tracking_history(
+        self, user_id: int, switch: bool, alt_switch: bool
+    ) -> dict:
         url = f"{BASE_URL}/user/setUserPrivacy"
         headers = await self._get_headers(True)
         data = {
             "userId": user_id,
             "historyLocusSwitch": int(switch),
+            "isWarnPush": int(alt_switch),
         }
 
         return await self._api_wrapper(url, headers, data)

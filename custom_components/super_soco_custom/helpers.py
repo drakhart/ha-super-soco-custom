@@ -11,7 +11,7 @@ from .const import (
     COURSE_ROUNDING_DECIMALS,
     DEFAULT_FLOAT,
     METERS_IN_EARTH_RADIUS,
-    MILLISECONDS_IN_SECOND,
+    MILLISECONDS_IN_A_SECOND,
 )
 
 
@@ -76,5 +76,5 @@ def parse_date(date_string: str) -> datetime:
 
 
 def parse_timestamp(timestampMilliseconds: int) -> datetime:
-    timestamp = timestampMilliseconds / MILLISECONDS_IN_SECOND
+    timestamp = timestampMilliseconds / MILLISECONDS_IN_A_SECOND
     return datetime.fromtimestamp(timestamp, tz=pytz.UTC)
