@@ -1,20 +1,28 @@
 {
     "config": {
         "abort": {
-            "already_configured": "El dispositivo ya está configurado"
+            "already_configured": "El dispositivo ya está configurado",
+            "reauth_successful": "Reautenticación correcta"
         },
         "error": {
             "cannot_connect": "Error intentando conectar",
-            "invalid_auth": "Credenciales incorrectas",
+            "invalid_auth": "Credenciales incorrectas o se han solicitado demasiados códigos de verificación",
             "unknown": "Error desconocido"
         },
         "step": {
-            "user": {
-                "description": "Introduce las mismas credenciales de acceso que en la app oficial de Super Soco.\n\n*Ten en cuenta que Super Soco no permite más de un cliente a la vez, por lo que se cerrará cualquier sesión abierta en la app cada vez que esta integración actualice las entidades. Podrás ajustar el intervalo de actualización más adelante haciendo click en Configurar.*",
+            "app": {
+                "description": "Selecciona la aplicación Vmoto Super Soco concreta usada para registrar la moto, y después el prefijo y número de teléfono usados para darte de alta en dicha aplicación.\n\n*Aviso: Ten en cuenta que Vmoto Super Soco no permite más de un cliente a la vez, por lo que al usar esta integración se cerrará cualquier sesión abierta en la app.*",
                 "data": {
-                    "password": "Contraseña",
+                    "app_name": "Application name:",
                     "phone_number": "Número de teléfono",
                     "phone_prefix": "Prefijo telefónico"
+                }
+            },
+            "login": {
+                "description": "Por favor, introduce:",
+                "data": {
+                    "login_code": "Código de verificación enviado por SMS",
+                    "password": "Contraseña"
                 }
             }
         }

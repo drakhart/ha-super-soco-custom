@@ -80,10 +80,16 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
         return f"{DOMAIN}_{self._id}"
 
     @property
+    def translation_key(self):
+        return self._id
+
+    @property
+    def has_entity_name(self):
+        return True
+
+    @property
     def name(self):
-        return (
-            f"{MANUFACTURER} {self.coordinator.data.get(DATA_MODEL_NAME)} {self._name}"
-        )
+        return self._name
 
     @property
     def native_value(self):

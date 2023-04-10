@@ -27,12 +27,12 @@ PLATFORMS = [
 ]
 
 # General
-ALARM_MODULE_MAX_VOLTAGE = 6  # It goes from 0 to 6
 API_GEO_PRECISION = 4  # 4 decimals = 11.1 meters
 CDN_BASE_URL = "https://oimg.supersocoeg.com:8996"
 CONFIG_FLOW_VERSION = 2
 COURSE_ROUNDING_DECIMALS = 2
 DISTANCE_ROUNDING_DECIMALS = 2
+ECU_MAX_VOLTAGE = 6  # It goes from 0 to 6
 GPS_MAX_ACCURACY = 15  # It goes from 0 to 15
 HOME_ZONE = "zone.home"
 KM_IN_A_M = 0.001
@@ -89,8 +89,6 @@ DATA_ACCUMULATIVE_RIM = "accumulativeRim"
 DATA_ADDRESS = "address"
 DATA_AGREEMENT_END_TIME = "agreementEndTime"
 DATA_AGREEMENT_START_TIME = "agreemenStartTime"  # Intended typo
-DATA_ALARM_MODULE_BATTERY = "alarm_module_battery"
-DATA_ALARM_MODULE_VOLTAGE = "voltage"
 DATA_ALTITUDE = "altitude"
 DATA_BATTERY = "nowElec"
 DATA_CONTENT = "content"
@@ -102,6 +100,8 @@ DATA_DEVICE_NO = "deviceNo"
 DATA_DIR_OF_TRAVEL = "dir_of_travel"
 DATA_DISPLAY_NAME = "display_name"
 DATA_DISTANCE_FROM_HOME = "distance_from_home"
+DATA_ECU_BATTERY = "ecuElec"
+DATA_ECU_VOLTAGE = "voltage"
 DATA_ELEVATION = "elevation"
 DATA_ESTIMATED_RANGE = "endurance"
 DATA_GPS_ACCURACY = "gps"
@@ -129,6 +129,7 @@ DATA_MODEL_NAME = "carModelName"
 DATA_NATIVE_PUSH_NOTIFICATIONS = "isWarnPush"
 DATA_NATIVE_TRACKING_HISTORY = "historyLocusSwitch"
 DATA_POWER_STATUS = "powerStatus"
+DATA_POWER_SWITCH = "powerSwitch"
 DATA_RADIUS = "radius"
 DATA_RESULTS = "results"
 DATA_REVERSE_GEOCODING = "reverse_geocoding"
@@ -148,8 +149,8 @@ DATA_SPEED = "sleep"  # Intended typo
 DATA_TITLE = "title"
 DATA_TRIP_DISTANCE = "mileages"
 DATA_USER = "user"
-DATA_USER_ID = "userId"
 DATA_USER_BIND_DEVICE = "userBindDevice"
+DATA_USER_ID = "userId"
 DATA_VEHICLE_IMAGE_URL = "imgUrl"
 DATA_VEHICLE_IMAGE_URL_VMOTO = "fileUrl"
 DATA_WIND_ROSE_COURSE = "wind_rose_course"
@@ -163,8 +164,8 @@ ERROR_UNKNOWN = "unknown"
 # Entities
 BINARY_SENSORS = [
     (
-        "power_status",  # Id
-        "Power Status",  # Name
+        "power",  # Id
+        "Power",  # Name
         DATA_POWER_STATUS,  # Data key
         1,  # Comparison condition
         "mdi:power-standby",  # Icon
@@ -222,16 +223,14 @@ SENSORS = [
         None,
     ),
     (
-        "alarm_module_battery",
-        "Alarm Module Battery",
-        DATA_ALARM_MODULE_BATTERY,
+        "ecu_battery",
+        "ECU Battery",
+        DATA_ECU_BATTERY,
         PERCENTAGE,
         "mdi:battery-charging-wireless",
         None,
         STATE_CLASS_MEASUREMENT,
-        {
-            "voltage": DATA_ALARM_MODULE_VOLTAGE,
-        },
+        None,
     ),
     (
         "altitude",
@@ -467,11 +466,11 @@ SWITCHES = [
         None,
     ),
     (
-        "power_switch",
-        "Power Switch",
-        DATA_POWER_STATUS,
+        "power",
+        "Power",
+        DATA_POWER_SWITCH,
         1,
-        "mdi:toggle-switch-variant",
+        "mdi:power-standby",
         None,
     ),
 ]
@@ -480,7 +479,7 @@ SWITCHES = [
 SWITCH_API_METHODS = {
     DATA_NATIVE_PUSH_NOTIFICATIONS: "set_push_notifications",
     DATA_NATIVE_TRACKING_HISTORY: "set_tracking_history",
-    DATA_POWER_STATUS: "switch_power",
+    DATA_POWER_SWITCH: "switch_power",
 }
 
 # Phone prefixes

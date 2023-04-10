@@ -13,7 +13,6 @@ from homeassistant.exceptions import (
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
-    ALARM_MODULE_MAX_VOLTAGE,
     API_GEO_PRECISION,
     CDN_BASE_URL,
     CONF_APP_NAME,
@@ -21,8 +20,6 @@ from .const import (
     DATA_ADDRESS,
     DATA_AGREEMENT_END_TIME,
     DATA_AGREEMENT_START_TIME,
-    DATA_ALARM_MODULE_BATTERY,
-    DATA_ALARM_MODULE_VOLTAGE,
     DATA_ALTITUDE,
     DATA_BATTERY,
     DATA_CONTENT,
@@ -34,6 +31,8 @@ from .const import (
     DATA_DIR_OF_TRAVEL,
     DATA_DISPLAY_NAME,
     DATA_DISTANCE_FROM_HOME,
+    DATA_ECU_BATTERY,
+    DATA_ECU_VOLTAGE,
     DATA_ELEVATION,
     DATA_ESTIMATED_RANGE,
     DATA_GPS_ACCURACY,
@@ -61,6 +60,7 @@ from .const import (
     DATA_NATIVE_PUSH_NOTIFICATIONS,
     DATA_NATIVE_TRACKING_HISTORY,
     DATA_POWER_STATUS,
+    DATA_POWER_SWITCH,
     DATA_RADIUS,
     DATA_RESULTS,
     DATA_REVERSE_GEOCODING_CITY,
@@ -98,6 +98,7 @@ from .const import (
     DIR_TOWARDS_HOME,
     DISTANCE_ROUNDING_DECIMALS,
     DOMAIN,
+    ECU_MAX_VOLTAGE,
     GPS_MAX_ACCURACY,
     HOME_ZONE,
     KM_IN_A_M,
@@ -169,7 +170,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         try:
-            # Build main data
+            # Get user and device data
             if not self._user_data or self._is_app_vmoto_soco():
                 _LOGGER.debug("Requesting user data")
                 self._user_data = (await self._client.get_user())[DATA_DATA]
@@ -185,14 +186,9 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                     DATA_DATA
                 ]
 
+            # Super Soco & Vmoto Soco common fields
             data = {
                 DATA_ACCUMULATIVE_RIM: device_data[DATA_ACCUMULATIVE_RIM],
-                DATA_ALARM_MODULE_BATTERY: calculate_percentage(
-                    device_data[DATA_ALARM_MODULE_VOLTAGE] or DEFAULT_INTEGER,
-                    ALARM_MODULE_MAX_VOLTAGE,
-                ),
-                DATA_ALARM_MODULE_VOLTAGE: device_data[DATA_ALARM_MODULE_VOLTAGE]
-                or DEFAULT_INTEGER,
                 DATA_BATTERY: device_data[DATA_BATTERY],
                 DATA_TRIP_DISTANCE: round(
                     device_data[DATA_TRIP_DISTANCE], DISTANCE_ROUNDING_DECIMALS
@@ -207,7 +203,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                     DATA_NATIVE_PUSH_NOTIFICATIONS
                 ],
                 DATA_NATIVE_TRACKING_HISTORY: device_data[DATA_NATIVE_TRACKING_HISTORY],
-                DATA_POWER_STATUS: device_data[DATA_POWER_STATUS],
                 DATA_SIGNAL_STRENGTH: calculate_percentage(
                     device_data[DATA_SIGNAL_STRENGTH], SIGNAL_MAX_STRENGTH
                 ),
@@ -218,17 +213,21 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             if self._is_app_vmoto_soco():
                 data.update(
                     {
+                        DATA_ECU_BATTERY: device_data[DATA_ECU_BATTERY],
                         DATA_LAST_GPS_TIME: parse_timestamp(
                             device_data[DATA_LAST_GPS_TIME]
                         ),
                         DATA_MODEL_NAME: self._user_data[DATA_USER_BIND_DEVICE][
                             DATA_MODEL_NAME
                         ],
+                        DATA_POWER_SWITCH: device_data[DATA_POWER_STATUS],
                         DATA_VEHICLE_IMAGE_URL: self._user_data[DATA_USER_BIND_DEVICE][
                             DATA_VEHICLE_IMAGE_URL_VMOTO
                         ],
                     }
                 )
+
+                self._is_powered_on = data[DATA_POWER_SWITCH] == 1
             else:
                 data.update(
                     {
@@ -238,19 +237,23 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                         DATA_AGREEMENT_START_TIME: parse_date(
                             self._user_data[DATA_DEVICE][DATA_AGREEMENT_START_TIME]
                         ),
+                        DATA_ECU_BATTERY: calculate_percentage(
+                            device_data[DATA_ECU_VOLTAGE] or DEFAULT_INTEGER,
+                            ECU_MAX_VOLTAGE,
+                        ),
                         DATA_LAST_GPS_TIME: parse_date(device_data[DATA_LAST_GPS_TIME]),
                         DATA_LOGO_IMAGE_URL: f"{CDN_BASE_URL}/{self._user_data[DATA_DEVICE][DATA_LOGO_IMAGE_URL]}",
                         DATA_MODEL_NAME: self._user_data[DATA_DEVICE][DATA_MODEL_NAME],
+                        DATA_POWER_STATUS: device_data[DATA_POWER_STATUS],
                         DATA_VEHICLE_IMAGE_URL: f"{CDN_BASE_URL}/{self._user_data[DATA_DEVICE][DATA_VEHICLE_IMAGE_URL]}",
                     }
                 )
 
+                self._is_powered_on = data[DATA_POWER_STATUS] == 1
+
             # Not every API response comes with the "lock" attribute
             if DATA_LOCK in device_data:
                 data[DATA_LOCK] = device_data[DATA_LOCK]
-
-            # Check if device is powered on
-            self._is_powered_on = data[DATA_POWER_STATUS] == 1
 
             # Inject home and course data only if vehicle is powered on or moving noticeably
             if self._is_powered_on or self._is_power_off_movement_noticeable(
@@ -731,7 +734,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                         state,
                         bool(self._last_data[DATA_NATIVE_PUSH_NOTIFICATIONS]),
                     )
-                elif data_key == DATA_POWER_STATUS:
+                elif data_key == DATA_POWER_SWITCH:
                     await getattr(self._client, SWITCH_API_METHODS[data_key])(
                         self._device_no,
                     )
@@ -740,7 +743,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
             await sleep(SWITCH_REFRESH_SLEEP_SECONDS)
             await self.async_request_refresh()
-        except KeyError:
+        except AttributeError:
             _LOGGER.debug("Unknown API method for data key: %s", data_key)
         except Exception as exception:  # pylint: disable=broad-exception-caught
             _LOGGER.exception(exception)

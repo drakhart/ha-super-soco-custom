@@ -6,7 +6,7 @@
         },
         "error": {
             "cannot_connect": "Failed to connect",
-            "invalid_auth": "Invalid authentication",
+            "invalid_auth": "Invalid authentication or too many verification codes requested",
             "unknown": "Unexpected error"
         },
         "step": {
