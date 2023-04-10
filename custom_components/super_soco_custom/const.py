@@ -1,11 +1,13 @@
 from homeassistant.components.device_tracker import SOURCE_TYPE_GPS
+from homeassistant.components.sensor.const import (
+    STATE_CLASS_MEASUREMENT,
+    STATE_CLASS_TOTAL_INCREASING,
+)
 from homeassistant.const import (
     DEGREE,
     DEVICE_CLASS_BATTERY,
     DEVICE_CLASS_POWER,
     DEVICE_CLASS_TIMESTAMP,
-    DEVICE_CLASS_VOLTAGE,
-    ELECTRIC_POTENTIAL_VOLT,
     LENGTH_KILOMETERS,
     LENGTH_METERS,
     PERCENTAGE,
@@ -103,7 +105,6 @@ DATA_DISTANCE_FROM_HOME = "distance_from_home"
 DATA_ELEVATION = "elevation"
 DATA_ESTIMATED_RANGE = "endurance"
 DATA_GPS_ACCURACY = "gps"
-DATA_GPS_ACCURACY_PERCENTAGE = "gps_accuracy_percentage"
 DATA_LAST_GPS_TIME = "lastGpsTime"
 DATA_LAST_TRIP_AVG_SPEED = "avgSpeed"
 DATA_LAST_TRIP_BEGIN_LATITUDE = "beginLatitude"
@@ -143,7 +144,6 @@ DATA_REVERSE_GEOCODING_STATE = "state"
 DATA_REVERSE_GEOCODING_STATE_DISTRICT = "state_district"
 DATA_REVERSE_GEOCODING_VILLAGE = "village"
 DATA_SIGNAL_STRENGTH = "gsm"
-DATA_SIGNAL_STRENGTH_PERCENTAGE = "signal_strength_percentage"
 DATA_SPEED = "sleep"  # Intended typo
 DATA_TITLE = "title"
 DATA_TRIP_DISTANCE = "mileages"
@@ -198,6 +198,7 @@ SENSORS = [
         None,  # Unit of measurement
         "mdi:engine",  # Icon
         None,  # Device class
+        STATE_CLASS_TOTAL_INCREASING,
         None,  # Extra attributes
     ),
     (
@@ -208,6 +209,7 @@ SENSORS = [
         "mdi:calendar-start",
         DEVICE_CLASS_TIMESTAMP,
         None,
+        None,
     ),
     (
         "agreement_end_time",
@@ -217,14 +219,6 @@ SENSORS = [
         "mdi:calendar-end",
         DEVICE_CLASS_TIMESTAMP,
         None,
-    ),
-    (
-        "alarm_module_voltage",
-        "Alarm Module Voltage",
-        DATA_ALARM_MODULE_VOLTAGE,
-        ELECTRIC_POTENTIAL_VOLT,
-        "mdi:current-dc",
-        DEVICE_CLASS_VOLTAGE,
         None,
     ),
     (
@@ -234,7 +228,10 @@ SENSORS = [
         PERCENTAGE,
         "mdi:battery-charging-wireless",
         None,
-        None,
+        STATE_CLASS_MEASUREMENT,
+        {
+            "voltage": DATA_ALARM_MODULE_VOLTAGE,
+        },
     ),
     (
         "altitude",
@@ -243,6 +240,7 @@ SENSORS = [
         LENGTH_METERS,
         "mdi:elevation-rise",
         None,
+        STATE_CLASS_MEASUREMENT,
         None,
     ),
     (
@@ -252,6 +250,7 @@ SENSORS = [
         PERCENTAGE,
         "mdi:battery",
         DEVICE_CLASS_BATTERY,
+        STATE_CLASS_MEASUREMENT,
         None,
     ),
     (
@@ -262,6 +261,7 @@ SENSORS = [
         "mdi:compass",
         None,
         None,
+        None,
     ),
     (
         "distance_from_home",
@@ -270,6 +270,7 @@ SENSORS = [
         LENGTH_KILOMETERS,
         "mdi:home",
         None,
+        STATE_CLASS_MEASUREMENT,
         {
             "dir_of_travel": DATA_DIR_OF_TRAVEL,
         },
@@ -281,6 +282,7 @@ SENSORS = [
         LENGTH_KILOMETERS,
         "mdi:map-marker-path",
         None,
+        STATE_CLASS_MEASUREMENT,
         None,
     ),
     (
@@ -289,6 +291,7 @@ SENSORS = [
         DATA_REVERSE_GEOCODING,
         None,
         "mdi:map",
+        None,
         None,
         {
             "city": DATA_REVERSE_GEOCODING_CITY,
@@ -307,12 +310,11 @@ SENSORS = [
         "gps_accuracy",
         "GPS Accuracy",
         DATA_GPS_ACCURACY,
-        None,
+        PERCENTAGE,
         "mdi:crosshairs-gps",
         None,
-        {
-            "percentage": DATA_GPS_ACCURACY_PERCENTAGE,
-        },
+        STATE_CLASS_MEASUREMENT,
+        None,
     ),
     (
         "image",
@@ -320,6 +322,7 @@ SENSORS = [
         DATA_VEHICLE_IMAGE_URL,
         None,
         "mdi:image",
+        None,
         None,
         None,
     ),
@@ -331,6 +334,7 @@ SENSORS = [
         "mdi:web-clock",
         DEVICE_CLASS_TIMESTAMP,
         None,
+        None,
     ),
     (
         "last_trip_average_speed",
@@ -339,6 +343,7 @@ SENSORS = [
         SPEED_KILOMETERS_PER_HOUR,
         "mdi:speedometer",
         None,
+        STATE_CLASS_MEASUREMENT,
         None,
     ),
     (
@@ -348,6 +353,7 @@ SENSORS = [
         LENGTH_KILOMETERS,
         "mdi:map-marker-distance",
         None,
+        STATE_CLASS_MEASUREMENT,
         {
             "begin_latitude": DATA_LAST_TRIP_BEGIN_LATITUDE,
             "begin_longitude": DATA_LAST_TRIP_BEGIN_LONGITUDE,
@@ -362,6 +368,7 @@ SENSORS = [
         TIME_SECONDS,
         "mdi:timer",
         None,
+        STATE_CLASS_MEASUREMENT,
         {
             "begin_time": DATA_LAST_TRIP_BEGIN_TIME,
             "end_time": DATA_LAST_TRIP_END_TIME,
@@ -374,6 +381,7 @@ SENSORS = [
         None,
         "mdi:alert-circle",
         DEVICE_CLASS_TIMESTAMP,
+        None,
         {
             "title": DATA_LAST_WARNING_TITLE,
             "message": DATA_LAST_WARNING_MESSAGE,
@@ -387,6 +395,7 @@ SENSORS = [
         "mdi:lock",
         None,
         None,
+        None,
     ),
     (
         "logo",
@@ -396,17 +405,17 @@ SENSORS = [
         "mdi:image",
         None,
         None,
+        None,
     ),
     (
         "signal_strength",
         "Signal Strength",
         DATA_SIGNAL_STRENGTH,
-        None,
+        PERCENTAGE,
         "mdi:signal",
         None,
-        {
-            "percentage": DATA_SIGNAL_STRENGTH_PERCENTAGE,
-        },
+        STATE_CLASS_MEASUREMENT,
+        None,
     ),
     (
         "speed",
@@ -415,6 +424,7 @@ SENSORS = [
         SPEED_KILOMETERS_PER_HOUR,
         "mdi:speedometer",
         None,
+        STATE_CLASS_MEASUREMENT,
         None,
     ),
     (
@@ -424,6 +434,7 @@ SENSORS = [
         LENGTH_KILOMETERS,
         "mdi:map-marker-distance",
         None,
+        STATE_CLASS_TOTAL_INCREASING,
         None,
     ),
     (
@@ -432,6 +443,7 @@ SENSORS = [
         DATA_WIND_ROSE_COURSE,
         None,
         "mdi:compass-rose",
+        None,
         None,
         None,
     ),
@@ -454,12 +466,21 @@ SWITCHES = [
         "mdi:database-marker",
         None,
     ),
+    (
+        "power_switch",
+        "Power Switch",
+        DATA_POWER_STATUS,
+        1,
+        "mdi:toggle-switch-variant",
+        None,
+    ),
 ]
 
 # Switch API methods
 SWITCH_API_METHODS = {
     DATA_NATIVE_PUSH_NOTIFICATIONS: "set_push_notifications",
     DATA_NATIVE_TRACKING_HISTORY: "set_tracking_history",
+    DATA_POWER_STATUS: "switch_power",
 }
 
 # Phone prefixes

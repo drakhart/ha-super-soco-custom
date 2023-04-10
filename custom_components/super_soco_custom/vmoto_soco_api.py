@@ -118,6 +118,15 @@ class VmotoSocoAPI:
 
         return await self._api_wrapper(url, headers, data)
 
+    async def switch_power(self, device_no: str) -> dict:
+        url = f"{BASE_URL}/device/click/{device_no}"
+        headers = await self._get_headers(True)
+        data = {
+            "deviceNo": device_no,
+        }
+
+        return await self._api_wrapper(url, headers, data)
+
     async def _api_wrapper(self, url: str, headers: dict = {}, data: dict = {}) -> dict:
         async with async_timeout.timeout(TIMEOUT):
             res = await self._session.post(url, headers=headers, json=data)

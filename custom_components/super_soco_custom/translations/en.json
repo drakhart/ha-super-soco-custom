@@ -21,7 +21,7 @@
             "login": {
                 "description": "Please enter:",
                 "data": {
-                    "login_code": "Verification code",
+                    "login_code": "Verification code sent via SMS",
                     "password": "Password"
                 }
             }

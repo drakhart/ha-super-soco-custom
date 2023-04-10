@@ -36,7 +36,6 @@ from .const import (
     DATA_DISTANCE_FROM_HOME,
     DATA_ELEVATION,
     DATA_ESTIMATED_RANGE,
-    DATA_GPS_ACCURACY_PERCENTAGE,
     DATA_GPS_ACCURACY,
     DATA_LAST_GPS_TIME,
     DATA_LAST_TRIP_AVG_SPEED,
@@ -76,7 +75,6 @@ from .const import (
     DATA_REVERSE_GEOCODING_STATE,
     DATA_REVERSE_GEOCODING_VILLAGE,
     DATA_REVERSE_GEOCODING,
-    DATA_SIGNAL_STRENGTH_PERCENTAGE,
     DATA_SIGNAL_STRENGTH,
     DATA_SPEED,
     DATA_TITLE,
@@ -189,6 +187,10 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
             data = {
                 DATA_ACCUMULATIVE_RIM: device_data[DATA_ACCUMULATIVE_RIM],
+                DATA_ALARM_MODULE_BATTERY: calculate_percentage(
+                    device_data[DATA_ALARM_MODULE_VOLTAGE] or DEFAULT_INTEGER,
+                    ALARM_MODULE_MAX_VOLTAGE,
+                ),
                 DATA_ALARM_MODULE_VOLTAGE: device_data[DATA_ALARM_MODULE_VOLTAGE]
                 or DEFAULT_INTEGER,
                 DATA_BATTERY: device_data[DATA_BATTERY],
@@ -196,7 +198,9 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                     device_data[DATA_TRIP_DISTANCE], DISTANCE_ROUNDING_DECIMALS
                 ),
                 DATA_ESTIMATED_RANGE: device_data[DATA_ESTIMATED_RANGE],
-                DATA_GPS_ACCURACY: device_data[DATA_GPS_ACCURACY],
+                DATA_GPS_ACCURACY: calculate_percentage(
+                    device_data[DATA_GPS_ACCURACY], GPS_MAX_ACCURACY
+                ),
                 DATA_LATITUDE: device_data[DATA_LATITUDE],
                 DATA_LONGITUDE: device_data[DATA_LONGITUDE],
                 DATA_NATIVE_PUSH_NOTIFICATIONS: device_data[
@@ -204,7 +208,9 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 ],
                 DATA_NATIVE_TRACKING_HISTORY: device_data[DATA_NATIVE_TRACKING_HISTORY],
                 DATA_POWER_STATUS: device_data[DATA_POWER_STATUS],
-                DATA_SIGNAL_STRENGTH: device_data[DATA_SIGNAL_STRENGTH],
+                DATA_SIGNAL_STRENGTH: calculate_percentage(
+                    device_data[DATA_SIGNAL_STRENGTH], SIGNAL_MAX_STRENGTH
+                ),
                 DATA_SPEED: device_data[DATA_SPEED],
             }
 
@@ -245,15 +251,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Check if device is powered on
             self._is_powered_on = data[DATA_POWER_STATUS] == 1
-
-            # Inject alarm module data
-            data.update(
-                self._get_alarm_module_data(
-                    data[DATA_ALARM_MODULE_VOLTAGE],
-                    data[DATA_GPS_ACCURACY],
-                    data[DATA_SIGNAL_STRENGTH],
-                )
-            )
 
             # Inject home and course data only if vehicle is powered on or moving noticeably
             if self._is_powered_on or self._is_power_off_movement_noticeable(
@@ -316,24 +313,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         except Exception as error:
             _LOGGER.exception(error)
             raise UpdateFailed from error
-
-    def _get_alarm_module_data(
-        self,
-        voltage: int,
-        gps_accuracy: int,
-        signal_strength: int,
-    ) -> dict:
-        return {
-            DATA_ALARM_MODULE_BATTERY: calculate_percentage(
-                voltage, ALARM_MODULE_MAX_VOLTAGE
-            ),
-            DATA_GPS_ACCURACY_PERCENTAGE: calculate_percentage(
-                gps_accuracy, GPS_MAX_ACCURACY
-            ),
-            DATA_SIGNAL_STRENGTH_PERCENTAGE: calculate_percentage(
-                signal_strength, SIGNAL_MAX_STRENGTH
-            ),
-        }
 
     async def _get_altitude_data(self, latitude: float, longitude: float) -> dict:
         if not self._config_entry.options.get(
@@ -751,6 +730,10 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                         self._user_id,
                         state,
                         bool(self._last_data[DATA_NATIVE_PUSH_NOTIFICATIONS]),
+                    )
+                elif data_key == DATA_POWER_STATUS:
+                    await getattr(self._client, SWITCH_API_METHODS[data_key])(
+                        self._device_no,
                     )
             else:
                 await getattr(self._client, SWITCH_API_METHODS[data_key])(state)

@@ -27,6 +27,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         unit,
         icon,
         device_class,
+        state_class,
         extra_attrs,
     ) in SENSORS:
         if not key in coordinator.data:
@@ -42,6 +43,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                     unit,
                     icon,
                     device_class,
+                    state_class,
                     extra_attrs,
                 )
             )
@@ -60,6 +62,7 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
         unit,
         icon,
         device_class,
+        state_class,
         extra_attrs,
     ):
         super().__init__(config_entry, coordinator)
@@ -69,6 +72,7 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
         self._unit = unit
         self._icon = icon
         self._device_class = device_class
+        self._state_class = state_class
         self._extra_attrs = extra_attrs
 
     @property
@@ -100,6 +104,13 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
             return None
 
         return self._device_class
+
+    @property
+    def state_class(self):
+        if self.native_value == STATE_UNAVAILABLE:
+            return None
+
+        return self._state_class
 
     @property
     def extra_state_attributes(self):
