@@ -1,0 +1,26 @@
+name: "Lint"
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  black:
+    name: "Black"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout the repository"
+        uses: "actions/checkout@v3.5.0"
+      - name: Setup Python
+        uses: "actions/setup-python@v4.5.0"
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - name: "Install linter"
+        run: python3 -m pip install black
+      - name: "Run linter"
+        run: black .

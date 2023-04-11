@@ -1,0 +1,35 @@
+name: Push actions
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  pytest:
+    name: "Pytest"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout the repository"
+        uses: "actions/checkout@v3.5.0"
+      - name: Setup Python
+        uses: "actions/setup-python@v4.5.0"
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - name: "Install requirements"
+        run: python3 -m pip install -r requirements_test.txt
+      - name: "Run tests"
+        run: |
+          pytest \
+            -qq \
+            --timeout=9 \
+            --durations=10 \
+            -n auto \
+            --cov custom_components.super_soco_custom \
+            -o console_output_style=count \
+            -p no:sugar \
+            tests
