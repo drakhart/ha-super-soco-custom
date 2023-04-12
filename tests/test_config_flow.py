@@ -8,6 +8,10 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from unittest.mock import patch
 
 from custom_components.super_soco_custom.const import (
+    CONF_APP_NAME,
+    CONF_PHONE_NUMBER,
+    CONF_PHONE_PREFIX,
+    CONF_PASSWORD,
     DOMAIN,
     NAME,
     OPT_EMAIL,
@@ -18,7 +22,7 @@ from custom_components.super_soco_custom.const import (
     OPT_UPDATE_INTERVAL,
 )
 
-from .const import MOCK_CONFIG
+from .const import MOCK_CONFIG_SUPER_SOCO
 
 
 # This fixture bypasses the actual setup of the integration
@@ -40,6 +44,7 @@ def bypass_setup_fixture():
 # Here we simiulate a successful config flow from the backend.
 # Note that we use the `bypass_get_data` fixture here because
 # we want the config flow validation to succeed during the test.
+@pytest.mark.asyncio
 async def test_successful_config_flow(
     hass,
     bypass_get_device,
@@ -57,36 +62,58 @@ async def test_successful_config_flow(
 
     # Check that the config flow shows the user form as the first step
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
-    assert result["step_id"] == "user"
+    assert result["step_id"] == "app"
 
-    # If a user were to enter `test_username` for username and `test_password`
-    # for password, it would result in this function call
+    # Continue past the app step
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input=MOCK_CONFIG
+        result["flow_id"],
+        user_input={
+            CONF_APP_NAME: MOCK_CONFIG_SUPER_SOCO[CONF_APP_NAME],
+            CONF_PHONE_NUMBER: MOCK_CONFIG_SUPER_SOCO[CONF_PHONE_NUMBER],
+            CONF_PHONE_PREFIX: MOCK_CONFIG_SUPER_SOCO[CONF_PHONE_PREFIX],
+        },
+    )
+
+    # Check that the config flow shows the login form as the next step
+    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["step_id"] == "login"
+
+    # Continue past the login step
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_PASSWORD: MOCK_CONFIG_SUPER_SOCO[CONF_PASSWORD]},
     )
 
     # Check that the config flow is complete and a new entry is created with
     # the input data
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
     assert result["title"] == NAME
-    assert result["data"] == MOCK_CONFIG
+    assert result["data"] == MOCK_CONFIG_SUPER_SOCO
     assert result["result"]
 
 
 # In this case, we want to simulate a failure during the config flow.
 # We use the `auth_error_on_login` (note the function parameters) to
 # raise an Exception during validation of the input config.
+@pytest.mark.asyncio
 async def test_failed_config_flow(hass, auth_error_on_login):
     """Test a failed config flow due to credential validation failure."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
 
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
-    assert result["step_id"] == "user"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_APP_NAME: MOCK_CONFIG_SUPER_SOCO[CONF_APP_NAME],
+            CONF_PHONE_NUMBER: MOCK_CONFIG_SUPER_SOCO[CONF_PHONE_NUMBER],
+            CONF_PHONE_PREFIX: MOCK_CONFIG_SUPER_SOCO[CONF_PHONE_PREFIX],
+        },
+    )
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input=MOCK_CONFIG
+        result["flow_id"],
+        user_input={CONF_PASSWORD: MOCK_CONFIG_SUPER_SOCO[CONF_PASSWORD]},
     )
 
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
@@ -94,11 +121,12 @@ async def test_failed_config_flow(hass, auth_error_on_login):
 
 
 # Our config flow also has an options flow, so we must test it as well.
+@pytest.mark.asyncio
 async def test_options_flow(hass):
     """Test an options flow."""
     # Create a new MockConfigEntry and add to HASS (we're bypassing config
     # flow entirely)
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG_SUPER_SOCO, entry_id="test")
     entry.add_to_hass(hass)
 
     # Initialize an options flow
