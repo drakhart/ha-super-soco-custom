@@ -1,5 +1,6 @@
 """Tests for super_soco_custom open_topo_data_api."""
 import json
+import pytest
 
 from custom_components.super_soco_custom.open_topo_data_api import (
     OpenTopoDataAPI,
@@ -11,6 +12,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from pytest_homeassistant_custom_component.common import load_fixture
 
 
+@pytest.mark.asyncio
 async def test_api(hass, aioclient_mock):
     """Test API calls."""
 

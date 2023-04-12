@@ -1,6 +1,9 @@
 {
   "status": "200",
   "data": {
+    "user": {
+      "userId": "123456789"
+    },
     "device": {
       "deviceNo": "1234567890123456",
       "agreemenStartTime": "01/01/2022 00:00AM",

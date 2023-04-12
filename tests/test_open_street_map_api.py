@@ -1,5 +1,6 @@
 """Tests for super_soco_custom open_street_map_api."""
 import json
+import pytest
 
 from custom_components.super_soco_custom.const import OPT_EMAIL
 from custom_components.super_soco_custom.open_street_map_api import (
@@ -14,6 +15,7 @@ from pytest_homeassistant_custom_component.common import load_fixture
 from .const import MOCK_OPTIONS
 
 
+@pytest.mark.asyncio
 async def test_api(hass, aioclient_mock):
     """Test API calls."""
 

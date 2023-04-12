@@ -28,6 +28,6 @@ jobs:
       - name: "Checkout the repository"
         uses: "actions/checkout@v3.5.0"
       - name: "Run HACS validation"
-        uses: "hacs/action@22.5.0"
+        uses: "hacs/action@main"
         with:
           category: "integration"

@@ -1,6 +1,7 @@
 """Test super_soco_custom setup process."""
-from homeassistant.exceptions import ConfigEntryNotReady
 import pytest
+
+from homeassistant.exceptions import ConfigEntryNotReady
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.super_soco_custom import (
@@ -19,6 +20,8 @@ from .const import MOCK_CONFIG
 # Home Assistant using the pytest_homeassistant_custom_component plugin.
 # Assertions allow you to verify that the return value of whatever is on the left
 # side of the assertion matches with the right side.
+@pytest.mark.asyncio
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_setup_unload_and_reload_entry(
     hass,
     bypass_get_device,
@@ -30,12 +33,6 @@ async def test_setup_unload_and_reload_entry(
 ):
     """Test entry setup and unload."""
     # Create a mock entry so we don't have to go through config flow
-    # hass.states.set("zone.home", 0, {
-    #     "latitude": 0,
-    #     "longitude": 0,
-    #     "radius": 100,
-    # })
-
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
 
     # Set up the entry and assert that the values set during setup are where we expect
@@ -61,6 +58,7 @@ async def test_setup_unload_and_reload_entry(
     assert config_entry.entry_id not in hass.data[DOMAIN]
 
 
+@pytest.mark.asyncio
 async def test_setup_entry_exception(hass, auth_error_on_login):
     """Test ConfigEntryNotReady when API raises an exception during entry setup."""
     config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")

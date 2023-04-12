@@ -1,5 +1,6 @@
 """Tests for super_soco_custom super_soco_api."""
 import json
+import pytest
 
 from custom_components.super_soco_custom.const import (
     CONF_PHONE_PREFIX,
@@ -15,6 +16,7 @@ from pytest_homeassistant_custom_component.common import load_fixture
 from .const import MOCK_CONFIG
 
 
+@pytest.mark.asyncio
 async def test_api(hass, aioclient_mock):
     """Test API calls."""
 
