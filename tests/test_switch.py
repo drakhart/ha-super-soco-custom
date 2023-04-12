@@ -10,23 +10,25 @@ from unittest.mock import call, patch
 
 from custom_components.super_soco_custom.const import DOMAIN
 
-from .const import MOCK_CONFIG
+from .const import MOCK_SUPER_SOCO_CONFIG
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_switch_services(
     hass,
-    bypass_get_device,
+    bypass_super_soco_get_device,
     bypass_get_mapzen,
-    bypass_get_tracking_history_list,
-    bypass_get_user,
-    bypass_get_warning_list,
-    bypass_login,
+    bypass_super_soco_get_tracking_history_list,
+    bypass_super_soco_get_user,
+    bypass_super_soco_get_warning_list,
+    bypass_super_soco_login,
 ):
     """Test switch services."""
     # Create a mock entry so we don't have to go through config flow
-    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG, entry_id="test")
+    config_entry = MockConfigEntry(
+        domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG, entry_id="test"
+    )
     config_entry.add_to_hass(hass)
 
     await hass.config_entries.async_setup(config_entry.entry_id)

@@ -46,12 +46,12 @@ def skip_notifications_fixture():
 
 
 # Fixtures to return mocked data from API calls
-@pytest.fixture(name="bypass_get_device")
-def bypass_get_device_fixture():
+@pytest.fixture(name="bypass_super_soco_get_device")
+def bypass_super_soco_get_device_fixture():
     """Skip calls to get device from Super Soco API."""
     with patch(
         "custom_components.super_soco_custom.SuperSocoAPI.get_device",
-        return_value=json.loads(load_fixture("device.json")),
+        return_value=json.loads(load_fixture("super_soco_device.json")),
     ):
         yield
 
@@ -66,42 +66,42 @@ def bypass_get_mapzen():
         yield
 
 
-@pytest.fixture(name="bypass_get_tracking_history_list")
-def bypass_get_tracking_history_list_fixture():
+@pytest.fixture(name="bypass_super_soco_get_tracking_history_list")
+def bypass_super_soco_get_tracking_history_list_fixture():
     """Skip calls to get tracking history list from Super Soco API."""
     with patch(
         "custom_components.super_soco_custom.SuperSocoAPI.get_tracking_history_list",
-        return_value=json.loads(load_fixture("tracking_history_list.json")),
+        return_value=json.loads(load_fixture("super_soco_tracking_history_list.json")),
     ):
         yield
 
 
-@pytest.fixture(name="bypass_get_user")
-def bypass_get_user_fixture():
+@pytest.fixture(name="bypass_super_soco_get_user")
+def bypass_super_soco_get_user_fixture():
     """Skip calls to get user from Super Soco API."""
     with patch(
         "custom_components.super_soco_custom.SuperSocoAPI.get_user",
-        return_value=json.loads(load_fixture("user.json")),
+        return_value=json.loads(load_fixture("super_soco_user.json")),
     ):
         yield
 
 
-@pytest.fixture(name="bypass_get_warning_list")
-def bypass_get_warning_fixture():
+@pytest.fixture(name="bypass_super_soco_get_warning_list")
+def bypass_super_soco_get_warning_fixture():
     """Skip calls to get warning list from Super Soco API."""
     with patch(
         "custom_components.super_soco_custom.SuperSocoAPI.get_warning_list",
-        return_value=json.loads(load_fixture("warning_list.json")),
+        return_value=json.loads(load_fixture("super_soco_warning_list.json")),
     ):
         yield
 
 
-@pytest.fixture(name="bypass_login")
-def bypass_login_fixture():
+@pytest.fixture(name="bypass_super_soco_login")
+def bypass_super_soco_login_fixture():
     """Skip calls to get device from Super Soco API."""
     with patch(
         "custom_components.super_soco_custom.SuperSocoAPI.login",
-        return_value=json.loads(load_fixture("login.json")),
+        return_value=json.loads(load_fixture("super_soco_login.json")),
     ):
         yield
 

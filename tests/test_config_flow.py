@@ -22,7 +22,7 @@ from custom_components.super_soco_custom.const import (
     OPT_UPDATE_INTERVAL,
 )
 
-from .const import MOCK_CONFIG_SUPER_SOCO
+from .const import MOCK_SUPER_SOCO_CONFIG
 
 
 # This fixture bypasses the actual setup of the integration
@@ -42,17 +42,17 @@ def bypass_setup_fixture():
 
 
 # Here we simiulate a successful config flow from the backend.
-# Note that we use the `bypass_get_data` fixture here because
+# Note that we use the `bypass_super_soco_get_data` fixture here because
 # we want the config flow validation to succeed during the test.
 @pytest.mark.asyncio
 async def test_successful_config_flow(
     hass,
-    bypass_get_device,
+    bypass_super_soco_get_device,
     bypass_get_mapzen,
-    bypass_get_tracking_history_list,
-    bypass_get_user,
-    bypass_get_warning_list,
-    bypass_login,
+    bypass_super_soco_get_tracking_history_list,
+    bypass_super_soco_get_user,
+    bypass_super_soco_get_warning_list,
+    bypass_super_soco_login,
 ):
     """Test a successful config flow."""
     # Initialize a config flow
@@ -68,9 +68,9 @@ async def test_successful_config_flow(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_APP_NAME: MOCK_CONFIG_SUPER_SOCO[CONF_APP_NAME],
-            CONF_PHONE_NUMBER: MOCK_CONFIG_SUPER_SOCO[CONF_PHONE_NUMBER],
-            CONF_PHONE_PREFIX: MOCK_CONFIG_SUPER_SOCO[CONF_PHONE_PREFIX],
+            CONF_APP_NAME: MOCK_SUPER_SOCO_CONFIG[CONF_APP_NAME],
+            CONF_PHONE_NUMBER: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_NUMBER],
+            CONF_PHONE_PREFIX: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_PREFIX],
         },
     )
 
@@ -81,14 +81,14 @@ async def test_successful_config_flow(
     # Continue past the login step
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={CONF_PASSWORD: MOCK_CONFIG_SUPER_SOCO[CONF_PASSWORD]},
+        user_input={CONF_PASSWORD: MOCK_SUPER_SOCO_CONFIG[CONF_PASSWORD]},
     )
 
     # Check that the config flow is complete and a new entry is created with
     # the input data
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
     assert result["title"] == NAME
-    assert result["data"] == MOCK_CONFIG_SUPER_SOCO
+    assert result["data"] == MOCK_SUPER_SOCO_CONFIG
     assert result["result"]
 
 
@@ -105,15 +105,15 @@ async def test_failed_config_flow(hass, auth_error_on_login):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_APP_NAME: MOCK_CONFIG_SUPER_SOCO[CONF_APP_NAME],
-            CONF_PHONE_NUMBER: MOCK_CONFIG_SUPER_SOCO[CONF_PHONE_NUMBER],
-            CONF_PHONE_PREFIX: MOCK_CONFIG_SUPER_SOCO[CONF_PHONE_PREFIX],
+            CONF_APP_NAME: MOCK_SUPER_SOCO_CONFIG[CONF_APP_NAME],
+            CONF_PHONE_NUMBER: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_NUMBER],
+            CONF_PHONE_PREFIX: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_PREFIX],
         },
     )
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={CONF_PASSWORD: MOCK_CONFIG_SUPER_SOCO[CONF_PASSWORD]},
+        user_input={CONF_PASSWORD: MOCK_SUPER_SOCO_CONFIG[CONF_PASSWORD]},
     )
 
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
@@ -126,7 +126,7 @@ async def test_options_flow(hass):
     """Test an options flow."""
     # Create a new MockConfigEntry and add to HASS (we're bypassing config
     # flow entirely)
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_CONFIG_SUPER_SOCO, entry_id="test")
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG, entry_id="test")
     entry.add_to_hass(hass)
 
     # Initialize an options flow

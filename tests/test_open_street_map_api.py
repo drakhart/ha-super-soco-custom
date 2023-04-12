@@ -26,7 +26,7 @@ async def test_api(hass, aioclient_mock):
     )
 
     # Get Mapzen
-    res_mock = json.loads(load_fixture("reverse.json"))
+    res_mock = json.loads(load_fixture("reverse_geocoding.json"))
     latitude = 1
     longitude = 1
 
