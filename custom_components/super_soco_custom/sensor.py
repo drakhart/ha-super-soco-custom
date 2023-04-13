@@ -4,10 +4,8 @@ from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.components.sensor import SensorEntity
 
 from .const import (
-    DATA_MODEL_NAME,
     DEFAULT_STRING,
     DOMAIN,
-    MANUFACTURER,
     SENSORS,
 )
 from .entity import SuperSocoCustomEntity

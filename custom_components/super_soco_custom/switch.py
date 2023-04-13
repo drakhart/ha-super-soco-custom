@@ -3,11 +3,9 @@ import logging
 from homeassistant.components.switch import SwitchEntity
 
 from .const import (
-    DATA_MODEL_NAME,
     DEFAULT_INTEGER,
     DEFAULT_STRING,
     DOMAIN,
-    MANUFACTURER,
     SWITCHES,
 )
 from .entity import SuperSocoCustomEntity

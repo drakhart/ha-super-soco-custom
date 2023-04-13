@@ -4,11 +4,9 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 
 from .const import (
     BINARY_SENSORS,
-    DATA_MODEL_NAME,
     DEFAULT_INTEGER,
     DEFAULT_STRING,
     DOMAIN,
-    MANUFACTURER,
 )
 from .entity import SuperSocoCustomEntity
 

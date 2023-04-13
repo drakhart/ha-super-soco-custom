@@ -43,7 +43,10 @@ async def test_api(hass, aioclient_mock):
     res_mock = json.loads(load_fixture("vmoto_soco_tracking_history_list.json"))
 
     aioclient_mock.post(f"{BASE_URL}/runTrail/list", json=res_mock)
-    assert await api.get_tracking_history_list(MOCK_USER_ID, MOCK_DEVICE_NO, 1, 1) == res_mock
+    assert (
+        await api.get_tracking_history_list(MOCK_USER_ID, MOCK_DEVICE_NO, 1, 1)
+        == res_mock
+    )
 
     # Get user
     res_mock = json.loads(load_fixture("vmoto_soco_user.json"))
@@ -54,7 +57,9 @@ async def test_api(hass, aioclient_mock):
     # Get warning list
     res_mock = json.loads(load_fixture("vmoto_soco_warning_list.json"))
 
-    aioclient_mock.post(f"{BASE_URL}/deviceWarn/findDeviceWarnPageByUserId", json=res_mock)
+    aioclient_mock.post(
+        f"{BASE_URL}/deviceWarn/findDeviceWarnPageByUserId", json=res_mock
+    )
     assert await api.get_warning_list(MOCK_USER_ID, 1, 1) == res_mock
 
     # Set push notifications

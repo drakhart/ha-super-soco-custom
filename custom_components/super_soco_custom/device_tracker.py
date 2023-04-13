@@ -3,13 +3,11 @@ import logging
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 
 from .const import (
-    DATA_MODEL_NAME,
     DEFAULT_FLOAT,
     DEFAULT_INTEGER,
     DEFAULT_STRING,
     DEVICE_TRACKERS,
     DOMAIN,
-    MANUFACTURER,
 )
 from .entity import SuperSocoCustomEntity
 
