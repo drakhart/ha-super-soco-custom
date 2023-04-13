@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "data": {
+    "data": [
+      {
+        "beginLatitude": 41.630249,
+        "beginLongitude": -4.7243433,
+        "beginTime": 1665117220000,
+        "endLatitude": 41.6556435,
+        "endLongitude": -4.7834849,
+        "endTime": 1665118080000,
+        "mileage": 7.5491850000000005,
+        "minutes": 14.3356
+      }
+    ]
+  }
+}

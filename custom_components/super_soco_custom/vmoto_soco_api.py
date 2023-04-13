@@ -26,12 +26,6 @@ class VmotoSocoAPI:
         self._phone_number = phone_number
         self._token = token
 
-    async def get_device(self, device_number: str) -> dict:
-        url = f"{BASE_URL}/device/info/{device_number}"
-        headers = await self._get_headers(True)
-
-        return await self._api_wrapper(url, headers)
-
     async def get_login_code(self) -> dict:
         url = f"{BASE_URL}/index/sendLogin4Code"
         headers = await self._get_headers(False)

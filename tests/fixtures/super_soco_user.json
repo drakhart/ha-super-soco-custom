@@ -1,16 +1,16 @@
 {
   "status": "200",
   "data": {
-    "user": {
-      "userId": "123456789"
-    },
     "device": {
-      "deviceNo": "1234567890123456",
       "agreemenStartTime": "01/01/2022 00:00AM",
       "agreementEndTime": "01/01/2099 00:00AM",
       "carModelName": "TS",
+      "deviceNo": "1234567890123456",
       "imgUrl": "vehicle.png",
       "logoImg": "logo.png"
+    },
+    "user": {
+      "userId": "1234"
     }
   }
 }

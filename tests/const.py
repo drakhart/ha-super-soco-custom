@@ -12,10 +12,10 @@ from custom_components.super_soco_custom.const import (
 )
 
 # Mock config data to be used across multiple tests
+MOCK_DEVICE_NO = "1234567890123456"
 MOCK_OPTIONS = {
     OPT_EMAIL: "test@test.com",
 }
-
 MOCK_SUPER_SOCO_CONFIG = {
     CONF_APP_NAME: SUPER_SOCO,
     CONF_LOGIN_CODE: None,
@@ -24,7 +24,7 @@ MOCK_SUPER_SOCO_CONFIG = {
     CONF_PHONE_PREFIX: 34,
     CONF_TOKEN: None,
 }
-
+MOCK_USER_ID = "1234"
 MOCK_VMOTO_SOCO_CONFIG = {
     CONF_APP_NAME: VMOTO_SOCO,
     CONF_LOGIN_CODE: "1234",

@@ -1,0 +1,29 @@
+{
+  "status": "200",
+  "data": {
+    "device": {
+      "accumulativeRim": 0,
+      "ecuElec": 100,
+      "endurance": 30,
+      "gps": 12,
+      "gsm": 2,
+      "historyLocusSwitch": 1,
+      "isWarnPush": 0,
+      "lastGpsTime": 1665146879908,
+      "latitude": 41.390205,
+      "lock": 0,
+      "longitude": 2.154007,
+      "mileages": 0,
+      "nowElec": 43,
+      "powerStatus": 0,
+      "sleep": 0
+    },
+    "user": {
+      "userId": "1234"
+    },
+    "userBindDevice": {
+      "carModelName": "TCMAX",
+      "fileUrl": "http://test.com/TCMAX.png"
+    }
+  }
+}

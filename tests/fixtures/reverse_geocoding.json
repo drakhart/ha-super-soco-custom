@@ -1,13 +1,13 @@
 {
   "display_name": "Test display name",
   "address": {
-    "road": "Test road",
-    "village": "Test village",
+    "country_code": "Test country code",
+    "country": "Test country",
     "county": "Test county",
+    "postcode": "Test postcode",
+    "road": "Test road",
     "state_district": "Test district",
     "state": "Test state",
-    "postcode": "Test postcode",
-    "country": "Test country",
-    "country_code": "Test country code"
+    "village": "Test village"
   }
 }

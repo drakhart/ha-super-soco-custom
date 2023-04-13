@@ -3,13 +3,13 @@
   "data": {
     "list": [
       {
-        "beginTime": "01/01/2022 00:00AM",
+        "avgSpeed": "0",
         "beginLatitude": 0,
         "beginLongitude": 0,
-        "endTime": "01/01/2022 12:00PM",
+        "beginTime": "01/01/2022 00:00AM",
         "endLatitude": 0,
         "endLongitude": 0,
-        "avgSpeed": "0",
+        "endTime": "01/01/2022 12:00PM",
         "rideDistance": "0",
         "rideTime": "0"
       }

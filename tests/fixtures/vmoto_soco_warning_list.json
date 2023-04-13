@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "data": {
+    "data": [
+      {
+        "content": "Your vehicle touched off vibrating alert, please take care of vehicle location in time",
+        "createTime": 1665093008000,
+        "title": "Vibrating alert"
+      }
+    ]
+  }
+}
