@@ -98,10 +98,40 @@ def bypass_super_soco_get_warning_fixture():
 
 @pytest.fixture(name="bypass_super_soco_login")
 def bypass_super_soco_login_fixture():
-    """Skip calls to get device from Super Soco API."""
+    """Skip calls to login from Super Soco API."""
     with patch(
         "custom_components.super_soco_custom.SuperSocoAPI.login",
         return_value=json.loads(load_fixture("super_soco_login.json")),
+    ):
+        yield
+
+
+@pytest.fixture(name="bypass_vmoto_soco_get_login_code")
+def bypass_vmoto_soco_get_login_code_fixture():
+    """Skip calls to get login code from Vmoto Soco API."""
+    with patch(
+        "custom_components.super_soco_custom.VmotoSocoAPI.get_login_code",
+        return_value=json.loads(load_fixture("vmoto_soco_login_code.json")),
+    ):
+        yield
+
+
+@pytest.fixture(name="bypass_vmoto_soco_get_user")
+def bypass_vmoto_soco_get_user_fixture():
+    """Skip calls to get user from Vmoto Soco API."""
+    with patch(
+        "custom_components.super_soco_custom.VmotoSocoAPI.get_user",
+        return_value=json.loads(load_fixture("vmoto_soco_user.json")),
+    ):
+        yield
+
+
+@pytest.fixture(name="bypass_vmoto_soco_login")
+def bypass_vmoto_soco_login_fixture():
+    """Skip calls to login from Vmoto Soco API."""
+    with patch(
+        "custom_components.super_soco_custom.VmotoSocoAPI.login",
+        return_value=json.loads(load_fixture("vmoto_soco_login.json")),
     ):
         yield
 

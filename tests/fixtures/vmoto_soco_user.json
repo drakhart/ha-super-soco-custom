@@ -3,6 +3,7 @@
   "data": {
     "device": {
       "accumulativeRim": 0,
+      "deviceNo": "1234567890123456",
       "ecuElec": 100,
       "endurance": 30,
       "gps": 12,

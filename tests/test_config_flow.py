@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from custom_components.super_soco_custom.const import (
     CONF_APP_NAME,
+    CONF_LOGIN_CODE,
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
     CONF_PASSWORD,
@@ -22,7 +23,7 @@ from custom_components.super_soco_custom.const import (
     OPT_UPDATE_INTERVAL,
 )
 
-from .const import MOCK_SUPER_SOCO_CONFIG
+from .const import MOCK_SUPER_SOCO_CONFIG, MOCK_VMOTO_SOCO_CONFIG
 
 
 # This fixture bypasses the actual setup of the integration
@@ -41,20 +42,15 @@ def bypass_setup_fixture():
         yield
 
 
-# Here we simiulate a successful config flow from the backend.
-# Note that we use the `bypass_super_soco_get_data` fixture here because
+# Here we simulate a successful Super Soco config flow from the backend.
+# Note that we use the `bypass_super_soco_login` fixture here because
 # we want the config flow validation to succeed during the test.
 @pytest.mark.asyncio
-async def test_successful_config_flow(
+async def test_successful_super_soco_config_flow(
     hass,
-    bypass_super_soco_get_device,
-    bypass_get_mapzen,
-    bypass_super_soco_get_tracking_history_list,
-    bypass_super_soco_get_user,
-    bypass_super_soco_get_warning_list,
-    bypass_super_soco_login,
+    bypass_super_soco_login,  # pylint: disable=unused-argument
 ):
-    """Test a successful config flow."""
+    """Test a successful Super Soco config flow."""
     # Initialize a config flow
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
@@ -92,11 +88,62 @@ async def test_successful_config_flow(
     assert result["result"]
 
 
+# Here we simulate a successful Vmoto Soco config flow from the backend.
+# Note that we use the `bypass_vmoto_soco_get_login_code` and
+# `bypass_vmoto_soco_login` fixture here because we want the config flow
+# validation to succeed during the test.
+@pytest.mark.asyncio
+async def test_successful_vmoto_soco_config_flow(
+    hass,
+    bypass_vmoto_soco_get_login_code,  # pylint: disable=unused-argument
+    bypass_vmoto_soco_login,  # pylint: disable=unused-argument
+):
+    """Test a successful Vmoto Soco config flow."""
+    # Initialize a config flow
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+
+    # Check that the config flow shows the user form as the first step
+    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["step_id"] == "app"
+
+    # Continue past the app step
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_APP_NAME: MOCK_VMOTO_SOCO_CONFIG[CONF_APP_NAME],
+            CONF_PHONE_NUMBER: MOCK_VMOTO_SOCO_CONFIG[CONF_PHONE_NUMBER],
+            CONF_PHONE_PREFIX: MOCK_VMOTO_SOCO_CONFIG[CONF_PHONE_PREFIX],
+        },
+    )
+
+    # Check that the config flow shows the login form as the next step
+    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["step_id"] == "login"
+
+    # Continue past the login step
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_LOGIN_CODE: MOCK_VMOTO_SOCO_CONFIG[CONF_LOGIN_CODE]},
+    )
+
+    # Check that the config flow is complete and a new entry is created with
+    # the input data
+    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+    assert result["title"] == NAME
+    assert result["data"] == MOCK_VMOTO_SOCO_CONFIG
+    assert result["result"]
+
+
 # In this case, we want to simulate a failure during the config flow.
 # We use the `auth_error_on_login` (note the function parameters) to
 # raise an Exception during validation of the input config.
 @pytest.mark.asyncio
-async def test_failed_config_flow(hass, auth_error_on_login):
+async def test_failed_config_flow(
+    hass,
+    auth_error_on_login,  # pylint: disable=unused-argument
+):
     """Test a failed config flow due to credential validation failure."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
