@@ -20,7 +20,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     for (
         id,  # pylint: disable=redefined-builtin
-        name,
         key,
         unit,
         icon,
@@ -36,7 +35,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                     config_entry,
                     coordinator,
                     id,
-                    name,
                     key,
                     unit,
                     icon,
@@ -55,7 +53,6 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
         config_entry,
         coordinator,
         id,  # pylint: disable=redefined-builtin
-        name,
         key,
         unit,
         icon,
@@ -65,7 +62,6 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
     ):
         super().__init__(config_entry, coordinator)
         self._id = id
-        self._name = name
         self._key = key
         self._unit = unit
         self._icon = icon
@@ -84,10 +80,6 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
     @property
     def has_entity_name(self):
         return True
-
-    @property
-    def name(self):
-        return self._name
 
     @property
     def native_value(self):

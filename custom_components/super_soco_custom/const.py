@@ -163,7 +163,6 @@ ERROR_UNKNOWN = "unknown"
 BINARY_SENSORS = [
     (
         "power",  # Id
-        "Power",  # Name
         DATA_POWER_STATUS,  # Data key
         1,  # Comparison condition
         "mdi:power-standby",  # Icon
@@ -175,7 +174,6 @@ BINARY_SENSORS = [
 DEVICE_TRACKERS = [
     (
         "location",  # Id
-        "Location",  # Name
         SOURCE_TYPE_GPS,  # Source type
         DATA_LATITUDE,  # Latitude data key
         DATA_LONGITUDE,  # Latitude data key
@@ -191,8 +189,16 @@ DEVICE_TRACKERS = [
 
 SENSORS = [
     (
+        "agreement_end_time",  # Id
+        DATA_AGREEMENT_END_TIME,  # Data key
+        None,  # Unit of measurement
+        "mdi:calendar-end",  # Icon
+        DEVICE_CLASS_TIMESTAMP,  # Device class
+        None,  # State class
+        None,  # Extra attributes
+    ),
+    (
         "agreement_start_time",
-        "Agreement Start Time",
         DATA_AGREEMENT_START_TIME,
         None,
         "mdi:calendar-start",
@@ -201,28 +207,7 @@ SENSORS = [
         None,
     ),
     (
-        "agreement_end_time",
-        "Agreement End Time",
-        DATA_AGREEMENT_END_TIME,
-        None,
-        "mdi:calendar-end",
-        DEVICE_CLASS_TIMESTAMP,
-        None,
-        None,
-    ),
-    (
-        "ecu_battery",
-        "ECU Battery",
-        DATA_ECU_BATTERY,
-        PERCENTAGE,
-        "mdi:battery-charging-wireless",
-        None,
-        STATE_CLASS_MEASUREMENT,
-        None,
-    ),
-    (
         "altitude",
-        "Altitude",
         DATA_ALTITUDE,
         LENGTH_METERS,
         "mdi:elevation-rise",
@@ -232,7 +217,6 @@ SENSORS = [
     ),
     (
         "battery",
-        "Battery",
         DATA_BATTERY,
         PERCENTAGE,
         "mdi:battery",
@@ -242,7 +226,6 @@ SENSORS = [
     ),
     (
         "course",
-        "Course",
         DATA_COURSE,
         DEGREE,
         "mdi:compass",
@@ -252,7 +235,6 @@ SENSORS = [
     ),
     (
         "distance_from_home",
-        "Distance From Home",
         DATA_DISTANCE_FROM_HOME,
         LENGTH_KILOMETERS,
         "mdi:home",
@@ -263,8 +245,16 @@ SENSORS = [
         },
     ),
     (
+        "ecu_battery",
+        DATA_ECU_BATTERY,
+        PERCENTAGE,
+        "mdi:battery-charging-wireless",
+        None,
+        STATE_CLASS_MEASUREMENT,
+        None,
+    ),
+    (
         "estimated_range",
-        "Estimated Range",
         DATA_ESTIMATED_RANGE,
         LENGTH_KILOMETERS,
         "mdi:map-marker-path",
@@ -273,29 +263,7 @@ SENSORS = [
         None,
     ),
     (
-        "reverse_geocoding",
-        "Reverse Geocoding",
-        DATA_REVERSE_GEOCODING,
-        None,
-        "mdi:map",
-        None,
-        None,
-        {
-            "city": DATA_REVERSE_GEOCODING_CITY,
-            "country": DATA_REVERSE_GEOCODING_COUNTRY,
-            "country_code": DATA_REVERSE_GEOCODING_COUNTRY_CODE,
-            "county": DATA_REVERSE_GEOCODING_COUNTY,
-            "house_number": DATA_REVERSE_GEOCODING_HOUSE_NUMBER,
-            "neighbourhood": DATA_REVERSE_GEOCODING_NEIGHBOURHOOD,
-            "postcode": DATA_REVERSE_GEOCODING_POSTCODE,
-            "road": DATA_REVERSE_GEOCODING_ROAD,
-            "state": DATA_REVERSE_GEOCODING_STATE,
-            "state_district": DATA_REVERSE_GEOCODING_STATE_DISTRICT,
-        },
-    ),
-    (
         "gps_accuracy",
-        "GPS Accuracy",
         DATA_GPS_ACCURACY,
         PERCENTAGE,
         "mdi:crosshairs-gps",
@@ -305,7 +273,6 @@ SENSORS = [
     ),
     (
         "image",
-        "Image",
         DATA_VEHICLE_IMAGE_URL,
         None,
         "mdi:image",
@@ -315,7 +282,6 @@ SENSORS = [
     ),
     (
         "last_gps_time",
-        "Last GPS Time",
         DATA_LAST_GPS_TIME,
         None,
         "mdi:web-clock",
@@ -325,7 +291,6 @@ SENSORS = [
     ),
     (
         "last_trip_average_speed",
-        "Last Trip Average Speed",
         DATA_LAST_TRIP_AVG_SPEED,
         SPEED_KILOMETERS_PER_HOUR,
         "mdi:speedometer",
@@ -335,7 +300,6 @@ SENSORS = [
     ),
     (
         "last_trip_distance",
-        "Last Trip Distance",
         DATA_LAST_TRIP_RIDE_DISTANCE,
         LENGTH_KILOMETERS,
         "mdi:map-marker-distance",
@@ -350,7 +314,6 @@ SENSORS = [
     ),
     (
         "last_trip_duration",
-        "Last Trip Duration",
         DATA_LAST_TRIP_RIDE_TIME,
         TIME_SECONDS,
         "mdi:timer",
@@ -363,20 +326,18 @@ SENSORS = [
     ),
     (
         "last_warning",
-        "Last Warning",
         DATA_LAST_WARNING_TIME,
         None,
         "mdi:alert-circle",
         DEVICE_CLASS_TIMESTAMP,
         None,
         {
-            "title": DATA_LAST_WARNING_TITLE,
             "message": DATA_LAST_WARNING_MESSAGE,
+            "title": DATA_LAST_WARNING_TITLE,
         },
     ),
     (
         "logo",
-        "Logo",
         DATA_LOGO_IMAGE_URL,
         None,
         "mdi:image",
@@ -385,8 +346,27 @@ SENSORS = [
         None,
     ),
     (
+        "reverse_geocoding",
+        DATA_REVERSE_GEOCODING,
+        None,
+        "mdi:map",
+        None,
+        None,
+        {
+            "city": DATA_REVERSE_GEOCODING_CITY,
+            "country": DATA_REVERSE_GEOCODING_COUNTRY,
+            "country_code": DATA_REVERSE_GEOCODING_COUNTRY_CODE,
+            "county": DATA_REVERSE_GEOCODING_COUNTY,
+            "house_number": DATA_REVERSE_GEOCODING_HOUSE_NUMBER,
+            "neighborhood": DATA_REVERSE_GEOCODING_NEIGHBOURHOOD,
+            "postcode": DATA_REVERSE_GEOCODING_POSTCODE,
+            "road": DATA_REVERSE_GEOCODING_ROAD,
+            "state": DATA_REVERSE_GEOCODING_STATE,
+            "state_district": DATA_REVERSE_GEOCODING_STATE_DISTRICT,
+        },
+    ),
+    (
         "signal_strength",
-        "Signal Strength",
         DATA_SIGNAL_STRENGTH,
         PERCENTAGE,
         "mdi:signal",
@@ -396,7 +376,6 @@ SENSORS = [
     ),
     (
         "speed",
-        "Speed",
         DATA_SPEED,
         SPEED_KILOMETERS_PER_HOUR,
         "mdi:speedometer",
@@ -406,7 +385,6 @@ SENSORS = [
     ),
     (
         "trip_distance",
-        "Trip Distance",
         DATA_TRIP_DISTANCE,
         LENGTH_KILOMETERS,
         "mdi:map-marker-distance",
@@ -416,7 +394,6 @@ SENSORS = [
     ),
     (
         "wind_rose_course",
-        "Wind Rose Course",
         DATA_WIND_ROSE_COURSE,
         None,
         "mdi:compass-rose",
@@ -429,7 +406,6 @@ SENSORS = [
 SWITCHES = [
     (
         "native_push_notifications",  # Id
-        "Native Push Notifications",  # Name
         DATA_NATIVE_PUSH_NOTIFICATIONS,  # Data key
         1,  # Comparison condition
         "mdi:bell-ring",  # Icon
@@ -437,7 +413,6 @@ SWITCHES = [
     ),
     (
         "native_tracking_history",
-        "Native Tracking History",
         DATA_NATIVE_TRACKING_HISTORY,
         1,
         "mdi:database-marker",
@@ -445,7 +420,6 @@ SWITCHES = [
     ),
     (
         "power",
-        "Power",
         DATA_POWER_SWITCH,
         1,
         "mdi:power-standby",

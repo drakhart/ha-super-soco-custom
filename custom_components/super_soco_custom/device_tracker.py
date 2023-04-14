@@ -21,7 +21,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     for (
         id,  # pylint: disable=redefined-builtin
-        name,
         source_type,
         latitude_key,
         longitude_key,
@@ -40,7 +39,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                     config_entry,
                     coordinator,
                     id,
-                    name,
                     source_type,
                     latitude_key,
                     longitude_key,
@@ -59,7 +57,6 @@ class SuperSocoCustomDeviceTracker(SuperSocoCustomEntity, TrackerEntity):
         config_entry,
         coordinator,
         id,  # pylint: disable=redefined-builtin
-        name,
         source_type,
         latitude_key,
         longitude_key,
@@ -69,7 +66,6 @@ class SuperSocoCustomDeviceTracker(SuperSocoCustomEntity, TrackerEntity):
     ):
         super().__init__(config_entry, coordinator)
         self._id = id
-        self._name = name
         self._source_type = source_type
         self._latitude_key = latitude_key
         self._longitude_key = longitude_key
@@ -88,10 +84,6 @@ class SuperSocoCustomDeviceTracker(SuperSocoCustomEntity, TrackerEntity):
     @property
     def has_entity_name(self):
         return True
-
-    @property
-    def name(self):
-        return self._name
 
     @property
     def source_type(self):

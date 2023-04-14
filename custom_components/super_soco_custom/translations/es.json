@@ -27,6 +27,178 @@
             }
         }
     },
+    "entity": {
+        "binary_sensor": {
+            "power": {
+                "name": "Interruptor"
+            }
+        },
+        "device_tracker": {
+            "location": {
+                "name": "Ubicación",
+                "state_attributes": {
+                    "altitude": {
+                        "name": "Altitud"
+                    },
+                    "course": {
+                        "name": "Rumbo"
+                    },
+                    "speed": {
+                        "name": "Velocidad"
+                    }
+                }
+            }
+        },
+        "sensor": {
+            "agreement_start_time": {
+                "name": "Fecha Inicio Contrato"
+            },
+            "agreement_end_time": {
+                "name": "Fecha Finalización Contrato"
+            },
+            "altitude": {
+                "name": "Altitud"
+            },
+            "battery": {
+                "name": "Batería"
+            },
+            "course": {
+                "name": "Rumbo"
+            },
+            "distance_from_home": {
+                "name": "Distancia Hasta Casa",
+                "state_attributes": {
+                    "dir_of_travel": {
+                        "name": "Dirección Viaje",
+                        "state": {
+                            "arrived": "En Casa",
+                            "away_from_home": "Alejándose",
+                            "stationary": "Inmóvil",
+                            "towards_home": "Acercándose"
+                        }
+                    }
+                }
+            },
+            "ecu_battery": {
+                "name": "Batería ECU"
+            },
+            "estimated_range": {
+                "name": "Autonomía Estimada"
+            },
+            "gps_accuracy": {
+                "name": "Precisión GPS"
+            },
+            "image": {
+                "name": "Imagen"
+            },
+            "last_gps_time": {
+                "name": "Hora Última Ubicación"
+            },
+            "last_trip_average_speed": {
+                "name": "Velocidad Media Último Viaje"
+            },
+            "last_trip_distance": {
+                "name": "Distancia Último Viaje",
+                "state_attributes": {
+                    "begin_latitude": {
+                        "name": "Latitud Inicio"
+                    },
+                    "begin_longitude": {
+                        "name": "Longitud Inicio"
+                    },
+                    "end_latitude": {
+                        "name": "Latitud Final"
+                    },
+                    "end_longitude": {
+                        "name": "Longitud Final"
+                    }
+                }
+            },
+            "last_trip_duration": {
+                "name": "Duración Último Viaje",
+                "state_attributes": {
+                    "begin_time": {
+                        "name": "Hora Inicio"
+                    },
+                    "end_time": {
+                        "name": "Hora Final"
+                    }
+                }
+            },
+            "last_warning": {
+                "name": "Último Aviso",
+                "state_attributes": {
+                    "message": {
+                        "name": "Mensaje"
+                    },
+                    "title": {
+                        "name": "Título"
+                    }
+                }
+            },
+            "logo": {
+                "name": "Logo"
+            },
+            "reverse_geocoding": {
+                "name": "Geocodificación Inversa",
+                "state_attributes": {
+                    "city": {
+                        "name": "Población"
+                    },
+                    "country": {
+                        "name": "País"
+                    },
+                    "country_code": {
+                        "name": "Código País"
+                    },
+                    "county": {
+                        "name": "Comarca"
+                    },
+                    "house_number": {
+                        "name": "Número Casa"
+                    },
+                    "neighborhood": {
+                        "name": "Vecindario"
+                    },
+                    "postcode": {
+                        "name": "Código Postal"
+                    },
+                    "road": {
+                        "name": "Calle"
+                    },
+                    "state": {
+                        "name": "Comunidad Autónoma"
+                    },
+                    "state_district": {
+                        "name": "Provincia"
+                    }
+                }
+            },
+            "signal_strength": {
+                "name": "Cobertura Datos"
+            },
+            "speed": {
+                "name": "Velocidad"
+            },
+            "trip_distance": {
+                "name": "Distancia Viaje"
+            },
+            "wind_rose_course": {
+                "name": "Rumbo Cardinal"
+            }
+        },
+        "switch": {
+            "native_push_notifications": {
+                "name": "Notificaciones Push Nativas"
+            },
+            "native_tracking_history": {
+                "name": "Historial Rutas Nativo"
+            },
+            "power": {
+                "name": "Interruptor"
+            }
+        }
+    },
     "options": {
         "step": {
             "user": {
