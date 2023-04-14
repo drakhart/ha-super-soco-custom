@@ -19,9 +19,9 @@
                 }
             },
             "login": {
-                "description": "Please enter:",
+                "description": "Please enter your login password or the verification code sent via SMS, depending on your app choice.\n\nPlease note that Vmoto Soco's session will expire every month; the integration will automatically ask you to reauthenticate whenever that happens.",
                 "data": {
-                    "login_code": "Verification code sent via SMS",
+                    "login_code": "Verification code",
                     "password": "Password"
                 }
             }

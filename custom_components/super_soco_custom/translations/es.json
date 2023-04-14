@@ -19,9 +19,9 @@
                 }
             },
             "login": {
-                "description": "Por favor, introduce:",
+                "description": "Por favor, introduce tu contraseña o el código de verificación recibido por SMS, dependiendo de la aplicación elegida.\n\nTen en cuenta que la sesión de Vmoto Soco caducará cada mes; la integración te avisará cuando esto pase y te pedirá que vuelvas a introducir un nuevo código.",
                 "data": {
-                    "login_code": "Código de verificación enviado por SMS",
+                    "login_code": "Código de verificación",
                     "password": "Contraseña"
                 }
             }

@@ -1,21 +1,201 @@
 {
     "config": {
         "abort": {
-            "already_configured": "O dispositivo já está configurado"
+            "already_configured": "O dispositivo já está configurado",
+            "reauth_successful": "Reauthentication successful"
         },
         "error": {
             "cannot_connect": "Falhou ao conectar",
-            "invalid_auth": "Autenticação inválida",
+            "invalid_auth": "Invalid authentication or too many verification codes requested",
             "unknown": "Erro inesperado"
         },
         "step": {
-            "user": {
-                "description": "Insira os mesmos detalhes de login do aplicativo oficial do Super Soco.\n\n*Observe que o Super Soco não permite mais de um cliente por vez, portanto, qualquer sessão aberta no aplicativo será fechada sempre que as entidades forem atualizadas por esta integração. Você pode ajustar o intervalo de atualização posteriormente clicando em Configurar.*",
+            "app": {
+                "description": "Please choose the specific Vmoto Super Soco app used to register your bike, then enter the phone prefix and number used to log in to that app.\n\n*Disclaimer: Please note that Vmoto Super Soco does not allow more than one client at a time, so any open session in the official app will be closed when using this integration.*",
                 "data": {
-                    "password": "Senha",
-                    "phone_number": "Número do telefone ",
+                    "app_name": "Application name:",
+                    "phone_number": "Número do telefone",
                     "phone_prefix": "Prefixo do telefone"
                 }
+            },
+            "login": {
+                "description": "Please enter your login password or the verification code sent via SMS, depending on your app choice.\n\nPlease note that Vmoto Soco's session will expire every month; the integration will automatically ask you to reauthenticate whenever that happens.",
+                "data": {
+                    "login_code": "Verification code",
+                    "password": "Senha"
+                }
+            }
+        }
+    },
+    "entity": {
+        "binary_sensor": {
+            "power": {
+                "name": "Power"
+            }
+        },
+        "device_tracker": {
+            "location": {
+                "name": "Location",
+                "state_attributes": {
+                    "altitude": {
+                        "name": "Altitude"
+                    },
+                    "course": {
+                        "name": "Course"
+                    },
+                    "speed": {
+                        "name": "Speed"
+                    }
+                }
+            }
+        },
+        "sensor": {
+            "agreement_start_time": {
+                "name": "Agreement Start Time"
+            },
+            "agreement_end_time": {
+                "name": "Agreement End Time"
+            },
+            "altitude": {
+                "name": "Altitude"
+            },
+            "battery": {
+                "name": "Battery"
+            },
+            "course": {
+                "name": "Course"
+            },
+            "distance_from_home": {
+                "name": "Distance From Home",
+                "state_attributes": {
+                    "dir_of_travel": {
+                        "name": "Direction Of Travel",
+                        "state": {
+                            "arrived": "Arrived",
+                            "away_from_home": "Away From Home",
+                            "stationary": "Stationary",
+                            "towards_home": "Towards Home"
+                        }
+                    }
+                }
+            },
+            "ecu_battery": {
+                "name": "ECU Battery"
+            },
+            "estimated_range": {
+                "name": "Estimated Range"
+            },
+            "gps_accuracy": {
+                "name": "GPS Accuracy"
+            },
+            "image": {
+                "name": "Image"
+            },
+            "last_gps_time": {
+                "name": "Last GPS Time"
+            },
+            "last_trip_average_speed": {
+                "name": "Last Trip Average Speed"
+            },
+            "last_trip_distance": {
+                "name": "Last Trip Distance",
+                "state_attributes": {
+                    "begin_latitude": {
+                        "name": "Starting Latitude"
+                    },
+                    "begin_longitude": {
+                        "name": "Starting Longitude"
+                    },
+                    "end_latitude": {
+                        "name": "Finishing Latitude"
+                    },
+                    "end_longitude": {
+                        "name": "Finishing Longitude"
+                    }
+                }
+            },
+            "last_trip_duration": {
+                "name": "Last Trip Duration",
+                "state_attributes": {
+                    "begin_time": {
+                        "name": "Starting Time"
+                    },
+                    "end_time": {
+                        "name": "Finishing Time"
+                    }
+                }
+            },
+            "last_warning": {
+                "name": "Last Warning",
+                "state_attributes": {
+                    "message": {
+                        "name": "Message"
+                    },
+                    "title": {
+                        "name": "Title"
+                    }
+                }
+            },
+            "logo": {
+                "name": "Logo"
+            },
+            "reverse_geocoding": {
+                "name": "Reverse Geocoding",
+                "state_attributes": {
+                    "city": {
+                        "name": "City"
+                    },
+                    "country": {
+                        "name": "Country"
+                    },
+                    "country_code": {
+                        "name": "Country Code"
+                    },
+                    "county": {
+                        "name": "County"
+                    },
+                    "house_number": {
+                        "name": "House Number"
+                    },
+                    "neighborhood": {
+                        "name": "Neighborhood"
+                    },
+                    "postcode": {
+                        "name": "ZIP Code"
+                    },
+                    "road": {
+                        "name": "Road"
+                    },
+                    "state": {
+                        "name": "State"
+                    },
+                    "state_district": {
+                        "name": "State District"
+                    }
+                }
+            },
+            "signal_strength": {
+                "name": "Signal Strength"
+            },
+            "speed": {
+                "name": "Speed"
+            },
+            "trip_distance": {
+                "name": "Trip Distance"
+            },
+            "wind_rose_course": {
+                "name": "Wind Rose Course"
+            }
+        },
+        "switch": {
+            "native_push_notifications": {
+                "name": "Native Push Notifications"
+            },
+            "native_tracking_history": {
+                "name": "Native Tracking History"
+            },
+            "power": {
+                "name": "Power"
             }
         }
     },
