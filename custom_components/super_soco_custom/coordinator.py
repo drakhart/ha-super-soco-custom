@@ -16,7 +16,6 @@ from .const import (
     API_GEO_PRECISION,
     CDN_BASE_URL,
     CONF_APP_NAME,
-    DATA_ACCUMULATIVE_RIM,
     DATA_ADDRESS,
     DATA_AGREEMENT_END_TIME,
     DATA_AGREEMENT_START_TIME,
@@ -53,7 +52,6 @@ from .const import (
     DATA_LAST_WARNING_TITLE,
     DATA_LATITUDE,
     DATA_LIST,
-    DATA_LOCK,
     DATA_LOGO_IMAGE_URL,
     DATA_LONGITUDE,
     DATA_MODEL_NAME,
@@ -188,7 +186,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Super Soco & Vmoto Soco common fields
             data = {
-                DATA_ACCUMULATIVE_RIM: device_data[DATA_ACCUMULATIVE_RIM],
                 DATA_BATTERY: device_data[DATA_BATTERY],
                 DATA_TRIP_DISTANCE: round(
                     device_data[DATA_TRIP_DISTANCE], DISTANCE_ROUNDING_DECIMALS
@@ -250,10 +247,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 )
 
                 self._is_powered_on = data[DATA_POWER_STATUS] == 1
-
-            # Not every API response comes with the "lock" attribute
-            if DATA_LOCK in device_data:
-                data[DATA_LOCK] = device_data[DATA_LOCK]
 
             # Inject home and course data only if vehicle is powered on or moving noticeably
             if self._is_powered_on or self._is_power_off_movement_noticeable(

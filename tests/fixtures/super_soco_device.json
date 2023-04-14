@@ -1,7 +1,6 @@
 {
   "status": "200",
   "data": {
-    "accumulativeRim": 0,
     "endurance": 70,
     "gps": 4,
     "gsm": 3,
@@ -9,7 +8,6 @@
     "isWarnPush": 0,
     "lastGpsTime": "01/01/2022 00:00AM",
     "latitude": 41.390205,
-    "lock": 0,
     "longitude": 2.154007,
     "mileages": 0.0,
     "nowElec": 100,

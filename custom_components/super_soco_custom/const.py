@@ -85,7 +85,6 @@ MAX_UPDATE_INTERVAL_MINUTES = 60
 MIN_UPDATE_INTERVAL_MINUTES = 1
 
 # Data keys
-DATA_ACCUMULATIVE_RIM = "accumulativeRim"
 DATA_ADDRESS = "address"
 DATA_AGREEMENT_END_TIME = "agreementEndTime"
 DATA_AGREEMENT_START_TIME = "agreemenStartTime"  # Intended typo
@@ -122,7 +121,6 @@ DATA_LAST_WARNING_TIME = "lastWarningTime"
 DATA_LAST_WARNING_TITLE = "lastWarningTitle"
 DATA_LATITUDE = "latitude"
 DATA_LIST = "list"
-DATA_LOCK = "lock"
 DATA_LOGO_IMAGE_URL = "logoImg"
 DATA_LONGITUDE = "longitude"
 DATA_MODEL_NAME = "carModelName"
@@ -192,16 +190,6 @@ DEVICE_TRACKERS = [
 ]
 
 SENSORS = [
-    (
-        "accumulative_rim",  # Id
-        "Accumulative Rim",  # Name
-        DATA_ACCUMULATIVE_RIM,  # Data key
-        None,  # Unit of measurement
-        "mdi:engine",  # Icon
-        None,  # Device class
-        STATE_CLASS_TOTAL_INCREASING,
-        None,  # Extra attributes
-    ),
     (
         "agreement_start_time",
         "Agreement Start Time",
@@ -385,16 +373,6 @@ SENSORS = [
             "title": DATA_LAST_WARNING_TITLE,
             "message": DATA_LAST_WARNING_MESSAGE,
         },
-    ),
-    (
-        "lock",
-        "Lock",
-        DATA_LOCK,
-        None,
-        "mdi:lock",
-        None,
-        None,
-        None,
     ),
     (
         "logo",

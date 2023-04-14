@@ -56,7 +56,6 @@ You can configure some extra options by clicking on "Configure" once the integra
 ![Config][img-config]
 
 ## Supported entities
-A total of 28 entities are included as follows:
 - Power status
 - Battery percentage
 - Estimated range
@@ -77,9 +76,6 @@ A total of 28 entities are included as follows:
 - Agreement (SIM card validity) start and end time
 - Image URLs for both the vehicle and its logo
 - Switches to enable/disable native tracking history and push notifications
-- And some unclear entities (if you decode their meaning please share, thanks!):
-  - Accumulative rim
-  - Lock
 
 *&ast; These entities include extra attributes with more details.*
 
