@@ -77,7 +77,10 @@ def parse_date(date_string: str) -> datetime:
     return datetime.strptime(clean_string, "%d/%m/%Y %H:%M%z")
 
 
-def parse_timestamp(timestampMilliseconds: int) -> datetime:
+def parse_timestamp(timestampMilliseconds: int, fix_timezone: bool = False) -> datetime:
     timestamp = timestampMilliseconds / MILLISECONDS_IN_A_SECOND
-    timestamp += UTC_TO_SHANGHAI_HOURS_DIFFERENCE * SECONDS_IN_AN_HOUR
+
+    if fix_timezone:
+        timestamp += UTC_TO_SHANGHAI_HOURS_DIFFERENCE * SECONDS_IN_AN_HOUR
+
     return datetime.fromtimestamp(timestamp, tz=pytz.UTC)

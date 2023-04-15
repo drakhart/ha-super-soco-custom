@@ -17,6 +17,9 @@ def test_calculate_course():
 
 def test_parse_timestamp():
     """Test parse_timestamp."""
-    assert parse_timestamp(1681423654000) == datetime.datetime(
+    assert parse_timestamp(1681423654000, True) == datetime.datetime(
         2023, 4, 14, 6, 7, 34, tzinfo=pytz.UTC
+    )
+    assert parse_timestamp(1681423654000) == datetime.datetime(
+        2023, 4, 13, 22, 7, 34, tzinfo=pytz.UTC
     )

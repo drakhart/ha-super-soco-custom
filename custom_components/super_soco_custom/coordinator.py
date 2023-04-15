@@ -212,7 +212,8 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                     {
                         DATA_ECU_BATTERY: device_data[DATA_ECU_BATTERY],
                         DATA_LAST_GPS_TIME: parse_timestamp(
-                            device_data[DATA_LAST_GPS_TIME]
+                            device_data[DATA_LAST_GPS_TIME],
+                            False,
                         ),
                         DATA_MODEL_NAME: self._user_data[DATA_USER_BIND_DEVICE][
                             DATA_MODEL_NAME
@@ -451,10 +452,12 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                             1,
                         ),
                         DATA_LAST_TRIP_BEGIN_TIME: parse_timestamp(
-                            trip[DATA_LAST_TRIP_BEGIN_TIME]
+                            trip[DATA_LAST_TRIP_BEGIN_TIME],
+                            True,
                         ),
                         DATA_LAST_TRIP_END_TIME: parse_timestamp(
-                            trip[DATA_LAST_TRIP_END_TIME]
+                            trip[DATA_LAST_TRIP_END_TIME],
+                            True,
                         ),
                         DATA_LAST_TRIP_RIDE_DISTANCE: round(
                             trip[DATA_LAST_TRIP_MILEAGE], DISTANCE_ROUNDING_DECIMALS
@@ -544,7 +547,8 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
                     data = {
                         DATA_LAST_WARNING_TIME: parse_timestamp(
-                            warning[DATA_CREATE_TIME]
+                            warning[DATA_CREATE_TIME],
+                            True,
                         ),
                     }
                 else:
