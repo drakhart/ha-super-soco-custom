@@ -116,12 +116,32 @@ def bypass_vmoto_soco_get_login_code_fixture():
         yield
 
 
+@pytest.fixture(name="bypass_vmoto_soco_get_tracking_history_list")
+def bypass_vmoto_soco_get_tracking_history_list_fixture():
+    """Skip calls to get tracking history list from Super Soco API."""
+    with patch(
+        "custom_components.super_soco_custom.VmotoSocoAPI.get_tracking_history_list",
+        return_value=json.loads(load_fixture("vmoto_soco_tracking_history_list.json")),
+    ):
+        yield
+
+
 @pytest.fixture(name="bypass_vmoto_soco_get_user")
 def bypass_vmoto_soco_get_user_fixture():
     """Skip calls to get user from Vmoto Soco API."""
     with patch(
         "custom_components.super_soco_custom.VmotoSocoAPI.get_user",
         return_value=json.loads(load_fixture("vmoto_soco_user.json")),
+    ):
+        yield
+
+
+@pytest.fixture(name="bypass_vmoto_soco_get_warning_list")
+def bypass_vmoto_soco_get_warning_fixture():
+    """Skip calls to get warning list from Super Soco API."""
+    with patch(
+        "custom_components.super_soco_custom.VmotoSocoAPI.get_warning_list",
+        return_value=json.loads(load_fixture("vmoto_soco_warning_list.json")),
     ):
         yield
 

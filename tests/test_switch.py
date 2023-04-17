@@ -17,8 +17,11 @@ from .const import MOCK_SUPER_SOCO_CONFIG
 @pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_switch_services(
     hass,
+    bypass_get_mapzen,  # pylint: disable=unused-argument
     bypass_super_soco_get_device,  # pylint: disable=unused-argument
     bypass_super_soco_get_user,  # pylint: disable=unused-argument
+    bypass_super_soco_get_tracking_history_list,  # pylint: disable=unused-argument
+    bypass_super_soco_get_warning_list,  # pylint: disable=unused-argument
 ):
     """Test switch services."""
     # Create a mock entry so we don't have to go through config flow
