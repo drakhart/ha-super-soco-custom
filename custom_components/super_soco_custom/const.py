@@ -1,5 +1,5 @@
 from homeassistant.components.device_tracker import SOURCE_TYPE_GPS
-from homeassistant.components.sensor.const import (
+from homeassistant.components.sensor import (
     STATE_CLASS_MEASUREMENT,
     STATE_CLASS_TOTAL_INCREASING,
 )
