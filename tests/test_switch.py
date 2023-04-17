@@ -14,6 +14,7 @@ from .const import MOCK_SUPER_SOCO_CONFIG
 
 
 @pytest.mark.asyncio
+# TODO: Remove when https://github.com/home-assistant/core/pull/89976 is released
 @pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_switch_services(
     hass,

@@ -21,6 +21,7 @@ from .const import MOCK_SUPER_SOCO_CONFIG, MOCK_VMOTO_SOCO_CONFIG
 # Assertions allow you to verify that the return value of whatever is on the left
 # side of the assertion matches with the right side.
 @pytest.mark.asyncio
+# TODO: Remove when https://github.com/home-assistant/core/pull/89976 is released
 @pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_setup_reload_and_unload_super_soco_entry(
     hass,
@@ -60,6 +61,7 @@ async def test_setup_reload_and_unload_super_soco_entry(
 
 
 @pytest.mark.asyncio
+# TODO: Remove when https://github.com/home-assistant/core/pull/89976 is released
 @pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_setup_reload_and_unload_vmoto_soco_entry(
     hass,
