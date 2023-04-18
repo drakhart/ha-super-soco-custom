@@ -99,13 +99,14 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     _LOGGER.debug("Migrating from version %s", config_entry.version)
 
     if config_entry.version == 1:
-        data = {
+        new = {**config_entry.data}
+        new.update({
             CONF_APP_NAME: SUPER_SOCO,
             CONF_TOKEN: None,
-        }
+        })
 
         config_entry.version = 2
-        hass.config_entries.async_update_entry(config_entry, data=data)
+        hass.config_entries.async_update_entry(config_entry, data=new)
 
     _LOGGER.info("Migration to version %s successful", config_entry.version)
 
