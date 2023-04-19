@@ -128,7 +128,6 @@ class VmotoSocoAPI:
     async def _api_wrapper(self, url: str, headers: dict = {}, data: dict = {}) -> dict:
         async with async_timeout.timeout(TIMEOUT):
             res = await self._session.post(url, headers=headers, json=data)
-            print(res.json())
             res.raise_for_status()
             json = await res.json()
 
