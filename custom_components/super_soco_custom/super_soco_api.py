@@ -1,8 +1,6 @@
 import aiohttp
 import async_timeout
 
-from typing import Union
-
 __title__ = "super_soco_api"
 __version__ = "0.0.1"
 __author__ = "@Drakhart"
@@ -32,7 +30,7 @@ class SuperSocoAPI:
         url = f"{BASE_URL}/device/info/{device_number}"
         headers = await self._get_headers(True)
 
-        return await self._api_wrapper(url, headers)
+        return await self._api_wrapper(url, headers, {})
 
     async def get_token(self) -> str:
         if not self._token:
@@ -56,7 +54,7 @@ class SuperSocoAPI:
         url = f"{BASE_URL}/user/get"
         headers = await self._get_headers(True)
 
-        return await self._api_wrapper(url, headers)
+        return await self._api_wrapper(url, headers, {})
 
     async def get_warning_list(self, page_num: int = 1, page_size: int = 20) -> dict:
         url = f"{BASE_URL}/deviceWarn/list"
@@ -86,15 +84,15 @@ class SuperSocoAPI:
         url = f"{BASE_URL}/deviceWarn/sw/{int(switch)}"
         headers = await self._get_headers(True)
 
-        return await self._api_wrapper(url, headers)
+        return await self._api_wrapper(url, headers, {})
 
     async def set_tracking_history(self, switch: bool) -> dict:
         url = f"{BASE_URL}/userRunPoint/sw/{int(switch)}"
         headers = await self._get_headers(True)
 
-        return await self._api_wrapper(url, headers)
+        return await self._api_wrapper(url, headers, {})
 
-    async def _api_wrapper(self, url: str, headers: dict = {}, data: dict = {}) -> dict:
+    async def _api_wrapper(self, url: str, headers: dict, data: dict) -> dict:
         async with async_timeout.timeout(TIMEOUT):
             res = await self._session.post(url, headers=headers, json=data)
             res.raise_for_status()

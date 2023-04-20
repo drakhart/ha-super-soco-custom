@@ -29,8 +29,9 @@ async def test_api(hass, aioclient_mock):
 
     # Temp token
     assert (
-        api._get_temp_token() == "1061DF687283FB6D662830C0B542D942"
-    )  # pylint: disable=protected-access
+        api._get_temp_token()  # pylint: disable=protected-access
+        == "1061DF687283FB6D662830C0B542D942"
+    )
 
     # Login code
     res_mock = json.loads(load_fixture("vmoto_soco_login_code.json"))
@@ -67,17 +68,11 @@ async def test_api(hass, aioclient_mock):
     )
     assert await api.get_warning_list(MOCK_USER_ID, 1, 1) == res_mock
 
-    # Set push notifications
-    res_mock = json.loads(load_fixture("vmoto_soco_push_notifications.json"))
+    # Set user privacy
+    res_mock = json.loads(load_fixture("vmoto_soco_user_privacy.json"))
 
     aioclient_mock.post(f"{BASE_URL}/user/setUserPrivacy", json=res_mock)
-    assert await api.set_push_notifications(MOCK_USER_ID, True, False) == res_mock
-
-    # Set tracking history
-    res_mock = json.loads(load_fixture("vmoto_soco_tracking_history.json"))
-
-    aioclient_mock.post(f"{BASE_URL}/user/setUserPrivacy", json=res_mock)
-    assert await api.set_tracking_history(MOCK_USER_ID, True, False) == res_mock
+    assert await api.set_user_privacy(MOCK_USER_ID, True, False) == res_mock
 
     # Switch power
     res_mock = json.loads(load_fixture("vmoto_soco_switch_power.json"))

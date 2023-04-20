@@ -720,19 +720,19 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             if self._is_app_vmoto_soco():
                 if data_key == DATA_NATIVE_PUSH_NOTIFICATIONS:
-                    await getattr(self._client, SWITCH_API_METHODS[data_key])(
+                    await self._client.set_user_privacy(
                         self._user_id,
-                        state,
                         bool(self._last_data[DATA_NATIVE_TRACKING_HISTORY]),
+                        state,
                     )
                 elif data_key == DATA_NATIVE_TRACKING_HISTORY:
-                    await getattr(self._client, SWITCH_API_METHODS[data_key])(
+                    await self._client.set_user_privacy(
                         self._user_id,
                         state,
                         bool(self._last_data[DATA_NATIVE_PUSH_NOTIFICATIONS]),
                     )
                 elif data_key == DATA_POWER_SWITCH:
-                    await getattr(self._client, SWITCH_API_METHODS[data_key])(
+                    await self._client.switch_power(
                         self._device_no,
                     )
             else:

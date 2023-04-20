@@ -2,8 +2,6 @@ import aiohttp
 import async_timeout
 import hashlib
 
-from typing import Union
-
 __title__ = "vmoto_soco_api"
 __version__ = "0.0.1"
 __author__ = "@Drakhart"
@@ -61,7 +59,7 @@ class VmotoSocoAPI:
         url = f"{BASE_URL}/user/index"
         headers = await self._get_headers(True)
 
-        return await self._api_wrapper(url, headers)
+        return await self._api_wrapper(url, headers, {})
 
     async def get_warning_list(
         self, user_id: int, page_num: int = 1, page_size: int = 20
@@ -90,28 +88,15 @@ class VmotoSocoAPI:
 
         return res
 
-    async def set_push_notifications(
-        self, user_id: int, switch: bool, alt_switch: bool
+    async def set_user_privacy(
+        self, user_id: int, tracking_history: bool, push_notifications: bool
     ) -> dict:
         url = f"{BASE_URL}/user/setUserPrivacy"
         headers = await self._get_headers(True)
         data = {
             "userId": user_id,
-            "isWarnPush": int(switch),
-            "historyLocusSwitch": int(alt_switch),
-        }
-
-        return await self._api_wrapper(url, headers, data)
-
-    async def set_tracking_history(
-        self, user_id: int, switch: bool, alt_switch: bool
-    ) -> dict:
-        url = f"{BASE_URL}/user/setUserPrivacy"
-        headers = await self._get_headers(True)
-        data = {
-            "userId": user_id,
-            "historyLocusSwitch": int(switch),
-            "isWarnPush": int(alt_switch),
+            "historyLocusSwitch": int(tracking_history),
+            "isWarnPush": int(push_notifications),
         }
 
         return await self._api_wrapper(url, headers, data)
@@ -125,7 +110,7 @@ class VmotoSocoAPI:
 
         return await self._api_wrapper(url, headers, data)
 
-    async def _api_wrapper(self, url: str, headers: dict = {}, data: dict = {}) -> dict:
+    async def _api_wrapper(self, url: str, headers: dict, data: dict) -> dict:
         async with async_timeout.timeout(TIMEOUT):
             res = await self._session.post(url, headers=headers, json=data)
             res.raise_for_status()
