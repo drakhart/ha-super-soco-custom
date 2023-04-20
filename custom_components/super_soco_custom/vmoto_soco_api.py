@@ -1,5 +1,6 @@
 import aiohttp
 import async_timeout
+import hashlib
 
 from typing import Union
 
@@ -10,7 +11,10 @@ __license__ = "MIT"
 
 BASE_URL = "https://app.vmotosoco-service.com/app/v1"
 JWT_PREFIX = "Quanjun "
+LANGUAGE = "en"
 TIMEOUT = 5
+TIMEZONE = "0"
+TIMEZONE_NAME = "GMT"
 
 
 class VmotoSocoAPI:
@@ -133,18 +137,25 @@ class VmotoSocoAPI:
 
             return json
 
+    def _get_temp_token(self) -> str:
+        unhashed = (
+            LANGUAGE + str(self._phone_prefix) + self._phone_number + TIMEZONE + "QJ"
+        )
+
+        return hashlib.md5(unhashed.encode()).hexdigest().upper()
+
     async def _get_headers(self, authz: bool) -> dict:
         headers = {
             "content-type": "application/json; charset=UTF-8",
-            "language": "en",
-            "timezone": "0",
-            "timezonename": "GMT",
+            "language": LANGUAGE,
+            "timezone": TIMEZONE,
+            "timezonename": TIMEZONE_NAME,
         }
 
         if authz:
             token = await self.get_token()
             headers["authorization"] = f"{JWT_PREFIX}{token}"
         else:
-            headers["temptoken"] = "0EFC85FBE34ADD5A3C10314C8EADD694"
+            headers["temptoken"] = self._get_temp_token()
 
         return headers

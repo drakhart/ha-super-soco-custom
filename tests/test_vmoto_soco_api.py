@@ -27,6 +27,11 @@ async def test_api(hass, aioclient_mock):
         MOCK_VMOTO_SOCO_CONFIG[CONF_PHONE_NUMBER],
     )
 
+    # Temp token
+    assert (
+        api._get_temp_token() == "1061DF687283FB6D662830C0B542D942"
+    )  # pylint: disable=protected-access
+
     # Login code
     res_mock = json.loads(load_fixture("vmoto_soco_login_code.json"))
 
