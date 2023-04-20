@@ -18,6 +18,7 @@ from .const import MOCK_SUPER_SOCO_CONFIG
 @pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_switch_services(
     hass,
+    bypass_coordinator_switch_delay,  # pylint: disable=unused-argument
     bypass_get_mapzen,  # pylint: disable=unused-argument
     bypass_super_soco_get_device,  # pylint: disable=unused-argument
     bypass_super_soco_get_user,  # pylint: disable=unused-argument

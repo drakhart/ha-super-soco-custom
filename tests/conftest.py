@@ -45,6 +45,17 @@ def skip_notifications_fixture():
         yield
 
 
+# Fixtures to return mocked constants
+@pytest.fixture(name="bypass_coordinator_switch_delay")
+def bypass_coordinator_switch_delay():
+    """Skip coordinator switch delay."""
+    with patch(
+        "custom_components.super_soco_custom.coordinator.SWITCH_REFRESH_SLEEP_SECONDS",
+        0,
+    ):
+        yield
+
+
 # Fixtures to return mocked data from API calls
 @pytest.fixture(name="bypass_super_soco_get_device")
 def bypass_super_soco_get_device_fixture():
