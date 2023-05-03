@@ -548,7 +548,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                     data = {
                         DATA_LAST_WARNING_TIME: parse_timestamp(
                             warning[DATA_CREATE_TIME],
-                            True,
+                            False,
                         ),
                     }
                 else:
