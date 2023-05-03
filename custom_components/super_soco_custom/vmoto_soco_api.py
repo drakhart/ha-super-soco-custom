@@ -10,7 +10,7 @@ __license__ = "MIT"
 BASE_URL = "https://app.vmotosoco-service.com/app/v1"
 JWT_PREFIX = "Quanjun "
 LANGUAGE = "en"
-TIMEOUT = 5
+TIMEOUT = 10
 TIMEZONE = "0"
 TIMEZONE_NAME = "GMT"
 

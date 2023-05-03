@@ -8,7 +8,7 @@ __license__ = "MIT"
 
 BASE_URL = "https://eg.supersocoeg.com/rest/v1"
 JWT_PREFIX = "Bearer "
-TIMEOUT = 5
+TIMEOUT = 10
 
 
 class SuperSocoAPI:
