@@ -12,8 +12,6 @@ from .const import (
     DEFAULT_FLOAT,
     METERS_IN_EARTH_RADIUS,
     MILLISECONDS_IN_A_SECOND,
-    SECONDS_IN_AN_HOUR,
-    UTC_TO_SHANGHAI_HOURS_DIFFERENCE,
 )
 
 
@@ -77,10 +75,7 @@ def parse_date(date_string: str) -> datetime:
     return datetime.strptime(clean_string, "%d/%m/%Y %H:%M%z")
 
 
-def parse_timestamp(timestampMilliseconds: int, fix_timezone: bool = False) -> datetime:
+def parse_timestamp(timestampMilliseconds: int) -> datetime:
     timestamp = timestampMilliseconds / MILLISECONDS_IN_A_SECOND
-
-    if fix_timezone:
-        timestamp += UTC_TO_SHANGHAI_HOURS_DIFFERENCE * SECONDS_IN_AN_HOUR
 
     return datetime.fromtimestamp(timestamp, tz=pytz.UTC)
