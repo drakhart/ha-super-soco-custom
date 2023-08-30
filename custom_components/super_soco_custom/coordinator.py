@@ -522,7 +522,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 DATA_LAST_WARNING_MESSAGE, STATE_UNKNOWN
             ),
             DATA_LAST_WARNING_TIME: self._last_data.get(
-                DATA_LAST_WARNING_TIME, STATE_UNKNOWN
+                DATA_LAST_WARNING_TIME, None
             ),
             DATA_LAST_WARNING_TITLE: self._last_data.get(
                 DATA_LAST_WARNING_TITLE, STATE_UNKNOWN
@@ -534,7 +534,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             not self._last_data
             or not self._is_powered_on
             or self._last_data[DATA_LAST_WARNING_TIME] == STATE_UNAVAILABLE
-            or self._last_data[DATA_LAST_WARNING_TIME] == STATE_UNKNOWN
+            or self._last_data[DATA_LAST_WARNING_TIME] == None
         ):
             try:
                 _LOGGER.debug("Requesting last warning data")
