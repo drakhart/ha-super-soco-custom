@@ -1,21 +1,14 @@
 from homeassistant.components.device_tracker import SOURCE_TYPE_GPS
 from homeassistant.components.sensor import (
-    STATE_CLASS_MEASUREMENT,
-    STATE_CLASS_TOTAL_INCREASING,
+    SensorStateClass,
+    SensorDeviceClass,
 )
 from homeassistant.const import (
     DEGREE,
-    DEVICE_CLASS_BATTERY,
-    DEVICE_CLASS_DISTANCE,
-    DEVICE_CLASS_DURATION,
-    DEVICE_CLASS_POWER,
-    DEVICE_CLASS_SPEED,
-    DEVICE_CLASS_TIMESTAMP,
-    LENGTH_KILOMETERS,
-    LENGTH_METERS,
     PERCENTAGE,
-    SPEED_KILOMETERS_PER_HOUR,
-    TIME_SECONDS,
+    UnitOfLength
+    UnitOfSpeed,
+    UnitOfTime,
 )
 
 # Component
@@ -169,7 +162,7 @@ BINARY_SENSORS = [
         DATA_POWER_STATUS,  # Data key
         1,  # Comparison condition
         "mdi:power-standby",  # Icon
-        DEVICE_CLASS_POWER,  # Device class
+        SensorDeviceClass.POWER,  # Device class
         None,  # Extra attributes
     ),
 ]
@@ -196,7 +189,7 @@ SENSORS = [
         DATA_AGREEMENT_END_TIME,  # Data key
         None,  # Unit of measurement
         "mdi:calendar-end",  # Icon
-        DEVICE_CLASS_TIMESTAMP,  # Device class
+        SensorDeviceClass.TIMESTAMP,  # Device class
         None,  # State class
         None,  # Extra attributes
     ),
@@ -205,17 +198,17 @@ SENSORS = [
         DATA_AGREEMENT_START_TIME,
         None,
         "mdi:calendar-start",
-        DEVICE_CLASS_TIMESTAMP,
+        SensorDeviceClass.TIMESTAMP,
         None,
         None,
     ),
     (
         "altitude",
         DATA_ALTITUDE,
-        LENGTH_METERS,
+        UnitOfLength.METERS,
         "mdi:elevation-rise",
-        DEVICE_CLASS_DISTANCE,
-        STATE_CLASS_MEASUREMENT,
+        SensorDeviceClass.DISTANCE,
+        SensorStateClass.MEASUREMENT,
         None,
     ),
     (
@@ -223,8 +216,8 @@ SENSORS = [
         DATA_BATTERY,
         PERCENTAGE,
         "mdi:battery",
-        DEVICE_CLASS_BATTERY,
-        STATE_CLASS_MEASUREMENT,
+        SensorDeviceClass.BATTERY,
+        SensorStateClass.MEASUREMENT,
         None,
     ),
     (
@@ -239,10 +232,10 @@ SENSORS = [
     (
         "distance_from_home",
         DATA_DISTANCE_FROM_HOME,
-        LENGTH_KILOMETERS,
+        UnitOfLength.KILOMETERS,
         "mdi:home",
-        DEVICE_CLASS_DISTANCE,
-        STATE_CLASS_MEASUREMENT,
+        SensorDeviceClass.DISTANCE,
+        SensorStateClass.MEASUREMENT,
         {
             "dir_of_travel": DATA_DIR_OF_TRAVEL,
         },
@@ -252,17 +245,17 @@ SENSORS = [
         DATA_ECU_BATTERY,
         PERCENTAGE,
         "mdi:battery-charging-wireless",
-        DEVICE_CLASS_BATTERY,
-        STATE_CLASS_MEASUREMENT,
+        SensorDeviceClass.BATTERY,
+        SensorStateClass.MEASUREMENT,
         None,
     ),
     (
         "estimated_range",
         DATA_ESTIMATED_RANGE,
-        LENGTH_KILOMETERS,
+        UnitOfLength.KILOMETERS,
         "mdi:map-marker-path",
-        DEVICE_CLASS_DISTANCE,
-        STATE_CLASS_MEASUREMENT,
+        SensorDeviceClass.DISTANCE,
+        SensorStateClass.MEASUREMENT,
         None,
     ),
     (
@@ -271,7 +264,7 @@ SENSORS = [
         PERCENTAGE,
         "mdi:crosshairs-gps",
         None,
-        STATE_CLASS_MEASUREMENT,
+        SensorStateClass.MEASUREMENT,
         None,
     ),
     (
@@ -288,26 +281,26 @@ SENSORS = [
         DATA_LAST_GPS_TIME,
         None,
         "mdi:web-clock",
-        DEVICE_CLASS_TIMESTAMP,
+        SensorDeviceClass.TIMESTAMP,
         None,
         None,
     ),
     (
         "last_trip_average_speed",
         DATA_LAST_TRIP_AVG_SPEED,
-        SPEED_KILOMETERS_PER_HOUR,
+        UnitOfSpeed.KILOMETERS_PER_HOUR,
         "mdi:speedometer",
-        DEVICE_CLASS_SPEED,
-        STATE_CLASS_MEASUREMENT,
+        SensorDeviceClass.SPEED,
+        SensorStateClass.MEASUREMENT,
         None,
     ),
     (
         "last_trip_distance",
         DATA_LAST_TRIP_RIDE_DISTANCE,
-        LENGTH_KILOMETERS,
+        UnitOfLength.KILOMETERS,
         "mdi:map-marker-distance",
-        DEVICE_CLASS_DISTANCE,
-        STATE_CLASS_MEASUREMENT,
+        SensorDeviceClass.DISTANCE,
+        SensorStateClass.MEASUREMENT,
         {
             "begin_latitude": DATA_LAST_TRIP_BEGIN_LATITUDE,
             "begin_longitude": DATA_LAST_TRIP_BEGIN_LONGITUDE,
@@ -318,10 +311,10 @@ SENSORS = [
     (
         "last_trip_duration",
         DATA_LAST_TRIP_RIDE_TIME,
-        TIME_SECONDS,
+        UnitOfTime.SECONDS,
         "mdi:timer",
-        DEVICE_CLASS_DURATION,
-        STATE_CLASS_MEASUREMENT,
+        SensorDeviceClass.DURATION,
+        SensorStateClass.MEASUREMENT,
         {
             "begin_time": DATA_LAST_TRIP_BEGIN_TIME,
             "end_time": DATA_LAST_TRIP_END_TIME,
@@ -332,7 +325,7 @@ SENSORS = [
         DATA_LAST_WARNING_TIME,
         None,
         "mdi:alert-circle",
-        DEVICE_CLASS_TIMESTAMP,
+        SensorDeviceClass.TIMESTAMP,
         None,
         {
             "message": DATA_LAST_WARNING_MESSAGE,
@@ -374,25 +367,25 @@ SENSORS = [
         PERCENTAGE,
         "mdi:signal",
         None,
-        STATE_CLASS_MEASUREMENT,
+        SensorStateClass.MEASUREMENT,
         None,
     ),
     (
         "speed",
         DATA_SPEED,
-        SPEED_KILOMETERS_PER_HOUR,
+        UnitOfSpeed.KILOMETERS_PER_HOUR,
         "mdi:speedometer",
-        DEVICE_CLASS_SPEED,
-        STATE_CLASS_MEASUREMENT,
+        SensorDeviceClass.SPEED,
+        SensorStateClass.MEASUREMENT,
         None,
     ),
     (
         "trip_distance",
         DATA_TRIP_DISTANCE,
-        LENGTH_KILOMETERS,
+        UnitOfLength.KILOMETERS,
         "mdi:map-marker-distance",
-        DEVICE_CLASS_DISTANCE,
-        STATE_CLASS_TOTAL_INCREASING,
+        SensorDeviceClass.DISTANCE,
+        SensorStateClass.TOTAL_INCREASING,
         None,
     ),
     (
