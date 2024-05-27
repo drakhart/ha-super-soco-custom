@@ -6,7 +6,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     DEGREE,
     PERCENTAGE,
-    UnitOfLength
+    UnitOfLength,
     UnitOfSpeed,
     UnitOfTime,
 )
