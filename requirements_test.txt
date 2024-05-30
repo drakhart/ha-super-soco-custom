@@ -1,2 +1,2 @@
-numpy==1.22.3
+numpy==1.26
 pytest-homeassistant-custom-component
