@@ -66,6 +66,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
     async def async_step_reauth(self, user_input=None) -> FlowResult:
+        self._errors = {}
         self._reauth_entry = self.hass.config_entries.async_get_entry(
             self.context["entry_id"]
         )
@@ -78,6 +79,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input:
             self._user_input.update(user_input)
+
+        errors = self._errors
+        self._errors = {}
 
         return self.async_show_form(
             step_id="app",
@@ -94,12 +98,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ): str,
                 }
             ),
-            errors=self._errors,
+            errors=errors,
         )
 
     async def async_step_app(self, user_input=None) -> FlowResult:
         if user_input:
             self._user_input.update(user_input)
+
+        errors = self._errors
+        self._errors = {}
 
         if self._user_input[CONF_APP_NAME] == SUPER_SOCO:
             return self.async_show_form(
@@ -111,7 +118,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ): str,
                     }
                 ),
-                errors=self._errors,
+                errors=errors,
             )
 
         try:
@@ -121,12 +128,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="login",
                 data_schema=vol.Schema(
                     {
-                        vol.Required(
-                            CONF_LOGIN_CODE, default=self._user_input[CONF_LOGIN_CODE]
-                        ): str,
+                        vol.Required(CONF_LOGIN_CODE): str,
                     }
                 ),
-                errors=self._errors,
+                errors=errors,
             )
         except CannotConnect:
             self._errors["base"] = ERROR_CANNOT_CONNECT
