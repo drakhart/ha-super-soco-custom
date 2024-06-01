@@ -7,9 +7,11 @@ on:
   push:
     branches:
       - "main"
+      - "master"
   pull_request:
     branches:
       - "main"
+      - "master"
 
 jobs:
   hassfest: # https://developers.home-assistant.io/blog/2020/04/16/hassfest
@@ -17,7 +19,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout the repository"
-        uses: "actions/checkout@v3.5.0"
+        uses: "actions/checkout@v4.1.6"
       - name: "Run hassfest validation"
         uses: "home-assistant/actions/hassfest@master"
 
@@ -26,7 +28,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout the repository"
-        uses: "actions/checkout@v3.5.0"
+        uses: "actions/checkout@v4.1.6"
       - name: "Run HACS validation"
         uses: "hacs/action@main"
         with:
