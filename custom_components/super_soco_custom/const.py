@@ -1,4 +1,4 @@
-from homeassistant.components.device_tracker import SOURCE_TYPE_GPS
+from homeassistant.components.device_tracker import SourceType
 from homeassistant.components.sensor import (
     SensorStateClass,
     SensorDeviceClass,
@@ -170,7 +170,7 @@ BINARY_SENSORS = [
 DEVICE_TRACKERS = [
     (
         "location",  # Id
-        SOURCE_TYPE_GPS,  # Source type
+        SourceType.GPS,  # Source type
         DATA_LATITUDE,  # Latitude data key
         DATA_LONGITUDE,  # Latitude data key
         DATA_GPS_ACCURACY,  # GPS accuracy data key
