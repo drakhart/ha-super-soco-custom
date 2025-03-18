@@ -10,7 +10,7 @@ __license__ = "MIT"
 BASE_URL = "https://app.vmotosoco-service.com/app/v1"
 JWT_PREFIX = "Quanjun "
 LANGUAGE = "en"
-TIMEOUT = 10
+TIMEOUT = 15
 TIMEZONE = "0"
 TIMEZONE_NAME = "GMT"
 
@@ -131,7 +131,7 @@ class VmotoSocoAPI:
 
     async def _get_headers(self, authz: bool) -> dict:
         headers = {
-            "content-type": "application/json; charset=UTF-8",
+            "content-type": "application/json; charset=utf-8",
             "language": LANGUAGE,
             "timezone": TIMEZONE,
             "timezonename": TIMEZONE_NAME,
