@@ -1,2 +1,2 @@
-numpy
-pytest-homeassistant-custom-component
+numpy==2.2.2
+pytest-homeassistant-custom-component==0.13.224
