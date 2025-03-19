@@ -1,6 +1,8 @@
 """Test super_soco_custom setup process."""
+
 import pytest
 
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import ConfigEntryNotReady
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -21,20 +23,21 @@ from .const import MOCK_SUPER_SOCO_CONFIG, MOCK_VMOTO_SOCO_CONFIG
 # Assertions allow you to verify that the return value of whatever is on the left
 # side of the assertion matches with the right side.
 @pytest.mark.asyncio
-# TODO: Remove when https://github.com/home-assistant/core/pull/89976 is released
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_setup_reload_and_unload_super_soco_entry(
     hass,
-    bypass_get_mapzen,  # pylint: disable=unused-argument
-    bypass_super_soco_get_device,  # pylint: disable=unused-argument
-    bypass_super_soco_get_user,  # pylint: disable=unused-argument
-    bypass_super_soco_get_tracking_history_list,  # pylint: disable=unused-argument
-    bypass_super_soco_get_warning_list,  # pylint: disable=unused-argument
+    bypass_get_mapzen,
+    bypass_super_soco_get_device,
+    bypass_super_soco_get_user,
+    bypass_super_soco_get_tracking_history_list,
+    bypass_super_soco_get_warning_list,
 ):
     """Test Super Soco entry setup and unload."""
     # Create a mock entry so we don't have to go through config flow
     config_entry = MockConfigEntry(
-        domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG, entry_id="test"
+        domain=DOMAIN,
+        data=MOCK_SUPER_SOCO_CONFIG,
+        entry_id="test",
+        state=ConfigEntryState.LOADED,
     )
 
     # Set up the entry and assert that the values set during setup are where we expect
@@ -44,7 +47,7 @@ async def test_setup_reload_and_unload_super_soco_entry(
     assert DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]
     assert (
         type(hass.data[DOMAIN][config_entry.entry_id])
-        == SuperSocoCustomDataUpdateCoordinator
+        is SuperSocoCustomDataUpdateCoordinator
     )
 
     # Reload the entry and assert that the data from above is still there
@@ -52,7 +55,7 @@ async def test_setup_reload_and_unload_super_soco_entry(
     assert DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]
     assert (
         type(hass.data[DOMAIN][config_entry.entry_id])
-        == SuperSocoCustomDataUpdateCoordinator
+        is SuperSocoCustomDataUpdateCoordinator
     )
 
     # Unload the entry and verify that the data has been removed
@@ -61,19 +64,20 @@ async def test_setup_reload_and_unload_super_soco_entry(
 
 
 @pytest.mark.asyncio
-# TODO: Remove when https://github.com/home-assistant/core/pull/89976 is released
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_setup_reload_and_unload_vmoto_soco_entry(
     hass,
-    bypass_get_mapzen,  # pylint: disable=unused-argument
-    bypass_vmoto_soco_get_user,  # pylint: disable=unused-argument
-    bypass_vmoto_soco_get_tracking_history_list,  # pylint: disable=unused-argument
-    bypass_vmoto_soco_get_warning_list,  # pylint: disable=unused-argument
+    bypass_get_mapzen,
+    bypass_vmoto_soco_get_user,
+    bypass_vmoto_soco_get_tracking_history_list,
+    bypass_vmoto_soco_get_warning_list,
 ):
     """Test Vmoto Soco entry setup and unload."""
     # Create a mock entry so we don't have to go through config flow
     config_entry = MockConfigEntry(
-        domain=DOMAIN, data=MOCK_VMOTO_SOCO_CONFIG, entry_id="test"
+        domain=DOMAIN,
+        data=MOCK_VMOTO_SOCO_CONFIG,
+        entry_id="test",
+        state=ConfigEntryState.LOADED,
     )
 
     # Set up the entry and assert that the values set during setup are where we expect
@@ -83,7 +87,7 @@ async def test_setup_reload_and_unload_vmoto_soco_entry(
     assert DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]
     assert (
         type(hass.data[DOMAIN][config_entry.entry_id])
-        == SuperSocoCustomDataUpdateCoordinator
+        is SuperSocoCustomDataUpdateCoordinator
     )
 
     # Reload the entry and assert that the data from above is still there
@@ -91,7 +95,7 @@ async def test_setup_reload_and_unload_vmoto_soco_entry(
     assert DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]
     assert (
         type(hass.data[DOMAIN][config_entry.entry_id])
-        == SuperSocoCustomDataUpdateCoordinator
+        is SuperSocoCustomDataUpdateCoordinator
     )
 
     # Unload the entry and verify that the data has been removed
@@ -102,7 +106,7 @@ async def test_setup_reload_and_unload_vmoto_soco_entry(
 @pytest.mark.asyncio
 async def test_setup_entry_exception(
     hass,
-    auth_error_on_login,  # pylint: disable=unused-argument
+    auth_error_on_login,
 ):
     """Test ConfigEntryNotReady when API raises an exception during entry setup."""
     config_entry = MockConfigEntry(

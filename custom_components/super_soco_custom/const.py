@@ -1,4 +1,4 @@
-from homeassistant.components.device_tracker import SourceType
+from homeassistant.components.device_tracker.const import SourceType
 from homeassistant.components.sensor import (
     SensorStateClass,
     SensorDeviceClass,
@@ -431,7 +431,7 @@ SWITCH_API_METHODS = {
 }
 
 # Phone prefixes
-PHONE_PREFIXES = {  # pylint: disable=duplicate-key
+PHONE_PREFIXES = {
     93: "Afghanistan (93)",
     355: "Albania (355)",
     213: "Algeria (213)",

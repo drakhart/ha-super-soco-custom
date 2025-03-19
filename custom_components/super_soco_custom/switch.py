@@ -19,13 +19,13 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     switches = []
 
     for (
-        id,  # pylint: disable=redefined-builtin
+        id,
         key,
         condition,
         icon,
         extra_attrs,
     ) in SWITCHES:
-        if not key in coordinator.data:
+        if key not in coordinator.data:
             _LOGGER.debug("Unable to set up switch due to missing data key: %s", key)
         else:
             switches.append(
@@ -48,7 +48,7 @@ class SuperSocoCustomSwitch(SuperSocoCustomEntity, SwitchEntity):
         self,
         config_entry,
         coordinator,
-        id,  # pylint: disable=redefined-builtin
+        id,
         key,
         condition,
         icon,
@@ -61,10 +61,10 @@ class SuperSocoCustomSwitch(SuperSocoCustomEntity, SwitchEntity):
         self._icon = icon
         self._extra_attrs = extra_attrs
 
-    async def async_turn_on(self, **kwargs):  # pylint: disable=unused-argument
+    async def async_turn_on(self, **kwargs):
         await self.coordinator.set_switch_state(self._key, True)
 
-    async def async_turn_off(self, **kwargs):  # pylint: disable=unused-argument
+    async def async_turn_off(self, **kwargs):
         await self.coordinator.set_switch_state(self._key, False)
 
     @property

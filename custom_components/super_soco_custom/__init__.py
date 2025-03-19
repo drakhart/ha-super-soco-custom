@@ -12,7 +12,6 @@ from .const import (
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
     CONF_TOKEN,
-    CONFIG_FLOW_VERSION,
     DOMAIN,
     NAME,
     OPT_EMAIL,
@@ -29,7 +28,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(
-    hass: HomeAssistant, config: Config  # pylint: disable=unused-argument
+    hass: HomeAssistant,
+    config: Config,
 ) -> bool:
     return True
 

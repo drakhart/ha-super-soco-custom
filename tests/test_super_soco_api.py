@@ -1,6 +1,10 @@
 """Tests for super_soco_custom super_soco_api."""
+
 import json
 import pytest
+
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from pytest_homeassistant_custom_component.common import load_fixture
 
 from custom_components.super_soco_custom.const import (
     CONF_PHONE_PREFIX,
@@ -8,10 +12,6 @@ from custom_components.super_soco_custom.const import (
     CONF_PASSWORD,
 )
 from custom_components.super_soco_custom.super_soco_api import SuperSocoAPI, BASE_URL
-
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
-from pytest_homeassistant_custom_component.common import load_fixture
 
 from .const import MOCK_SUPER_SOCO_CONFIG
 
@@ -38,7 +38,7 @@ async def test_api(hass, aioclient_mock):
     res_mock = json.loads(load_fixture("super_soco_device.json"))
 
     aioclient_mock.post(f"{BASE_URL}/device/info/1234567890123456", json=res_mock)
-    assert await api.get_device(1234567890123456) == res_mock
+    assert await api.get_device("1234567890123456") == res_mock
 
     # Get tracking history list
     res_mock = json.loads(load_fixture("super_soco_tracking_history_list.json"))

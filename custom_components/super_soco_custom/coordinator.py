@@ -330,7 +330,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 res = await self._open_topo_data_api.get_mapzen(latitude, longitude)
 
                 data = {DATA_ALTITUDE: res[DATA_RESULTS][0][DATA_ELEVATION]}
-            except Exception as exception:  # pylint: disable=broad-exception-caught
+            except Exception as exception:
                 _LOGGER.exception(exception)
         else:
             _LOGGER.debug("Altitude data is up to date")
@@ -503,7 +503,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 self._last_trip_timestamp = timestamp
             except IndexError:
                 _LOGGER.debug("Last trip data is empty")
-            except Exception as exception:  # pylint: disable=broad-exception-caught
+            except Exception as exception:
                 _LOGGER.exception(exception)
         else:
             _LOGGER.debug("Last trip data is up to date")
@@ -521,9 +521,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             DATA_LAST_WARNING_MESSAGE: self._last_data.get(
                 DATA_LAST_WARNING_MESSAGE, STATE_UNKNOWN
             ),
-            DATA_LAST_WARNING_TIME: self._last_data.get(
-                DATA_LAST_WARNING_TIME, None
-            ),
+            DATA_LAST_WARNING_TIME: self._last_data.get(DATA_LAST_WARNING_TIME, None),
             DATA_LAST_WARNING_TITLE: self._last_data.get(
                 DATA_LAST_WARNING_TITLE, STATE_UNKNOWN
             ),
@@ -563,7 +561,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 )
             except IndexError:
                 _LOGGER.debug("Last warning data is empty")
-            except Exception as exception:  # pylint: disable=broad-exception-caught
+            except Exception as exception:
                 _LOGGER.exception(exception)
         else:
             _LOGGER.debug("Last warning data is up to date")
@@ -661,7 +659,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                         DATA_REVERSE_GEOCODING_STATE_DISTRICT, STATE_UNKNOWN
                     ),
                 }
-            except Exception as exception:  # pylint: disable=broad-exception-caught
+            except Exception as exception:
                 _LOGGER.exception(exception)
         else:
             _LOGGER.debug("Reverse geocoding data is up to date")
@@ -713,6 +711,8 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         return distance >= POWER_OFF_DISTANCE_THRESHOLD_METERS
 
     async def set_switch_state(self, data_key: str, state: bool) -> None:
+        print("TESTDFSDF")
+
         try:
             if self._is_app_vmoto_soco():
                 if data_key == DATA_NATIVE_PUSH_NOTIFICATIONS:
@@ -738,7 +738,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             await self.async_request_refresh()
         except AttributeError:
             _LOGGER.debug("Unknown API method for data key: %s", data_key)
-        except Exception as exception:  # pylint: disable=broad-exception-caught
+        except Exception as exception:
             _LOGGER.exception(exception)
 
     def _set_update_interval(self) -> None:

@@ -1,10 +1,10 @@
 """Test super_soco_custom config flow."""
+
 import pytest
 
-from homeassistant import config_entries, data_entry_flow
-
+from homeassistant import config_entries
+from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-
 from unittest.mock import patch
 
 from custom_components.super_soco_custom.const import (
@@ -32,12 +32,15 @@ from .const import MOCK_SUPER_SOCO_CONFIG, MOCK_VMOTO_SOCO_CONFIG
 @pytest.fixture(autouse=True)
 def bypass_setup_fixture():
     """Prevent setup."""
-    with patch(
-        "custom_components.super_soco_custom.async_setup",
-        return_value=True,
-    ), patch(
-        "custom_components.super_soco_custom.async_setup_entry",
-        return_value=True,
+    with (
+        patch(
+            "custom_components.super_soco_custom.async_setup",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.super_soco_custom.async_setup_entry",
+            return_value=True,
+        ),
     ):
         yield
 
@@ -48,7 +51,7 @@ def bypass_setup_fixture():
 @pytest.mark.asyncio
 async def test_successful_super_soco_config_flow(
     hass,
-    bypass_super_soco_login,  # pylint: disable=unused-argument
+    bypass_super_soco_login,
 ):
     """Test a successful Super Soco config flow."""
     # Initialize a config flow
@@ -57,7 +60,7 @@ async def test_successful_super_soco_config_flow(
     )
 
     # Check that the config flow shows the user form as the first step
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "app"
 
     # Continue past the app step
@@ -71,7 +74,7 @@ async def test_successful_super_soco_config_flow(
     )
 
     # Check that the config flow shows the login form as the next step
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "login"
 
     # Continue past the login step
@@ -82,7 +85,7 @@ async def test_successful_super_soco_config_flow(
 
     # Check that the config flow is complete and a new entry is created with
     # the input data
-    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+    assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["title"] == NAME
     assert result["data"] == MOCK_SUPER_SOCO_CONFIG
     assert result["result"]
@@ -95,8 +98,8 @@ async def test_successful_super_soco_config_flow(
 @pytest.mark.asyncio
 async def test_successful_vmoto_soco_config_flow(
     hass,
-    bypass_vmoto_soco_get_login_code,  # pylint: disable=unused-argument
-    bypass_vmoto_soco_login,  # pylint: disable=unused-argument
+    bypass_vmoto_soco_get_login_code,
+    bypass_vmoto_soco_login,
 ):
     """Test a successful Vmoto Soco config flow."""
     # Initialize a config flow
@@ -105,7 +108,7 @@ async def test_successful_vmoto_soco_config_flow(
     )
 
     # Check that the config flow shows the user form as the first step
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "app"
 
     # Continue past the app step
@@ -119,7 +122,7 @@ async def test_successful_vmoto_soco_config_flow(
     )
 
     # Check that the config flow shows the login form as the next step
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "login"
 
     # Continue past the login step
@@ -130,7 +133,7 @@ async def test_successful_vmoto_soco_config_flow(
 
     # Check that the config flow is complete and a new entry is created with
     # the input data
-    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+    assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["title"] == NAME
     assert result["data"] == MOCK_VMOTO_SOCO_CONFIG
     assert result["result"]
@@ -142,7 +145,7 @@ async def test_successful_vmoto_soco_config_flow(
 @pytest.mark.asyncio
 async def test_failed_config_flow(
     hass,
-    auth_error_on_login,  # pylint: disable=unused-argument
+    auth_error_on_login,
 ):
     """Test a failed config flow due to credential validation failure."""
     result = await hass.config_entries.flow.async_init(
@@ -163,7 +166,7 @@ async def test_failed_config_flow(
         user_input={CONF_PASSWORD: MOCK_SUPER_SOCO_CONFIG[CONF_PASSWORD]},
     )
 
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == FlowResultType.FORM
     assert result["errors"] == {"base": "invalid_auth"}
 
 
@@ -180,7 +183,7 @@ async def test_options_flow(hass):
     result = await hass.config_entries.options.async_init(entry.entry_id)
 
     # Verify that the first options step is a user form
-    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "user"
 
     # Enter some fake data into the form
@@ -192,7 +195,7 @@ async def test_options_flow(hass):
     )
 
     # Verify that the flow finishes
-    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+    assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["title"] == NAME
 
     # Verify that the options were updated

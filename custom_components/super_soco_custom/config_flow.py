@@ -137,7 +137,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._errors["base"] = ERROR_CANNOT_CONNECT
         except InvalidAuth:
             self._errors["base"] = ERROR_INVALID_AUTH
-        except Exception as error:  # pylint: disable=broad-exception-caught
+        except Exception as error:
             _LOGGER.exception(error)
             self._errors["base"] = ERROR_UNKNOWN
 
@@ -163,7 +163,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._errors["base"] = ERROR_CANNOT_CONNECT
         except InvalidAuth:
             self._errors["base"] = ERROR_INVALID_AUTH
-        except Exception as error:  # pylint: disable=broad-exception-caught
+        except Exception as error:
             _LOGGER.exception(error)
             self._errors["base"] = ERROR_UNKNOWN
 
@@ -239,9 +239,7 @@ class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry) -> None:
         self.options = dict(config_entry.options)
 
-    async def async_step_init(
-        self, user_input=None  # pylint: disable=unused-argument
-    ) -> FlowResult:
+    async def async_step_init(self, user_input=None) -> FlowResult:
         return await self.async_step_user()
 
     async def async_step_user(self, user_input=None) -> FlowResult:

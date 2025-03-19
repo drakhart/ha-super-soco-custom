@@ -20,7 +20,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     device_trackers = []
 
     for (
-        id,  # pylint: disable=redefined-builtin
+        id,
         source_type,
         latitude_key,
         longitude_key,
@@ -56,7 +56,7 @@ class SuperSocoCustomDeviceTracker(SuperSocoCustomEntity, TrackerEntity):
         self,
         config_entry,
         coordinator,
-        id,  # pylint: disable=redefined-builtin
+        id,
         source_type,
         latitude_key,
         longitude_key,

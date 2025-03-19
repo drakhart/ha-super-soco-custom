@@ -1,4 +1,5 @@
 """Tests for super_soco_custom open_topo_data_api."""
+
 import json
 import pytest
 
