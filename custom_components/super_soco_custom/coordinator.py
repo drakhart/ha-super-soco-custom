@@ -711,8 +711,6 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         return distance >= POWER_OFF_DISTANCE_THRESHOLD_METERS
 
     async def set_switch_state(self, data_key: str, state: bool) -> None:
-        print("TESTDFSDF")
-
         try:
             if self._is_app_vmoto_soco():
                 if data_key == DATA_NATIVE_PUSH_NOTIFICATIONS:

@@ -70,7 +70,7 @@ def bypass_super_soco_get_device_fixture():
 
 
 @pytest.fixture(name="bypass_get_mapzen")
-def bypass_get_mapzen():
+def bypass_get_mapzen_fixture():
     """Skip calls to get Mapzen from Open Topo Data API."""
     with patch(
         "custom_components.super_soco_custom.OpenTopoDataAPI.get_mapzen",
