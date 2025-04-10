@@ -570,7 +570,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def _get_reverse_geocoding_data(
         self, latitude: float, longitude: float
-    ) -> float:
+    ) -> dict:
         if not self._config_entry.options.get(
             OPT_ENABLE_REVERSE_GEOCODING_ENTITY, DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY
         ):
