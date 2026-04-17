@@ -1,4 +1,6 @@
 import logging
+from typing import Optional, cast
+
 import voluptuous as vol
 
 from aiohttp import ClientResponseError, ClientSession, ServerTimeoutError
@@ -59,7 +61,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._reauth_entry = None
         self._user_input = {
             CONF_APP_NAME: SUPER_SOCO,
-            CONF_PHONE_PREFIX: list(PHONE_PREFIXES.keys())[0],
+            CONF_PHONE_PREFIX: PHONE_PREFIXES[0][1],
             CONF_PHONE_NUMBER: None,
             CONF_PASSWORD: None,
             CONF_LOGIN_CODE: None,
@@ -67,15 +69,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(self, user_input=None) -> FlowResult:
         self._errors = {}
-        self._reauth_entry = self.hass.config_entries.async_get_entry(
-            self.context["entry_id"]
-        )
+        entry_id: Optional[str] = self.context.get("entry_id")
+        if entry_id is None:
+            self._reauth_entry = None
+        else:
+            self._reauth_entry = self.hass.config_entries.async_get_entry(entry_id)
 
         return await self.async_step_user(user_input)
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         if self._async_current_entries() and not self._reauth_entry:
-            return self.async_abort(reason=ERROR_ALREADY_CONFIGURED)
+            return cast(FlowResult, self.async_abort(reason=ERROR_ALREADY_CONFIGURED))
 
         if user_input:
             self._user_input.update(user_input)
@@ -83,22 +87,29 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = self._errors
         self._errors = {}
 
-        return self.async_show_form(
-            step_id="app",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_APP_NAME, default=self._user_input[CONF_APP_NAME]
-                    ): vol.In(APP_NAMES),
-                    vol.Required(
-                        CONF_PHONE_PREFIX, default=self._user_input[CONF_PHONE_PREFIX]
-                    ): vol.In(PHONE_PREFIXES),
-                    vol.Required(
-                        CONF_PHONE_NUMBER, default=self._user_input[CONF_PHONE_NUMBER]
-                    ): str,
-                }
+        # Build a mapping: code -> display name for form selection
+        prefix_dict = {code: name for name, code in PHONE_PREFIXES}
+        return cast(
+            FlowResult,
+            self.async_show_form(
+                step_id="app",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_APP_NAME, default=self._user_input[CONF_APP_NAME]
+                        ): vol.In(APP_NAMES),
+                        vol.Required(
+                            CONF_PHONE_PREFIX,
+                            default=self._user_input[CONF_PHONE_PREFIX],
+                        ): vol.In(prefix_dict),
+                        vol.Required(
+                            CONF_PHONE_NUMBER,
+                            default=self._user_input[CONF_PHONE_NUMBER],
+                        ): str,
+                    }
+                ),
+                errors=errors,
             ),
-            errors=errors,
         )
 
     async def async_step_app(self, user_input=None) -> FlowResult:
@@ -109,29 +120,35 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
 
         if self._user_input[CONF_APP_NAME] == SUPER_SOCO:
-            return self.async_show_form(
-                step_id="login",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(
-                            CONF_PASSWORD, default=self._user_input[CONF_PASSWORD]
-                        ): str,
-                    }
+            return cast(
+                FlowResult,
+                self.async_show_form(
+                    step_id="login",
+                    data_schema=vol.Schema(
+                        {
+                            vol.Required(
+                                CONF_PASSWORD, default=self._user_input[CONF_PASSWORD]
+                            ): str,
+                        }
+                    ),
+                    errors=errors,
                 ),
-                errors=errors,
             )
 
         try:
             await self._get_login_code()
 
-            return self.async_show_form(
-                step_id="login",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(CONF_LOGIN_CODE): str,
-                    }
+            return cast(
+                FlowResult,
+                self.async_show_form(
+                    step_id="login",
+                    data_schema=vol.Schema(
+                        {
+                            vol.Required(CONF_LOGIN_CODE): str,
+                        }
+                    ),
+                    errors=errors,
                 ),
-                errors=errors,
             )
         except CannotConnect:
             self._errors["base"] = ERROR_CANNOT_CONNECT
@@ -156,9 +173,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
 
-                return self.async_abort(reason="reauth_successful")
+                return cast(FlowResult, self.async_abort(reason="reauth_successful"))
 
-            return self.async_create_entry(title=NAME, data=self._user_input)
+            return cast(
+                FlowResult, self.async_create_entry(title=NAME, data=self._user_input)
+            )
         except CannotConnect:
             self._errors["base"] = ERROR_CANNOT_CONNECT
         except InvalidAuth:
@@ -248,57 +267,61 @@ class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
 
             return await self._update_options()
 
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        OPT_UPDATE_INTERVAL,
-                        default=self.options.get(
-                            OPT_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL_MINUTES
-                        ),
-                    ): selector.selector(
-                        {
-                            "number": {
-                                "min": MIN_UPDATE_INTERVAL_MINUTES,
-                                "max": MAX_UPDATE_INTERVAL_MINUTES,
+        return cast(
+            FlowResult,
+            self.async_show_form(
+                step_id="user",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            OPT_UPDATE_INTERVAL,
+                            default=self.options.get(
+                                OPT_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL_MINUTES
+                            ),
+                        ): selector.selector(
+                            {
+                                "number": {
+                                    "min": MIN_UPDATE_INTERVAL_MINUTES,
+                                    "max": MAX_UPDATE_INTERVAL_MINUTES,
+                                }
                             }
-                        }
-                    ),
-                    vol.Required(
-                        OPT_ENABLE_LAST_WARNING_ENTITY,
-                        default=self.options.get(
+                        ),
+                        vol.Required(
                             OPT_ENABLE_LAST_WARNING_ENTITY,
-                            DEFAULT_ENABLE_LAST_WARNING_ENTITY,
-                        ),
-                    ): selector.selector({"boolean": {}}),
-                    vol.Required(
-                        OPT_ENABLE_LAST_TRIP_ENTITIES,
-                        default=self.options.get(
+                            default=self.options.get(
+                                OPT_ENABLE_LAST_WARNING_ENTITY,
+                                DEFAULT_ENABLE_LAST_WARNING_ENTITY,
+                            ),
+                        ): selector.selector({"boolean": {}}),
+                        vol.Required(
                             OPT_ENABLE_LAST_TRIP_ENTITIES,
-                            DEFAULT_ENABLE_LAST_TRIP_ENTITIES,
-                        ),
-                    ): selector.selector({"boolean": {}}),
-                    vol.Required(
-                        OPT_ENABLE_ALTITUDE_ENTITY,
-                        default=self.options.get(
-                            OPT_ENABLE_ALTITUDE_ENTITY, DEFAULT_ENABLE_ALTITUDE_ENTITY
-                        ),
-                    ): selector.selector({"boolean": {}}),
-                    vol.Required(
-                        OPT_ENABLE_REVERSE_GEOCODING_ENTITY,
-                        default=self.options.get(
+                            default=self.options.get(
+                                OPT_ENABLE_LAST_TRIP_ENTITIES,
+                                DEFAULT_ENABLE_LAST_TRIP_ENTITIES,
+                            ),
+                        ): selector.selector({"boolean": {}}),
+                        vol.Required(
+                            OPT_ENABLE_ALTITUDE_ENTITY,
+                            default=self.options.get(
+                                OPT_ENABLE_ALTITUDE_ENTITY,
+                                DEFAULT_ENABLE_ALTITUDE_ENTITY,
+                            ),
+                        ): selector.selector({"boolean": {}}),
+                        vol.Required(
                             OPT_ENABLE_REVERSE_GEOCODING_ENTITY,
-                            DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
-                        ),
-                    ): selector.selector({"boolean": {}}),
-                    vol.Optional(
-                        OPT_EMAIL,
-                        default=self.options.get(OPT_EMAIL, DEFAULT_STRING),
-                    ): selector.selector({"text": {}}),
-                }
+                            default=self.options.get(
+                                OPT_ENABLE_REVERSE_GEOCODING_ENTITY,
+                                DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
+                            ),
+                        ): selector.selector({"boolean": {}}),
+                        vol.Optional(
+                            OPT_EMAIL,
+                            default=self.options.get(OPT_EMAIL, DEFAULT_STRING),
+                        ): selector.selector({"text": {}}),
+                    }
+                ),
             ),
         )
 
     async def _update_options(self) -> FlowResult:
-        return self.async_create_entry(title=NAME, data=self.options)
+        return cast(FlowResult, self.async_create_entry(title=NAME, data=self.options))

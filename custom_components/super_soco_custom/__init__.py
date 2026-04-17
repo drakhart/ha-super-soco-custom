@@ -1,4 +1,5 @@
 import logging
+from typing import Optional, cast
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -39,12 +40,12 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
 
-    app_name = config_entry.data.get(CONF_APP_NAME)
-    phone_prefix = config_entry.data.get(CONF_PHONE_PREFIX)
-    phone_number = config_entry.data.get(CONF_PHONE_NUMBER)
-    password = config_entry.data.get(CONF_PASSWORD)
-    token = config_entry.data.get(CONF_TOKEN)
-    email = config_entry.data.get(OPT_EMAIL)
+    app_name: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_APP_NAME))
+    phone_prefix: int = cast(int, config_entry.data.get(CONF_PHONE_PREFIX))
+    phone_number: str = cast(str, config_entry.data.get(CONF_PHONE_NUMBER))
+    password: str = cast(str, config_entry.data.get(CONF_PASSWORD))
+    token: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_TOKEN))
+    email: Optional[str] = cast(Optional[str], config_entry.data.get(OPT_EMAIL))
 
     session = async_get_clientsession(hass)
 

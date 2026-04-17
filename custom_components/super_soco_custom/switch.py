@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 
 from homeassistant.components.switch import SwitchEntity
 
@@ -9,6 +10,7 @@ from .const import (
     SWITCHES,
 )
 from .entity import SuperSocoCustomEntity
+from .coordinator import SuperSocoCustomDataUpdateCoordinator
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -62,10 +64,14 @@ class SuperSocoCustomSwitch(SuperSocoCustomEntity, SwitchEntity):
         self._extra_attrs = extra_attrs
 
     async def async_turn_on(self, **kwargs):
-        await self.coordinator.set_switch_state(self._key, True)
+        await cast(
+            SuperSocoCustomDataUpdateCoordinator, self.coordinator
+        ).set_switch_state(self._key, True)
 
     async def async_turn_off(self, **kwargs):
-        await self.coordinator.set_switch_state(self._key, False)
+        await cast(
+            SuperSocoCustomDataUpdateCoordinator, self.coordinator
+        ).set_switch_state(self._key, False)
 
     @property
     def unique_id(self):

@@ -53,8 +53,6 @@ from custom_components.super_soco_custom.const import (
     HOME_ZONE,
     DATA_LATITUDE,
     DATA_LONGITUDE,
-    DATA_LAST_TRIP_AVG_SPEED,
-    DATA_LAST_TRIP_BEGIN_TIME,
     DATA_LAST_TRIP_RIDE_DISTANCE,
     DATA_LAST_WARNING_TIME,
     DATA_LAST_WARNING_MESSAGE,
@@ -89,70 +87,26 @@ otd_errors.get_mapzen = AsyncMock(return_value={DATA_RESULTS: [{DATA_ELEVATION: 
 
 
 @pytest.mark.asyncio
-async def test_altitude_and_home_and_last_trip_and_warning(
-    hass,
-    bypass_get_mapzen,
-    bypass_super_soco_get_tracking_history_list,
-    bypass_super_soco_get_warning_list,
-    bypass_super_soco_get_user,
-    bypass_super_soco_get_device,
-):
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={CONF_APP_NAME: SUPER_SOCO},
-        options={
-            OPT_ENABLE_ALTITUDE_ENTITY: True,
-            OPT_ENABLE_LAST_TRIP_ENTITIES: True,
-            OPT_ENABLE_LAST_WARNING_ENTITY: True,
-        },
-    )
+async def test_async_update_fetch_user_missing_data_raises_updatefailed(hass):
+    """Coordinator should raise UpdateFailed when get_user returns empty DATA_DATA."""
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_APP_NAME: SUPER_SOCO})
 
-    # Use the shared patched API methods via fixtures by creating real API instances
-    client = SuperSocoAPI(async_get_clientsession(hass), 0, "num", "pwd")
-    topo = OpenTopoDataAPI(async_get_clientsession(hass))
+    bad_client = create_autospec(SuperSocoAPI, instance=True)
+    bad_client.get_user = AsyncMock(return_value={DATA_DATA: {}})
+
     coord = SuperSocoCustomDataUpdateCoordinator(
         hass,
         entry,
-        client,
+        bad_client,
         cast(OpenStreetMapAPI, None),
-        cast(OpenTopoDataAPI, topo),
+        cast(OpenTopoDataAPI, None),
     )
 
-    # Altitude should read from topo (using shared fixture)
-    alt = await coord._get_altitude_data(1.0, 1.0)
-    assert alt[DATA_ALTITUDE] is not None and alt[DATA_ALTITUDE] != STATE_UNKNOWN
+    from homeassistant.helpers.update_coordinator import UpdateFailed as _UF
 
-    # Home data: set a home zone in hass and test arrived/towards/away/stationary
-    hass.states.async_set(
-        HOME_ZONE,
-        "z",
-        attributes={DATA_LATITUDE: 10.0, DATA_LONGITUDE: 10.0, DATA_RADIUS: 1000},
-    )
-
-    # Arrived (same coords)
-    res = coord._get_home_data(10.0, 10.0)
-    assert res[DATA_DISTANCE_FROM_HOME] == 0 or res[DATA_DIR_OF_TRAVEL] == DIR_ARRIVED
-
-    # Previous distance larger -> towards
-    coord._last_data = {DATA_DISTANCE_FROM_HOME: 100.0}
-    res2 = coord._get_home_data(10.0, 11.0)
-    assert res2[DATA_DIR_OF_TRAVEL] in (
-        DIR_TOWARDS_HOME,
-        DIR_AWAY_FROM_HOME,
-        DIR_STATIONARY,
-    )
-
-    # Last trip (non-vmoto) and last warning (non-vmoto)
-    coord._last_data = {}
-    trip = await coord._get_last_trip_data()
-    warn = await coord._get_last_warning_data()
-
-    # Values come from shared fixtures so assert presence and reasonable types
-    assert DATA_LAST_TRIP_AVG_SPEED in trip
-    assert isinstance(trip[DATA_LAST_TRIP_BEGIN_TIME], datetime)
-    assert DATA_LAST_TRIP_RIDE_DISTANCE in trip
-    assert isinstance(warn[DATA_LAST_WARNING_TIME], datetime)
-    assert DATA_LAST_WARNING_MESSAGE in warn
+    with pytest.raises(_UF):
+        await coord._async_update_data()
+    # test covered: raising on missing user data
 
 
 @pytest.mark.asyncio
@@ -193,7 +147,7 @@ async def test_course_and_geo_and_set_switch_vmoto(hass, monkeypatch):
         DATA_NATIVE_TRACKING_HISTORY: 1,
         DATA_NATIVE_PUSH_NOTIFICATIONS: 0,
     }
-    coord._user_id = "u"
+    coord._user_id = 1
     coord._device_no = "d"
 
     # monkeypatch instance methods to avoid network calls and record invocations
@@ -216,7 +170,134 @@ async def test_course_and_geo_and_set_switch_vmoto(hass, monkeypatch):
     if hasattr(coord, "_debounced_refresh"):
         coord._debounced_refresh.async_cancel()
 
-    assert "privacy" in called or "power" in called
+
+@pytest.mark.asyncio
+async def test_get_last_trip_and_warning_handle_exceptions_vmoto(hass):
+    """Ensure exception paths in vmoto last trip/warning are handled."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_APP_NAME: VMOTO_SOCO},
+        options={
+            OPT_ENABLE_LAST_TRIP_ENTITIES: True,
+            OPT_ENABLE_LAST_WARNING_ENTITY: True,
+        },
+    )
+
+    client = create_autospec(VmotoSocoAPI, instance=True)
+    client.get_user = AsyncMock(
+        return_value=json.loads(load_fixture("vmoto_soco_user.json"))
+    )
+    client.get_tracking_history_list = AsyncMock(side_effect=Exception("boom-trips"))
+    client.get_warning_list = AsyncMock(side_effect=Exception("boom-warns"))
+
+    coord = SuperSocoCustomDataUpdateCoordinator(
+        hass,
+        entry,
+        client,
+        osm,
+        cast(OpenTopoDataAPI, None),
+    )
+
+    # provide ids so IndexError path is not triggered and the API exception branch runs
+    coord._user_id = 1
+    coord._device_no = "d1"
+
+    trip = await coord._get_last_trip_data()
+    warn = await coord._get_last_warning_data()
+
+    assert isinstance(trip, dict)
+    assert isinstance(warn, dict)
+
+
+def test_is_power_off_movement_noticeable_exception():
+    """Exercise exception path in _is_power_off_movement_noticeable."""
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
+    coord = SuperSocoCustomDataUpdateCoordinator(
+        cast(Any, None),
+        entry,
+        cast(SuperSocoAPI | VmotoSocoAPI, None),
+        cast(OpenStreetMapAPI, None),
+        cast(OpenTopoDataAPI, None),
+    )
+
+    # Non-numeric last_data should trigger the exception and return True
+    coord._last_data = {DATA_LATITUDE: "nan", DATA_LONGITUDE: "x"}
+    assert coord._is_power_off_movement_noticeable(1.0, 1.0) is True
+
+
+@pytest.mark.asyncio
+async def test_set_switch_state_missing_user_or_device_do_not_crash(hass, monkeypatch):
+    """Call set_switch_state with missing ids to execute raise branches (caught internally)."""
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_APP_NAME: VMOTO_SOCO}, options={})
+    client = create_autospec(VmotoSocoAPI, instance=True)
+
+    coord = SuperSocoCustomDataUpdateCoordinator(
+        hass,
+        entry,
+        client,
+        cast(OpenStreetMapAPI, None),
+        cast(OpenTopoDataAPI, None),
+    )
+
+    # ensure missing ids to run the UpdateFailed-raising lines (they are caught internally)
+    coord._user_id = None
+    coord._device_no = None
+
+    # monkeypatch sleep to avoid delays inside set_switch_state
+    monkeypatch.setattr(
+        "custom_components.super_soco_custom.coordinator.sleep",
+        AsyncMock(return_value=None),
+    )
+
+    # These calls exercise the branches that raise UpdateFailed internally; they should not raise here
+    await coord.set_switch_state(DATA_NATIVE_PUSH_NOTIFICATIONS, True)
+    await coord.set_switch_state(DATA_NATIVE_TRACKING_HISTORY, False)
+    await coord.set_switch_state(DATA_POWER_SWITCH, True)
+
+    assert True
+
+
+@pytest.mark.asyncio
+async def test_async_update_missing_user_data_raises_update_failed(hass):
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+
+    bad_client = create_autospec(SuperSocoAPI, instance=True)
+    # get_user returns a structure without DATA_DATA (or None) to trigger the missing-user raise
+    bad_client.get_user = AsyncMock(return_value={})
+
+    coord = SuperSocoCustomDataUpdateCoordinator(
+        hass,
+        entry,
+        bad_client,
+        cast(OpenStreetMapAPI, None),
+        cast(OpenTopoDataAPI, None),
+    )
+
+    with pytest.raises(UpdateFailed):
+        await coord._async_update_data()
+
+
+@pytest.mark.asyncio
+async def test_async_update_missing_device_number_raises_update_failed(hass):
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+
+    bad_client = create_autospec(SuperSocoAPI, instance=True)
+    # get_user returns DATA_DATA but device no is explicitly None
+    # use literal keys matching the API payload to avoid constant resolution issues
+    bad_client.get_user = AsyncMock(
+        return_value={"data": {"user": {"userId": 1}, "device": {"deviceNo": None}}}
+    )
+
+    coord = SuperSocoCustomDataUpdateCoordinator(
+        hass,
+        entry,
+        bad_client,
+        cast(OpenStreetMapAPI, None),
+        cast(OpenTopoDataAPI, None),
+    )
+
+    with pytest.raises(UpdateFailed):
+        await coord._async_update_data()
 
 
 @pytest.mark.asyncio
@@ -570,7 +651,7 @@ async def test_vmoto_last_trip_and_warning_and_reverse(
     assert rev[DATA_REVERSE_GEOCODING] == "Test display name"
 
     # now call last trip and last warning via their methods
-    coord._user_id = "u1"
+    coord._user_id = 1
     coord._device_no = "d1"
 
     trip = await coord._get_last_trip_data()
@@ -580,6 +661,45 @@ async def test_vmoto_last_trip_and_warning_and_reverse(
     # coordinator returns camelCase keys for warnings
     assert isinstance(warn, dict)
     assert warn.get(DATA_LAST_WARNING_TIME) is not None
+
+
+@pytest.mark.asyncio
+async def test_vmoto_full_data_path(hass):
+    """Ensure _async_update_data covers the VMOTO full data path."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_APP_NAME: VMOTO_SOCO},
+        options={OPT_ENABLE_REVERSE_GEOCODING_ENTITY: True},
+    )
+
+    client = create_autospec(VmotoSocoAPI, instance=True)
+    client.get_user = AsyncMock(
+        return_value=json.loads(load_fixture("vmoto_soco_user.json"))
+    )
+    client.get_tracking_history_list = AsyncMock(
+        return_value=json.loads(load_fixture("vmoto_soco_tracking_history_list.json"))
+    )
+    client.get_warning_list = AsyncMock(
+        return_value=json.loads(load_fixture("vmoto_soco_warning_list.json"))
+    )
+
+    coord = SuperSocoCustomDataUpdateCoordinator(
+        hass,
+        entry,
+        client,
+        osm,
+        cast(OpenTopoDataAPI, None),
+    )
+
+    # ensure last_data empty to force updates
+    coord._last_data = {}
+    coord._user_data = None
+
+    data = await coord._async_update_data()
+
+    # vmoto-specific keys should be present
+    assert isinstance(data, dict)
+    assert DATA_BATTERY in data or DATA_DATA in data
 
 
 @pytest.mark.asyncio

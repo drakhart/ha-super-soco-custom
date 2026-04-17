@@ -257,6 +257,19 @@ async def test_async_step_reauth_and_get_session(hass):
 
 
 @pytest.mark.asyncio
+async def test_async_step_reauth_with_no_entry_id(hass):
+    """Ensure async_step_reauth handles missing context['entry_id'] gracefully."""
+    flow = ConfigFlow()
+    flow.hass = hass
+    # no entry_id in context
+    flow.context = {}
+
+    res = await flow.async_step_reauth({CONF_PASSWORD: "p"})
+    assert isinstance(res, dict)
+    assert res.get("type") in ("form", "create_entry", "abort")
+
+
+@pytest.mark.asyncio
 async def test_async_step_app_and_login_cannot_connect(hass, monkeypatch):
     flow = ConfigFlow()
     flow.hass = hass
