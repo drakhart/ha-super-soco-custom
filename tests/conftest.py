@@ -18,9 +18,16 @@
 import json
 import pytest
 
+from aiohttp import ClientResponseError
+from aiohttp.client_reqrep import RequestInfo
+from multidict import (
+    CIMultiDict,
+    CIMultiDictProxy,
+)
 from pytest_homeassistant_custom_component.common import load_fixture
-
+from typing import cast
 from unittest.mock import patch
+from yarl import URL
 
 from custom_components.super_soco_custom.config_flow import InvalidAuth
 
@@ -178,3 +185,51 @@ def auth_error_login_fixture():
         side_effect=InvalidAuth,
     ):
         yield
+
+
+@pytest.fixture(name="make_client_response_error")
+def make_client_response_error_fixture():
+    """Return a factory that creates a ClientResponseError with request_info.real_url set."""
+
+    def _make(status=500, url="http://x"):
+        req_info = RequestInfo(
+            URL(url), "GET", cast(CIMultiDictProxy[str], CIMultiDict()), URL(url)
+        )
+        return ClientResponseError(req_info, (), status=status)
+
+    return _make
+
+
+@pytest.fixture(name="make_fake_session")
+def make_fake_session_fixture():
+    """Factory to create a fake aiohttp-like session with queued responses.
+
+    Usage: session = make_fake_session([({'status': '403'}, 200), ({'status': '200'}, 200)])
+    Each item is a tuple (payload, status).
+    """
+
+    class FakeResponse:
+        def __init__(self, payload, status=200):
+            self._payload = payload
+            self.status = status
+
+        async def json(self):
+            return self._payload
+
+        def raise_for_status(self):
+            if getattr(self, "status", 200) >= 400:
+                raise Exception("http error")
+
+    class FakeSession:
+        def __init__(self, responses):
+            # responses: list of (payload, status)
+            self._responses = [FakeResponse(p, s) for p, s in responses]
+
+        async def post(self, url, headers=None, json=None):
+            return self._responses.pop(0)
+
+    def _factory(items):
+        # items is list of (payload, status)
+        return FakeSession(items)
+
+    return _factory

@@ -69,3 +69,31 @@ async def test_api(hass, aioclient_mock):
 
     aioclient_mock.post(f"{BASE_URL}/userRunPoint/sw/1", json=res_mock)
     assert await api.set_tracking_history(True) == res_mock
+
+
+@pytest.mark.asyncio
+async def test_api_wrapper_retries_on_403(monkeypatch, make_fake_session):
+    # Prepare session that returns 403 payload then 200 payload
+    session = make_fake_session(
+        [({"status": "403"}, 200), ({"status": "200", "data": {"ok": True}}, 200)]
+    )
+
+    api = SuperSocoAPI(session, 0, "num", "pwd")
+
+    async def fake_login():
+        api._token = "tok"
+
+    monkeypatch.setattr(api, "login", fake_login)
+
+    res = await api._api_wrapper("url", {}, {})
+
+    assert res["status"] == "200"
+
+
+@pytest.mark.asyncio
+async def test_api_wrapper_non_200_raises(make_fake_session):
+    session = make_fake_session([({"status": "500"}, 200)])
+    api = SuperSocoAPI(session, 0, "num", "pwd")
+
+    with pytest.raises(Exception):
+        await api._api_wrapper("url", {}, {})

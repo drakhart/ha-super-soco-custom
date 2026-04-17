@@ -1,6 +1,6 @@
 {
   "name": "Super Soco Custom",
   "hacs": "2.0.1",
-  "homeassistant": "2025.2.4",
+  "homeassistant": "2025.3.3",
   "render_readme": true
 }

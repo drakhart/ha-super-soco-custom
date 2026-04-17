@@ -5,19 +5,23 @@ import pytest
 from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-from unittest.mock import call, patch
+from unittest.mock import AsyncMock, call, create_autospec, patch
 
 from custom_components.super_soco_custom.const import (
     DATA_NATIVE_PUSH_NOTIFICATIONS,
     DOMAIN,
+)
+from custom_components.super_soco_custom.coordinator import (
+    SuperSocoCustomDataUpdateCoordinator,
+)
+from custom_components.super_soco_custom.switch import (
+    SuperSocoCustomSwitch,
 )
 
 from .const import MOCK_SUPER_SOCO_CONFIG
 
 
 @pytest.mark.asyncio
-# TODO: Remove when https://github.com/home-assistant/core/pull/89976 is released
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_switch_services(
     hass,
     bypass_coordinator_switch_delay,
@@ -93,3 +97,32 @@ async def test_switch_services(
 
     await hass.config_entries.async_unload(config_entry.entry_id)
     await hass.async_block_till_done()
+
+
+@pytest.mark.asyncio
+async def test_switch_extra_state_attributes_mapping():
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
+    coord = create_autospec(SuperSocoCustomDataUpdateCoordinator, instance=True)
+    coord.data = {"a": "one", "b": "two"}
+
+    switch = SuperSocoCustomSwitch(entry, coord, "sid", "a", 1, "ic", {"x": "b"})
+
+    assert switch.extra_state_attributes == {"x": "two"}
+
+
+@pytest.mark.asyncio
+async def test_switch_turns_call_coordinator():
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
+    coord = create_autospec(SuperSocoCustomDataUpdateCoordinator, instance=True)
+    coord.data = {"k": 0}
+    coord.set_switch_state = AsyncMock()
+
+    switch = SuperSocoCustomSwitch(entry, coord, "sid", "k", 1, "ic", None)
+
+    await switch.async_turn_on()
+    await switch.async_turn_off()
+
+    assert coord.set_switch_state.await_args_list == [
+        (("k", True),),
+        (("k", False),),
+    ]
