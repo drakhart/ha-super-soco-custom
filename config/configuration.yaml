@@ -1,4 +1,7 @@
-default_config:
+ffmpeg:
+  ffmpeg_bin: /usr/bin/ffmpeg
+
+frontend:
 
 logger:
   default: info

@@ -1,5 +1,5 @@
 {
-    "name": "ludeeus/integration_blueprint",
+    "name": "HA Super Soco Custom Dev Container",
     "image": "mcr.microsoft.com/devcontainers/python:3.13",
     "postCreateCommand": "pip3 install --user -r requirements.txt -r requirements_test.txt",
     "forwardPorts": [
@@ -41,8 +41,7 @@
         "ghcr.io/devcontainers-extra/features/apt-packages:1": {
             "packages": [
                 "ffmpeg",
-                "libturbojpeg0",
-                "libpcap-dev"
+                "libturbojpeg0"
             ]
         }
     }
