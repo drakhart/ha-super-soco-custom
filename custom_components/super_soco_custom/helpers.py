@@ -2,9 +2,7 @@ import re
 import pytz
 
 from datetime import datetime
-
 from math import acos, cos, sin, radians
-
 from numpy import arctan2, degrees
 
 from .const import (

@@ -1,4 +1,4 @@
-name: Push actions
+name: "Test"
 
 on:
   push:
@@ -14,11 +14,11 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout the repository"
-        uses: "actions/checkout@v4.1.6"
+        uses: "actions/checkout@v4.2.2"
       - name: Setup Python
-        uses: "actions/setup-python@v5.1.0"
+        uses: "actions/setup-python@v5.4.0"
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - name: "Install requirements"
         run: python3 -m pip install -r requirements_test.txt
       - name: "Run tests"

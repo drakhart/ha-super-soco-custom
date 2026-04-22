@@ -1,6 +1,7 @@
 import aiohttp
 import async_timeout
 import hashlib
+from typing import Optional
 
 __title__ = "vmoto_soco_api"
 __version__ = "0.0.1"
@@ -21,12 +22,12 @@ class VmotoSocoAPI:
         session: aiohttp.ClientSession,
         phone_prefix: int,
         phone_number: str,
-        token: str = None,
+        token: Optional[str] = None,
     ) -> None:
         self._session = session
         self._phone_prefix = phone_prefix
         self._phone_number = phone_number
-        self._token = token
+        self._token: Optional[str] = token
 
     async def get_login_code(self) -> dict:
         url = f"{BASE_URL}/index/sendLogin4Code"
@@ -38,7 +39,7 @@ class VmotoSocoAPI:
 
         return await self._api_wrapper(url, headers, data)
 
-    async def get_token(self) -> str:
+    async def get_token(self) -> Optional[str]:
         return self._token
 
     async def get_tracking_history_list(
@@ -139,7 +140,8 @@ class VmotoSocoAPI:
 
         if authz:
             token = await self.get_token()
-            headers["authorization"] = f"{JWT_PREFIX}{token}"
+            if token is not None:
+                headers["authorization"] = f"{JWT_PREFIX}{token}"
         else:
             headers["temptoken"] = self._get_temp_token()
 

@@ -1,6 +1,10 @@
 """Tests for super_soco_custom vmoto_soco_api."""
+
 import json
 import pytest
+
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from pytest_homeassistant_custom_component.common import load_fixture
 
 from custom_components.super_soco_custom.const import (
     CONF_LOGIN_CODE,
@@ -8,10 +12,6 @@ from custom_components.super_soco_custom.const import (
     CONF_PHONE_NUMBER,
 )
 from custom_components.super_soco_custom.vmoto_soco_api import VmotoSocoAPI, BASE_URL
-
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
-from pytest_homeassistant_custom_component.common import load_fixture
 
 from .const import MOCK_DEVICE_NO, MOCK_USER_ID, MOCK_VMOTO_SOCO_CONFIG
 
@@ -28,10 +28,7 @@ async def test_api(hass, aioclient_mock):
     )
 
     # Temp token
-    assert (
-        api._get_temp_token()  # pylint: disable=protected-access
-        == "1061DF687283FB6D662830C0B542D942"
-    )
+    assert api._get_temp_token() == "1061DF687283FB6D662830C0B542D942"
 
     # Login code
     res_mock = json.loads(load_fixture("vmoto_soco_login_code.json"))

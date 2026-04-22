@@ -72,12 +72,13 @@ _\*\* These entities may not be available depending on native app support (Super
 
 ## Roadmap
 
-- Increase test coverage
-- Add altitude and reverse geocoding cache
-- Allow speed threshold customization (this is used to filter out unwanted GPS noise when the vehicle is virtually still)
-- Allow update interval customization while the vehicle is powered on (instead of forcing a 5 seconds interval)
-- Add vehicle diagnosis for Vmoto Soco (Super Soco API doesn't support it)
-- Add detailed battery information for Vmoto Soco (Super Soco API doesn't support it)
+- [x] ~~Increase test coverage~~
+- [ ] Add email login for Vmoto Soco
+- [ ] Add altitude and reverse geocoding cache
+- [ ] Allow speed threshold customization (this is used to filter out unwanted GPS noise when the vehicle is virtually still)
+- [ ] Allow update interval customization while the vehicle is powered on (instead of forcing a 5 seconds interval)
+- [ ] Add vehicle diagnosis for Vmoto Soco (Super Soco API doesn't support it)
+- [ ] Add detailed battery information for Vmoto Soco (Super Soco API doesn't support it)
 
 ## Contributions are welcome!
 

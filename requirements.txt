@@ -1,0 +1,7 @@
+hassil==3.5.0
+home-assistant-intents==2026.3.24
+homeassistant==2026.2.3
+mutagen==1.47.0
+pymicro-vad==2.0.1
+pyspeex-noise==2.0.0
+PyTurboJPEG==1.7.5

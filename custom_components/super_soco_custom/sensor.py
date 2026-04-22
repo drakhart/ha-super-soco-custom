@@ -19,7 +19,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     sensors = []
 
     for (
-        id,  # pylint: disable=redefined-builtin
+        id,
         key,
         unit,
         icon,
@@ -27,7 +27,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         state_class,
         extra_attrs,
     ) in SENSORS:
-        if not key in coordinator.data:
+        if key not in coordinator.data:
             _LOGGER.debug("Unable to set up sensor due to missing data key: %s", key)
         else:
             sensors.append(
@@ -52,7 +52,7 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
         self,
         config_entry,
         coordinator,
-        id,  # pylint: disable=redefined-builtin
+        id,
         key,
         unit,
         icon,
@@ -87,7 +87,7 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
 
     @property
     def native_unit_of_measurement(self):
-        if self.native_value != STATE_UNAVAILABLE and self._unit != None:
+        if self.native_value != STATE_UNAVAILABLE and self._unit is not None:
             return self._unit
 
     @property

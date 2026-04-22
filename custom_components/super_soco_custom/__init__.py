@@ -1,4 +1,5 @@
 import logging
+from typing import Optional, cast
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -12,7 +13,6 @@ from .const import (
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
     CONF_TOKEN,
-    CONFIG_FLOW_VERSION,
     DOMAIN,
     NAME,
     OPT_EMAIL,
@@ -29,7 +29,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(
-    hass: HomeAssistant, config: Config  # pylint: disable=unused-argument
+    hass: HomeAssistant,
+    config: Config,
 ) -> bool:
     return True
 
@@ -39,12 +40,12 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
 
-    app_name = config_entry.data.get(CONF_APP_NAME)
-    phone_prefix = config_entry.data.get(CONF_PHONE_PREFIX)
-    phone_number = config_entry.data.get(CONF_PHONE_NUMBER)
-    password = config_entry.data.get(CONF_PASSWORD)
-    token = config_entry.data.get(CONF_TOKEN)
-    email = config_entry.data.get(OPT_EMAIL)
+    app_name: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_APP_NAME))
+    phone_prefix: int = cast(int, config_entry.data.get(CONF_PHONE_PREFIX))
+    phone_number: str = cast(str, config_entry.data.get(CONF_PHONE_NUMBER))
+    password: str = cast(str, config_entry.data.get(CONF_PASSWORD))
+    token: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_TOKEN))
+    email: Optional[str] = cast(Optional[str], config_entry.data.get(OPT_EMAIL))
 
     session = async_get_clientsession(hass)
 
@@ -108,8 +109,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
             }
         )
 
-        config_entry.version = 2
-        hass.config_entries.async_update_entry(config_entry, data=new)
+        hass.config_entries.async_update_entry(config_entry, data=new, version=2)
 
     _LOGGER.info("Migration to version %s successful", config_entry.version)
 

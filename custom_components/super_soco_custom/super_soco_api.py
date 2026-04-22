@@ -1,5 +1,6 @@
 import aiohttp
 import async_timeout
+from typing import Optional
 
 __title__ = "super_soco_api"
 __version__ = "0.0.1"
@@ -18,13 +19,13 @@ class SuperSocoAPI:
         phone_prefix: int,
         phone_number: str,
         password: str,
-        token: str = None,
+        token: Optional[str] = None,
     ) -> None:
         self._session = session
         self._phone_prefix = phone_prefix
         self._phone_number = phone_number
         self._password = password
-        self._token = token
+        self._token: Optional[str] = token
 
     async def get_device(self, device_number: str) -> dict:
         url = f"{BASE_URL}/device/info/{device_number}"
@@ -32,7 +33,7 @@ class SuperSocoAPI:
 
         return await self._api_wrapper(url, headers, {})
 
-    async def get_token(self) -> str:
+    async def get_token(self) -> Optional[str]:
         if not self._token:
             await self.login()
 
@@ -115,6 +116,7 @@ class SuperSocoAPI:
 
         if authz:
             token = await self.get_token()
-            headers["authorization"] = f"{JWT_PREFIX}{token}"
+            if token is not None:
+                headers["authorization"] = f"{JWT_PREFIX}{token}"
 
         return headers

@@ -1,5 +1,6 @@
 import aiohttp
 import async_timeout
+from typing import Optional
 
 __title__ = "open_street_map_api"
 __version__ = "0.0.1"
@@ -11,12 +12,14 @@ TIMEOUT = 2
 
 
 class OpenStreetMapAPI:
-    def __init__(self, session: aiohttp.ClientSession, email: str) -> None:
+    def __init__(self, session: aiohttp.ClientSession, email: Optional[str]) -> None:
         self._session = session
-        self._email = email
+        self._email: Optional[str] = email
 
     async def get_reverse(self, latitude: float, longitude: float) -> dict:
-        url = f"{BASE_URL}/reverse?format=json&email={self._email}&lat={latitude}&lon={longitude}"
+        # Only include the email parameter if provided
+        email_param = f"&email={self._email}" if self._email else ""
+        url = f"{BASE_URL}/reverse?format=json{email_param}&lat={latitude}&lon={longitude}"
         headers = await self._get_headers()
 
         return await self._api_wrapper(url, headers)

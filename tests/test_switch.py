@@ -1,35 +1,39 @@
 """Test super_soco_custom switch."""
+
 import pytest
 
-from homeassistant.components.switch import SERVICE_TURN_OFF, SERVICE_TURN_ON
-from homeassistant.const import Platform, ATTR_ENTITY_ID
-
+from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
+from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from unittest.mock import AsyncMock, call, create_autospec, patch
 
-from unittest.mock import call, patch
-
-from custom_components.super_soco_custom.const import DOMAIN
+from custom_components.super_soco_custom.const import (
+    DATA_NATIVE_PUSH_NOTIFICATIONS,
+    DOMAIN,
+)
+from custom_components.super_soco_custom.coordinator import (
+    SuperSocoCustomDataUpdateCoordinator,
+)
+from custom_components.super_soco_custom.switch import (
+    SuperSocoCustomSwitch,
+)
 
 from .const import MOCK_SUPER_SOCO_CONFIG
 
 
 @pytest.mark.asyncio
-# TODO: Remove when https://github.com/home-assistant/core/pull/89976 is released
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_switch_services(
     hass,
-    bypass_coordinator_switch_delay,  # pylint: disable=unused-argument
-    bypass_get_mapzen,  # pylint: disable=unused-argument
-    bypass_super_soco_get_device,  # pylint: disable=unused-argument
-    bypass_super_soco_get_user,  # pylint: disable=unused-argument
-    bypass_super_soco_get_tracking_history_list,  # pylint: disable=unused-argument
-    bypass_super_soco_get_warning_list,  # pylint: disable=unused-argument
+    bypass_coordinator_switch_delay,
+    bypass_get_mapzen,
+    bypass_super_soco_get_device,
+    bypass_super_soco_get_user,
+    bypass_super_soco_get_tracking_history_list,
+    bypass_super_soco_get_warning_list,
 ):
     """Test switch services."""
     # Create a mock entry so we don't have to go through config flow
-    config_entry = MockConfigEntry(
-        domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG, entry_id="test"
-    )
+    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
     config_entry.add_to_hass(hass)
 
     await hass.config_entries.async_setup(config_entry.entry_id)
@@ -37,41 +41,41 @@ async def test_switch_services(
 
     # Assert that the on/off services are called for push notifications switch
     with patch(
-        "custom_components.super_soco_custom.SuperSocoAPI.set_push_notifications"
+        "custom_components.super_soco_custom.SuperSocoCustomDataUpdateCoordinator.set_switch_state"
     ) as push_func:
         await hass.services.async_call(
-            Platform.SWITCH,
+            SWITCH_DOMAIN,
             SERVICE_TURN_OFF,
             service_data={
-                ATTR_ENTITY_ID: f"{Platform.SWITCH}.super_soco_ts_native_push_notifications"
+                ATTR_ENTITY_ID: f"{SWITCH_DOMAIN}.super_soco_ts_native_push_notifications"
             },
             blocking=True,
         )
         assert push_func.called
-        assert push_func.call_args == call(False)
+        assert push_func.call_args == call(DATA_NATIVE_PUSH_NOTIFICATIONS, False)
 
         push_func.reset_mock()
 
         await hass.services.async_call(
-            Platform.SWITCH,
+            SWITCH_DOMAIN,
             SERVICE_TURN_ON,
             service_data={
-                ATTR_ENTITY_ID: f"{Platform.SWITCH}.super_soco_ts_native_push_notifications"
+                ATTR_ENTITY_ID: f"{SWITCH_DOMAIN}.super_soco_ts_native_push_notifications"
             },
             blocking=True,
         )
         assert push_func.called
-        assert push_func.call_args == call(True)
+        assert push_func.call_args == call(DATA_NATIVE_PUSH_NOTIFICATIONS, True)
 
     # Assert that the on/off services are called for tracking history switch
     with patch(
         "custom_components.super_soco_custom.SuperSocoAPI.set_tracking_history"
     ) as push_func:
         await hass.services.async_call(
-            Platform.SWITCH,
+            SWITCH_DOMAIN,
             SERVICE_TURN_OFF,
             service_data={
-                ATTR_ENTITY_ID: f"{Platform.SWITCH}.super_soco_ts_native_tracking_history"
+                ATTR_ENTITY_ID: f"{SWITCH_DOMAIN}.super_soco_ts_native_tracking_history"
             },
             blocking=True,
         )
@@ -81,10 +85,10 @@ async def test_switch_services(
         push_func.reset_mock()
 
         await hass.services.async_call(
-            Platform.SWITCH,
+            SWITCH_DOMAIN,
             SERVICE_TURN_ON,
             service_data={
-                ATTR_ENTITY_ID: f"{Platform.SWITCH}.super_soco_ts_native_tracking_history"
+                ATTR_ENTITY_ID: f"{SWITCH_DOMAIN}.super_soco_ts_native_tracking_history"
             },
             blocking=True,
         )
@@ -93,3 +97,32 @@ async def test_switch_services(
 
     await hass.config_entries.async_unload(config_entry.entry_id)
     await hass.async_block_till_done()
+
+
+@pytest.mark.asyncio
+async def test_switch_extra_state_attributes_mapping():
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
+    coord = create_autospec(SuperSocoCustomDataUpdateCoordinator, instance=True)
+    coord.data = {"a": "one", "b": "two"}
+
+    switch = SuperSocoCustomSwitch(entry, coord, "sid", "a", 1, "ic", {"x": "b"})
+
+    assert switch.extra_state_attributes == {"x": "two"}
+
+
+@pytest.mark.asyncio
+async def test_switch_turns_call_coordinator():
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
+    coord = create_autospec(SuperSocoCustomDataUpdateCoordinator, instance=True)
+    coord.data = {"k": 0}
+    coord.set_switch_state = AsyncMock()
+
+    switch = SuperSocoCustomSwitch(entry, coord, "sid", "k", 1, "ic", None)
+
+    await switch.async_turn_on()
+    await switch.async_turn_off()
+
+    assert coord.set_switch_state.await_args_list == [
+        (("k", True),),
+        (("k", False),),
+    ]

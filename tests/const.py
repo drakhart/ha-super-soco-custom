@@ -1,4 +1,5 @@
 """Constants for super_soco_custom tests."""
+
 from custom_components.super_soco_custom.const import (
     CONF_APP_NAME,
     CONF_LOGIN_CODE,
@@ -24,7 +25,7 @@ MOCK_SUPER_SOCO_CONFIG = {
     CONF_PHONE_PREFIX: 34,
     CONF_TOKEN: None,
 }
-MOCK_USER_ID = "1234"
+MOCK_USER_ID = 1234
 MOCK_VMOTO_SOCO_CONFIG = {
     CONF_APP_NAME: VMOTO_SOCO,
     CONF_LOGIN_CODE: "1234",

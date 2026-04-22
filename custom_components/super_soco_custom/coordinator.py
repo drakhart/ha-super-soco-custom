@@ -1,4 +1,5 @@
 import logging
+from typing import Any, cast, Optional
 
 from aiohttp import ClientResponseError
 from asyncio import sleep
@@ -154,9 +155,9 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         )
         self._is_powered_on = False
         self._last_trip_timestamp = None
-        self._user_data = None
-        self._user_id = None
-        self._device_no = None
+        self._user_data: Optional[dict[str, Any]] = None
+        self._user_id: Optional[int] = None
+        self._device_no: Optional[str] = None
 
         _LOGGER.debug(
             "Setting initial update interval: %i minute(s)",
@@ -173,16 +174,24 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("Requesting user data")
                 self._user_data = (await self._client.get_user())[DATA_DATA]
 
-            self._user_id = self._user_data[DATA_USER][DATA_USER_ID]
-            self._device_no = self._user_data[DATA_DEVICE][DATA_DEVICE_NO]
+            if not self._user_data:
+                raise UpdateFailed("Missing user data")
+
+            user_data = self._user_data
+
+            self._user_id = user_data[DATA_USER][DATA_USER_ID]
+            self._device_no = user_data[DATA_DEVICE][DATA_DEVICE_NO]
 
             if self._is_app_vmoto_soco():
-                device_data = self._user_data[DATA_DEVICE]
+                device_data = user_data[DATA_DEVICE]
             else:
                 _LOGGER.debug("Requesting device data")
-                device_data = (await self._client.get_device(self._device_no))[
-                    DATA_DATA
-                ]
+                # _client is Union[SuperSocoAPI, VmotoSocoAPI]; cast to SuperSocoAPI
+                client = cast(SuperSocoAPI, self._client)
+                if self._device_no is None:
+                    raise UpdateFailed("Missing device number")
+
+                device_data = (await client.get_device(self._device_no))[DATA_DATA]
 
             # Super Soco & Vmoto Soco common fields
             data = {
@@ -214,11 +223,11 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                         DATA_LAST_GPS_TIME: parse_timestamp(
                             device_data[DATA_LAST_GPS_TIME],
                         ),
-                        DATA_MODEL_NAME: self._user_data[DATA_USER_BIND_DEVICE][
+                        DATA_MODEL_NAME: user_data[DATA_USER_BIND_DEVICE][
                             DATA_MODEL_NAME
                         ],
                         DATA_POWER_SWITCH: device_data[DATA_POWER_STATUS],
-                        DATA_VEHICLE_IMAGE_URL: self._user_data[DATA_USER_BIND_DEVICE][
+                        DATA_VEHICLE_IMAGE_URL: user_data[DATA_USER_BIND_DEVICE][
                             DATA_VEHICLE_IMAGE_URL_VMOTO
                         ],
                     }
@@ -229,20 +238,20 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 data.update(
                     {
                         DATA_AGREEMENT_END_TIME: parse_date(
-                            self._user_data[DATA_DEVICE][DATA_AGREEMENT_END_TIME]
+                            user_data[DATA_DEVICE][DATA_AGREEMENT_END_TIME]
                         ),
                         DATA_AGREEMENT_START_TIME: parse_date(
-                            self._user_data[DATA_DEVICE][DATA_AGREEMENT_START_TIME]
+                            user_data[DATA_DEVICE][DATA_AGREEMENT_START_TIME]
                         ),
                         DATA_ECU_BATTERY: calculate_percentage(
                             device_data[DATA_ECU_VOLTAGE] or DEFAULT_INTEGER,
                             ECU_MAX_VOLTAGE,
                         ),
                         DATA_LAST_GPS_TIME: parse_date(device_data[DATA_LAST_GPS_TIME]),
-                        DATA_LOGO_IMAGE_URL: f"{CDN_BASE_URL}/{self._user_data[DATA_DEVICE][DATA_LOGO_IMAGE_URL]}",
-                        DATA_MODEL_NAME: self._user_data[DATA_DEVICE][DATA_MODEL_NAME],
+                        DATA_LOGO_IMAGE_URL: f"{CDN_BASE_URL}/{user_data[DATA_DEVICE][DATA_LOGO_IMAGE_URL]}",
+                        DATA_MODEL_NAME: user_data[DATA_DEVICE][DATA_MODEL_NAME],
                         DATA_POWER_STATUS: device_data[DATA_POWER_STATUS],
-                        DATA_VEHICLE_IMAGE_URL: f"{CDN_BASE_URL}/{self._user_data[DATA_DEVICE][DATA_VEHICLE_IMAGE_URL]}",
+                        DATA_VEHICLE_IMAGE_URL: f"{CDN_BASE_URL}/{user_data[DATA_DEVICE][DATA_VEHICLE_IMAGE_URL]}",
                     }
                 )
 
@@ -250,16 +259,20 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Inject home and course data only if vehicle is powered on or moving noticeably
             if self._is_powered_on or self._is_power_off_movement_noticeable(
-                data[DATA_LATITUDE], data[DATA_LONGITUDE]
+                float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
             ):
                 # Inject home data
                 data.update(
-                    self._get_home_data(data[DATA_LATITUDE], data[DATA_LONGITUDE])
+                    self._get_home_data(
+                        float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
+                    )
                 )
 
                 # Inject course data
                 data.update(
-                    self._get_course_data(data[DATA_LATITUDE], data[DATA_LONGITUDE])
+                    self._get_course_data(
+                        float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
+                    )
                 )
 
             # ... otherwise use last cached data to reduce GPS jitter
@@ -283,11 +296,13 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
             # Inject additional API data
             data.update(
-                await self._get_altitude_data(data[DATA_LATITUDE], data[DATA_LONGITUDE])
+                await self._get_altitude_data(
+                    float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
+                )
             )
             data.update(
                 await self._get_reverse_geocoding_data(
-                    data[DATA_LATITUDE], data[DATA_LONGITUDE]
+                    float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
                 )
             )
             data.update(await self._get_last_trip_data())
@@ -330,7 +345,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 res = await self._open_topo_data_api.get_mapzen(latitude, longitude)
 
                 data = {DATA_ALTITUDE: res[DATA_RESULTS][0][DATA_ELEVATION]}
-            except Exception as exception:  # pylint: disable=broad-exception-caught
+            except Exception as exception:
                 _LOGGER.exception(exception)
         else:
             _LOGGER.debug("Altitude data is up to date")
@@ -350,15 +365,21 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         if home:
             home_latitude = home.attributes.get(DATA_LATITUDE)
             home_longitude = home.attributes.get(DATA_LONGITUDE)
+            home_radius_raw = home.attributes.get(DATA_RADIUS)
             home_radius = round(
-                home.attributes.get(DATA_RADIUS) * KM_IN_A_M, DISTANCE_ROUNDING_DECIMALS
-            )
-
-            data[DATA_DISTANCE_FROM_HOME] = round(
-                calculate_distance(home_latitude, home_longitude, latitude, longitude)
+                (float(home_radius_raw) if home_radius_raw is not None else 0)
                 * KM_IN_A_M,
                 DISTANCE_ROUNDING_DECIMALS,
             )
+
+            if home_latitude is not None and home_longitude is not None:
+                data[DATA_DISTANCE_FROM_HOME] = round(
+                    calculate_distance(
+                        float(home_latitude), float(home_longitude), latitude, longitude
+                    )
+                    * KM_IN_A_M,
+                    DISTANCE_ROUNDING_DECIMALS,
+                )
 
             if data[DATA_DISTANCE_FROM_HOME] <= home_radius:
                 data[DATA_DIR_OF_TRAVEL] = DIR_ARRIVED
@@ -438,7 +459,11 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("Requesting last trip data")
 
                 if self._is_app_vmoto_soco():
-                    res = await self._client.get_tracking_history_list(
+                    client = cast(VmotoSocoAPI, self._client)
+                    if self._user_id is None or self._device_no is None:
+                        raise IndexError
+
+                    res = await client.get_tracking_history_list(
                         self._user_id, self._device_no, 1, 1
                     )
                     trip = res[DATA_DATA][DATA_DATA][0]
@@ -464,7 +489,8 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                         ),
                     }
                 else:
-                    res = await self._client.get_tracking_history_list(1, 1)
+                    client = cast(SuperSocoAPI, self._client)
+                    res = await client.get_tracking_history_list(1, 1)
                     trip = res[DATA_DATA][DATA_LIST][0]
 
                     data = {
@@ -503,7 +529,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 self._last_trip_timestamp = timestamp
             except IndexError:
                 _LOGGER.debug("Last trip data is empty")
-            except Exception as exception:  # pylint: disable=broad-exception-caught
+            except Exception as exception:
                 _LOGGER.exception(exception)
         else:
             _LOGGER.debug("Last trip data is up to date")
@@ -521,9 +547,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             DATA_LAST_WARNING_MESSAGE: self._last_data.get(
                 DATA_LAST_WARNING_MESSAGE, STATE_UNKNOWN
             ),
-            DATA_LAST_WARNING_TIME: self._last_data.get(
-                DATA_LAST_WARNING_TIME, None
-            ),
+            DATA_LAST_WARNING_TIME: self._last_data.get(DATA_LAST_WARNING_TIME, None),
             DATA_LAST_WARNING_TITLE: self._last_data.get(
                 DATA_LAST_WARNING_TITLE, STATE_UNKNOWN
             ),
@@ -534,12 +558,16 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
             not self._last_data
             or not self._is_powered_on
             or self._last_data[DATA_LAST_WARNING_TIME] == STATE_UNAVAILABLE
-            or self._last_data[DATA_LAST_WARNING_TIME] == None
+            or self._last_data[DATA_LAST_WARNING_TIME] is None
         ):
             try:
                 _LOGGER.debug("Requesting last warning data")
                 if self._is_app_vmoto_soco():
-                    res = await self._client.get_warning_list(self._user_id, 1, 1)
+                    client = cast(VmotoSocoAPI, self._client)
+                    if self._user_id is None:
+                        raise IndexError
+
+                    res = await client.get_warning_list(self._user_id, 1, 1)
                     warning = res[DATA_DATA][DATA_DATA][0]
 
                     data = {
@@ -548,7 +576,8 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                         ),
                     }
                 else:
-                    res = await self._client.get_warning_list(1, 1)
+                    client = cast(SuperSocoAPI, self._client)
+                    res = await client.get_warning_list(1, 1)
                     warning = res[DATA_DATA][DATA_LIST][0]
 
                     data = {
@@ -563,7 +592,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                 )
             except IndexError:
                 _LOGGER.debug("Last warning data is empty")
-            except Exception as exception:  # pylint: disable=broad-exception-caught
+            except Exception as exception:
                 _LOGGER.exception(exception)
         else:
             _LOGGER.debug("Last warning data is up to date")
@@ -572,7 +601,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def _get_reverse_geocoding_data(
         self, latitude: float, longitude: float
-    ) -> float:
+    ) -> dict:
         if not self._config_entry.options.get(
             OPT_ENABLE_REVERSE_GEOCODING_ENTITY, DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY
         ):
@@ -661,7 +690,7 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
                         DATA_REVERSE_GEOCODING_STATE_DISTRICT, STATE_UNKNOWN
                     ),
                 }
-            except Exception as exception:  # pylint: disable=broad-exception-caught
+            except Exception as exception:
                 _LOGGER.exception(exception)
         else:
             _LOGGER.debug("Reverse geocoding data is up to date")
@@ -675,8 +704,8 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
 
         if self._last_data:
             data[DATA_COURSE] = calculate_course(
-                self._last_data[DATA_LATITUDE],
-                self._last_data[DATA_LONGITUDE],
+                float(self._last_data[DATA_LATITUDE]),
+                float(self._last_data[DATA_LONGITUDE]),
                 latitude,
                 longitude,
             )
@@ -692,9 +721,9 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         return (
             not self._last_data
             or round(latitude, API_GEO_PRECISION)
-            != round(self._last_data[DATA_LATITUDE], API_GEO_PRECISION)
+            != round(float(self._last_data.get(DATA_LATITUDE, 0)), API_GEO_PRECISION)
             or round(longitude, API_GEO_PRECISION)
-            != round(self._last_data[DATA_LONGITUDE], API_GEO_PRECISION)
+            != round(float(self._last_data.get(DATA_LONGITUDE, 0)), API_GEO_PRECISION)
         )
 
     def _is_power_off_movement_noticeable(
@@ -703,11 +732,17 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
         if not self._last_data:
             return True
 
+        try:
+            last_lat = float(self._last_data[DATA_LATITUDE])
+            last_lon = float(self._last_data[DATA_LONGITUDE])
+        except Exception:
+            return True
+
         distance = calculate_distance(
             latitude,
             longitude,
-            self._last_data[DATA_LATITUDE],
-            self._last_data[DATA_LONGITUDE],
+            last_lat,
+            last_lon,
         )
 
         return distance >= POWER_OFF_DISTANCE_THRESHOLD_METERS
@@ -715,30 +750,41 @@ class SuperSocoCustomDataUpdateCoordinator(DataUpdateCoordinator):
     async def set_switch_state(self, data_key: str, state: bool) -> None:
         try:
             if self._is_app_vmoto_soco():
+                client = cast(VmotoSocoAPI, self._client)
                 if data_key == DATA_NATIVE_PUSH_NOTIFICATIONS:
-                    await self._client.set_user_privacy(
+                    if self._user_id is None:
+                        raise UpdateFailed("Missing user id")
+
+                    await client.set_user_privacy(
                         self._user_id,
-                        bool(self._last_data[DATA_NATIVE_TRACKING_HISTORY]),
+                        bool(self._last_data.get(DATA_NATIVE_TRACKING_HISTORY, False)),
                         state,
                     )
                 elif data_key == DATA_NATIVE_TRACKING_HISTORY:
-                    await self._client.set_user_privacy(
+                    if self._user_id is None:
+                        raise UpdateFailed("Missing user id")
+
+                    await client.set_user_privacy(
                         self._user_id,
                         state,
-                        bool(self._last_data[DATA_NATIVE_PUSH_NOTIFICATIONS]),
+                        bool(
+                            self._last_data.get(DATA_NATIVE_PUSH_NOTIFICATIONS, False)
+                        ),
                     )
                 elif data_key == DATA_POWER_SWITCH:
-                    await self._client.switch_power(
-                        self._device_no,
-                    )
+                    if self._device_no is None:
+                        raise UpdateFailed("Missing device number")
+
+                    await client.switch_power(self._device_no)
             else:
-                await getattr(self._client, SWITCH_API_METHODS[data_key])(state)
+                client = cast(SuperSocoAPI, self._client)
+                await getattr(client, SWITCH_API_METHODS[data_key])(state)
 
             await sleep(SWITCH_REFRESH_SLEEP_SECONDS)
             await self.async_request_refresh()
         except AttributeError:
             _LOGGER.debug("Unknown API method for data key: %s", data_key)
-        except Exception as exception:  # pylint: disable=broad-exception-caught
+        except Exception as exception:
             _LOGGER.exception(exception)
 
     def _set_update_interval(self) -> None:

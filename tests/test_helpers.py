@@ -1,5 +1,6 @@
 """Tests for super_soco_custom open_topo_data_api."""
-import datetime
+
+from datetime import datetime
 import pytz
 
 from custom_components.super_soco_custom.helpers import (
@@ -17,6 +18,6 @@ def test_calculate_course():
 
 def test_parse_timestamp():
     """Test parse_timestamp."""
-    assert parse_timestamp(1681423654000) == datetime.datetime(
+    assert parse_timestamp(1681423654000) == datetime(
         2023, 4, 13, 22, 7, 34, tzinfo=pytz.UTC
     )
