@@ -16,7 +16,7 @@
                     "app_name": "Nombre de la aplicación"
                 }
             },
-            "login": {
+            "super_soco_credentials": {
                 "description": "Introduce las credenciales usadas para darte de alta en la aplicación Super Soco.",
                 "data": {
                     "phone_prefix": "Prefijo telefónico",
@@ -230,7 +230,7 @@
                     "update_interval": "Intervalo de actualización en minutos"
                 },
                 "data_description": {
-                    "email": "Email para la API de Open Street Maps; usado solo si la geocodificación inversa está habilitada (consultar https://nominatim.org/release-docs/develop/api/Reverse/#other para saber más)",
+                    "email": "Email para la API de Open Street Maps; usado solo si la geocodificación inversa está habilitada (consultar {nominatim_url} para saber más)",
                     "enable_altitude_entity": "Descarga datos adicionales desde Open Topo Data usando el set de datos de Mapzen",
                     "enable_last_trip_entities": "Descarga datos adicionales desde Super Soco; sólo disponibles si el historial nativo está activado; se actualizarán como mucho cada 10 minutos",
                     "enable_last_warning_entity": "Descarga datos adicionales desde Super Soco",

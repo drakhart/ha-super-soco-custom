@@ -121,7 +121,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return cast(
                 FlowResult,
                 self.async_show_form(
-                    step_id="login",
+                    step_id="super_soco_credentials",
                     data_schema=vol.Schema(
                         {
                             vol.Required(
@@ -161,6 +161,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors=errors,
             ),
         )
+
+    async def async_step_super_soco_credentials(self, user_input=None) -> FlowResult:
+        return await self.async_step_login(user_input)
 
     async def async_step_vmoto_soco_login_method(self, user_input=None) -> FlowResult:
         if user_input:
@@ -216,7 +219,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return cast(
                 FlowResult,
                 self.async_show_form(
-                    step_id="login",
+                    step_id="vmoto_soco_login_code",
                     data_schema=vol.Schema(
                         {
                             vol.Required(CONF_LOGIN_CODE): str,
@@ -234,6 +237,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._errors["base"] = ERROR_UNKNOWN
 
         return await self.async_step_user(user_input)
+
+    async def async_step_vmoto_soco_login_code(self, user_input=None) -> FlowResult:
+        return await self.async_step_login(user_input)
 
     async def async_step_login(self, user_input=None) -> FlowResult:
         if user_input:
@@ -347,6 +353,9 @@ class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
             FlowResult,
             self.async_show_form(
                 step_id="user",
+                description_placeholders={
+                    "nominatim_url": "https://nominatim.org/release-docs/develop/api/Reverse/#other"
+                },
                 data_schema=vol.Schema(
                     {
                         vol.Required(

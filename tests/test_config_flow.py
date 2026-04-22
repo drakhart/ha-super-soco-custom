@@ -100,7 +100,7 @@ async def test_successful_super_soco_config_flow(
 
     # Check that the config flow shows the login form as the next step
     assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "login"
+    assert result["step_id"] == "super_soco_credentials"
 
     # Continue past the login step
     result = await hass.config_entries.flow.async_configure(
@@ -172,7 +172,7 @@ async def test_successful_vmoto_soco_config_flow(
 
     # Check that the config flow shows the login form as the next step
     assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "login"
+    assert result["step_id"] == "vmoto_soco_login_code"
 
     # Continue past the login code step
     result = await hass.config_entries.flow.async_configure(
