@@ -10,11 +10,14 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
     APP_NAMES,
     CONF_APP_NAME,
+    CONF_EMAIL,
     CONF_LOGIN_CODE,
+    CONF_LOGIN_METHOD,
     CONF_PASSWORD,
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
@@ -31,6 +34,8 @@ from .const import (
     ERROR_CANNOT_CONNECT,
     ERROR_INVALID_AUTH,
     ERROR_UNKNOWN,
+    LOGIN_METHOD_EMAIL,
+    LOGIN_METHOD_PHONE,
     MAX_UPDATE_INTERVAL_MINUTES,
     MIN_UPDATE_INTERVAL_MINUTES,
     NAME,
@@ -61,8 +66,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._reauth_entry = None
         self._user_input = {
             CONF_APP_NAME: SUPER_SOCO,
+            CONF_LOGIN_METHOD: None,
             CONF_PHONE_PREFIX: PHONE_PREFIXES[0][1],
             CONF_PHONE_NUMBER: None,
+            CONF_EMAIL: None,
             CONF_PASSWORD: None,
             CONF_LOGIN_CODE: None,
         }
@@ -87,8 +94,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = self._errors
         self._errors = {}
 
-        # Build a mapping: code -> display name for form selection
-        prefix_dict = {code: name for name, code in PHONE_PREFIXES}
         return cast(
             FlowResult,
             self.async_show_form(
@@ -98,14 +103,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         vol.Required(
                             CONF_APP_NAME, default=self._user_input[CONF_APP_NAME]
                         ): vol.In(APP_NAMES),
-                        vol.Required(
-                            CONF_PHONE_PREFIX,
-                            default=self._user_input[CONF_PHONE_PREFIX],
-                        ): vol.In(prefix_dict),
-                        vol.Required(
-                            CONF_PHONE_NUMBER,
-                            default=self._user_input[CONF_PHONE_NUMBER],
-                        ): str,
                     }
                 ),
                 errors=errors,
@@ -120,12 +117,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
 
         if self._user_input[CONF_APP_NAME] == SUPER_SOCO:
+            prefix_dict = {code: name for name, code in PHONE_PREFIXES}
             return cast(
                 FlowResult,
                 self.async_show_form(
                     step_id="login",
                     data_schema=vol.Schema(
                         {
+                            vol.Required(
+                                CONF_PHONE_PREFIX,
+                                default=self._user_input[CONF_PHONE_PREFIX],
+                            ): vol.In(prefix_dict),
+                            vol.Required(
+                                CONF_PHONE_NUMBER,
+                                default=self._user_input[CONF_PHONE_NUMBER],
+                            ): str,
                             vol.Required(
                                 CONF_PASSWORD, default=self._user_input[CONF_PASSWORD]
                             ): str,
@@ -134,6 +140,75 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     errors=errors,
                 ),
             )
+
+        return cast(
+            FlowResult,
+            self.async_show_form(
+                step_id="vmoto_soco_login_method",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_LOGIN_METHOD,
+                            default=self._user_input[CONF_LOGIN_METHOD],
+                        ): SelectSelector(
+                            SelectSelectorConfig(
+                                options=[LOGIN_METHOD_PHONE, LOGIN_METHOD_EMAIL],
+                                translation_key=CONF_LOGIN_METHOD,
+                            )
+                        ),
+                    }
+                ),
+                errors=errors,
+            ),
+        )
+
+    async def async_step_vmoto_soco_login_method(self, user_input=None) -> FlowResult:
+        if user_input:
+            self._user_input.update(user_input)
+
+        errors = self._errors
+        self._errors = {}
+
+        if self._user_input[CONF_LOGIN_METHOD] == LOGIN_METHOD_EMAIL:
+            return cast(
+                FlowResult,
+                self.async_show_form(
+                    step_id="vmoto_soco_credentials",
+                    data_schema=vol.Schema(
+                        {
+                            vol.Required(
+                                CONF_EMAIL, default=self._user_input[CONF_EMAIL]
+                            ): str,
+                        }
+                    ),
+                    errors=errors,
+                ),
+            )
+
+        prefix_dict = {code: name for name, code in PHONE_PREFIXES}
+        return cast(
+            FlowResult,
+            self.async_show_form(
+                step_id="vmoto_soco_credentials",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_PHONE_PREFIX,
+                            default=self._user_input[CONF_PHONE_PREFIX],
+                        ): vol.In(prefix_dict),
+                        vol.Required(
+                            CONF_PHONE_NUMBER,
+                            default=self._user_input[CONF_PHONE_NUMBER],
+                        ): str,
+                    }
+                ),
+                errors=errors,
+            ),
+        )
+
+    async def async_step_vmoto_soco_credentials(self, user_input=None) -> FlowResult:
+        if user_input:
+            self._user_input.update(user_input)
 
         try:
             await self._get_login_code()
@@ -147,7 +222,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             vol.Required(CONF_LOGIN_CODE): str,
                         }
                     ),
-                    errors=errors,
+                    errors={},
                 ),
             )
         except CannotConnect:
@@ -249,8 +324,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def _get_vmoto_soco_client(self) -> VmotoSocoAPI:
         return VmotoSocoAPI(
             self._get_session(),
-            self._user_input[CONF_PHONE_PREFIX],
-            self._user_input[CONF_PHONE_NUMBER],
+            phone_prefix=self._user_input.get(CONF_PHONE_PREFIX),
+            phone_number=self._user_input.get(CONF_PHONE_NUMBER),
+            email=self._user_input.get(CONF_EMAIL),
         )
 
 

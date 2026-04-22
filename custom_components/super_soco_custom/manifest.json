@@ -5,8 +5,11 @@
     "@Drakhart"
   ],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/drakhart/ha-super-soco-custom",
+  "integration_type": "device",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/drakhart/ha-super-soco-custom/issues",
   "requirements": [],

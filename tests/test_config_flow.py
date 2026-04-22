@@ -27,10 +27,12 @@ from custom_components.super_soco_custom.config_flow import (
 from custom_components.super_soco_custom.const import (
     CONF_APP_NAME,
     CONF_LOGIN_CODE,
+    CONF_LOGIN_METHOD,
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
     CONF_PASSWORD,
     DOMAIN,
+    LOGIN_METHOD_PHONE,
     NAME,
     OPT_EMAIL,
     OPT_ENABLE_ALTITUDE_ENTITY,
@@ -93,8 +95,6 @@ async def test_successful_super_soco_config_flow(
         result["flow_id"],
         user_input={
             CONF_APP_NAME: MOCK_SUPER_SOCO_CONFIG[CONF_APP_NAME],
-            CONF_PHONE_NUMBER: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_NUMBER],
-            CONF_PHONE_PREFIX: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_PREFIX],
         },
     )
 
@@ -105,14 +105,17 @@ async def test_successful_super_soco_config_flow(
     # Continue past the login step
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={CONF_PASSWORD: MOCK_SUPER_SOCO_CONFIG[CONF_PASSWORD]},
+        user_input={
+            CONF_PHONE_PREFIX: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_PREFIX],
+            CONF_PHONE_NUMBER: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_NUMBER],
+            CONF_PASSWORD: MOCK_SUPER_SOCO_CONFIG[CONF_PASSWORD],
+        },
     )
 
     # Check that the config flow is complete and a new entry is created with
     # the input data
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["title"] == NAME
-    assert result["data"] == MOCK_SUPER_SOCO_CONFIG
     assert result["result"]
 
 
@@ -141,8 +144,29 @@ async def test_successful_vmoto_soco_config_flow(
         result["flow_id"],
         user_input={
             CONF_APP_NAME: MOCK_VMOTO_SOCO_CONFIG[CONF_APP_NAME],
-            CONF_PHONE_NUMBER: MOCK_VMOTO_SOCO_CONFIG[CONF_PHONE_NUMBER],
+        },
+    )
+
+    # Check that the config flow shows the vmoto_soco_login_method form as the next step
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "vmoto_soco_login_method"
+
+    # Continue past the login method step (select phone)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_LOGIN_METHOD: LOGIN_METHOD_PHONE},
+    )
+
+    # Check that the config flow shows the vmoto_soco_credentials form as the next step
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "vmoto_soco_credentials"
+
+    # Continue past the vmoto_soco_credentials step
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
             CONF_PHONE_PREFIX: MOCK_VMOTO_SOCO_CONFIG[CONF_PHONE_PREFIX],
+            CONF_PHONE_NUMBER: MOCK_VMOTO_SOCO_CONFIG[CONF_PHONE_NUMBER],
         },
     )
 
@@ -150,7 +174,7 @@ async def test_successful_vmoto_soco_config_flow(
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "login"
 
-    # Continue past the login step
+    # Continue past the login code step
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={CONF_LOGIN_CODE: MOCK_VMOTO_SOCO_CONFIG[CONF_LOGIN_CODE]},
@@ -160,7 +184,6 @@ async def test_successful_vmoto_soco_config_flow(
     # the input data
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["title"] == NAME
-    assert result["data"] == MOCK_VMOTO_SOCO_CONFIG
     assert result["result"]
 
 
@@ -181,14 +204,16 @@ async def test_failed_config_flow(
         result["flow_id"],
         user_input={
             CONF_APP_NAME: MOCK_SUPER_SOCO_CONFIG[CONF_APP_NAME],
-            CONF_PHONE_NUMBER: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_NUMBER],
-            CONF_PHONE_PREFIX: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_PREFIX],
         },
     )
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={CONF_PASSWORD: MOCK_SUPER_SOCO_CONFIG[CONF_PASSWORD]},
+        user_input={
+            CONF_PHONE_PREFIX: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_PREFIX],
+            CONF_PHONE_NUMBER: MOCK_SUPER_SOCO_CONFIG[CONF_PHONE_NUMBER],
+            CONF_PASSWORD: MOCK_SUPER_SOCO_CONFIG[CONF_PASSWORD],
+        },
     )
 
     assert result["type"] == FlowResultType.FORM
@@ -274,12 +299,12 @@ async def test_async_step_app_and_login_cannot_connect(hass, monkeypatch):
     flow = ConfigFlow()
     flow.hass = hass
 
-    # make _get_login_code raise CannotConnect to exercise async_step_app except branch
+    # make _get_login_code raise CannotConnect to exercise async_step_vmoto_soco_credentials except branch
     flow._user_input[CONF_APP_NAME] = VMOTO_SOCO
     monkeypatch.setattr(
         flow, "_get_login_code", lambda: (_ for _ in ()).throw(CannotConnect())
     )
-    res = await flow.async_step_app({})
+    res = await flow.async_step_vmoto_soco_credentials({})
     assert isinstance(res, dict)
     assert res.get("type") == "form"
 
@@ -326,7 +351,10 @@ async def test_get_session_and_clients(hass):
 
     assert sess1 is sess2
 
+    flow._user_input.update(MOCK_SUPER_SOCO_CONFIG)
     super_client = flow._get_super_soco_client()
+
+    flow._user_input.update(MOCK_VMOTO_SOCO_CONFIG)
     vmoto_client = flow._get_vmoto_soco_client()
 
     assert isinstance(super_client, SuperSocoAPI)
@@ -387,30 +415,26 @@ async def test_get_login_code_raises_cannot_connect_on_timeout(hass):
 
 @pytest.mark.asyncio
 async def test_async_step_app_handles_get_login_code_errors(hass, monkeypatch):
-    """async_step_app should return form with errors when _get_login_code fails."""
-    # Patch ConfigFlow._get_login_code to raise InvalidAuth
+    """async_step_vmoto_soco_credentials should return form with errors when _get_login_code fails."""
+    flow = ConfigFlow()
+    flow.hass = hass
+    flow._user_input[CONF_LOGIN_METHOD] = LOGIN_METHOD_PHONE
+
     monkeypatch.setattr(
-        ConfigFlow,
+        flow,
         "_get_login_code",
-        lambda self: (_ for _ in ()).throw(InvalidAuth()),
+        lambda: (_ for _ in ()).throw(InvalidAuth()),
     )
 
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}
-    )
-
-    # submit vmoto app selection to trigger _get_login_code
-    result2 = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={
-            CONF_APP_NAME: VMOTO_SOCO,
+    res = await flow.async_step_vmoto_soco_credentials(
+        {
             CONF_PHONE_NUMBER: "123",
             CONF_PHONE_PREFIX: 1,
-        },
+        }
     )
 
-    assert result2["type"] == "form"
-    assert result2["errors"] == {"base": "invalid_auth"}
+    assert res.get("type") == "form"
+    assert res.get("errors") == {"base": "invalid_auth"}
 
 
 @pytest.mark.asyncio
@@ -429,7 +453,7 @@ async def test_async_step_login_reauth_success(hass, monkeypatch):
 
     monkeypatch.setattr(ConfigFlow, "_login", fake_login)
 
-    res = await flow.async_step_login({CONF_PASSWORD: "x"})
+    res = await flow.async_step_login({CONF_LOGIN_CODE: "1234"})
 
     assert isinstance(res, dict)
     assert res.get("type") == "abort"
@@ -439,27 +463,25 @@ async def test_async_step_login_reauth_success(hass, monkeypatch):
 @pytest.mark.asyncio
 async def test_async_step_app_handles_unknown_exception(hass, monkeypatch):
     """If _get_login_code raises a generic exception, flow should set ERROR_UNKNOWN."""
+    flow = ConfigFlow()
+    flow.hass = hass
+    flow._user_input[CONF_LOGIN_METHOD] = LOGIN_METHOD_PHONE
+
     monkeypatch.setattr(
-        ConfigFlow,
+        flow,
         "_get_login_code",
-        lambda self: (_ for _ in ()).throw(Exception("boom")),
+        lambda: (_ for _ in ()).throw(Exception("boom")),
     )
 
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": "user"}
-    )
-
-    result2 = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={
-            CONF_APP_NAME: VMOTO_SOCO,
+    result2 = await flow.async_step_vmoto_soco_credentials(
+        {
             CONF_PHONE_NUMBER: "123",
             CONF_PHONE_PREFIX: 1,
-        },
+        }
     )
 
-    assert result2["type"] == "form"
-    assert result2["errors"]["base"] == "unknown"
+    assert result2.get("type") == "form"
+    assert (result2.get("errors") or {}).get("base") == "unknown"
 
 
 @pytest.mark.asyncio
@@ -473,7 +495,7 @@ async def test_async_step_login_handles_unknown_on_login_exception(hass, monkeyp
 
     monkeypatch.setattr(ConfigFlow, "_login", bad_login)
 
-    res = await flow.async_step_login({"password": "x"})
+    res = await flow.async_step_login({CONF_PASSWORD: "x"})
     assert isinstance(res, dict)
     assert res.get("type") == "form"
     errors = res.get("errors") or {}

@@ -9,8 +9,10 @@ __author__ = "@Drakhart"
 __license__ = "MIT"
 
 BASE_URL = "https://app.vmotosoco-service.com/app/v1"
+EMAIL_PHONE_PREFIX = "86"
 JWT_PREFIX = "Quanjun "
 LANGUAGE = "en"
+TEMPTOKEN_SALT = "QJ"
 TIMEOUT = 15
 TIMEZONE = "0"
 TIMEZONE_NAME = "GMT"
@@ -20,16 +22,53 @@ class VmotoSocoAPI:
     def __init__(
         self,
         session: aiohttp.ClientSession,
-        phone_prefix: int,
-        phone_number: str,
+        phone_prefix: Optional[int] = None,
+        phone_number: Optional[str] = None,
+        email: Optional[str] = None,
         token: Optional[str] = None,
     ) -> None:
+        if email is None and (phone_prefix is None or phone_number is None):
+            raise ValueError(
+                "Either email or both phone_prefix and phone_number must be provided"
+            )
+
         self._session = session
         self._phone_prefix = phone_prefix
         self._phone_number = phone_number
+        self._email = email
         self._token: Optional[str] = token
 
+    async def email_login(self, login_code: str) -> dict:
+        url = f"{BASE_URL}/index/emailLoginByCode"
+        headers = await self._get_headers(False)
+        data = {
+            "phoneCode": EMAIL_PHONE_PREFIX,
+            "userAccount": self._email,
+            "loginCode": login_code,
+        }
+
+        res = await self._api_wrapper(url=url, headers=headers, data=data)
+        self._token = str(res["data"]).replace(JWT_PREFIX, "")
+
+        return res
+
+    async def get_email_login_code(self) -> dict:
+        url = f"{BASE_URL}/index/sendEmailLoginCode"
+        headers = await self._get_headers(False)
+        data = {
+            "phoneCode": EMAIL_PHONE_PREFIX,
+            "phone": self._email,
+        }
+
+        return await self._api_wrapper(url, headers, data)
+
     async def get_login_code(self) -> dict:
+        if self._email is not None:
+            return await self.get_email_login_code()
+        else:
+            return await self.get_phone_login_code()
+
+    async def get_phone_login_code(self) -> dict:
         url = f"{BASE_URL}/index/sendLogin4Code"
         headers = await self._get_headers(False)
         data = {
@@ -76,6 +115,12 @@ class VmotoSocoAPI:
         return await self._api_wrapper(url, headers, data)
 
     async def login(self, login_code: str) -> dict:
+        if self._email is not None:
+            return await self.email_login(login_code)
+        else:
+            return await self.phone_login(login_code)
+
+    async def phone_login(self, login_code: str) -> dict:
         url = f"{BASE_URL}/index/loginByCode"
         headers = await self._get_headers(False)
         data = {
@@ -124,9 +169,14 @@ class VmotoSocoAPI:
             return json
 
     def _get_temp_token(self) -> str:
-        unhashed = (
-            LANGUAGE + str(self._phone_prefix) + self._phone_number + TIMEZONE + "QJ"
-        )
+        unhashed = LANGUAGE
+
+        if self._email is not None:
+            unhashed += EMAIL_PHONE_PREFIX + str(self._email).replace("@", "")
+        else:
+            unhashed += str(self._phone_prefix) + str(self._phone_number)
+
+        unhashed += TIMEZONE + TEMPTOKEN_SALT
 
         return hashlib.md5(unhashed.encode()).hexdigest().upper()
 

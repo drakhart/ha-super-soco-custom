@@ -11,18 +11,38 @@
         },
         "step": {
             "app": {
-                "description": "Please choose the specific Vmoto Super Soco app used to register your bike, then enter the phone prefix and number used to log in to that app.\n\n*Disclaimer: Please note that Vmoto Super Soco does not allow more than one client at a time, so any open session in the official app will be closed when using this integration.*",
+                "description": "Please choose the specific Vmoto Super Soco app used to register your bike.\n\n*Disclaimer: Please note that Vmoto Super Soco does not allow more than one client at a time, so any open session in the official app will be closed when using this integration.*",
                 "data": {
-                    "app_name": "Application name:",
-                    "phone_number": "Phone number",
-                    "phone_prefix": "Phone prefix"
+                    "app_name": "Application name"
                 }
             },
             "login": {
-                "description": "Please enter your login password or the verification code sent via SMS, depending on your app choice.\n\nPlease note that Vmoto Soco's session will expire every month; the integration will automatically ask you to reauthenticate whenever that happens.",
+                "description": "Please enter the credentials used to log in to the Super Soco app.",
                 "data": {
-                    "login_code": "Verification code",
+                    "phone_prefix": "Phone prefix",
+                    "phone_number": "Phone number",
                     "password": "Password"
+                }
+            },
+            "vmoto_soco_login_method": {
+                "description": "Please choose the login method for the Vmoto Soco app.",
+                "data": {
+                    "login_method": "Login method"
+                },
+                "data_description": {}
+            },
+            "vmoto_soco_credentials": {
+                "description": "Please enter the credentials used to log in to the Vmoto Soco app.",
+                "data": {
+                    "phone_prefix": "Phone prefix",
+                    "phone_number": "Phone number",
+                    "email": "Email"
+                }
+            },
+            "vmoto_soco_login_code": {
+                "description": "Please enter the verification code sent via SMS or email.\n\nPlease note that Vmoto Soco's session will expire every month; the integration will automatically ask you to reauthenticate whenever that happens.",
+                "data": {
+                    "login_code": "Verification code"
                 }
             }
         }
@@ -218,6 +238,14 @@
                     "enable_reverse_geocoding_entity": "Downloads additional data from Open Street Maps",
                     "update_interval": "Only when the vehicle is powered off; when it's on the interval will be 5 seconds"
                 }
+            }
+        }
+    },
+    "selector": {
+        "login_method": {
+            "options": {
+                "phone": "Phone",
+                "email": "Email"
             }
         }
     }

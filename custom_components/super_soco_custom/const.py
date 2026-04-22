@@ -57,11 +57,21 @@ DEFAULT_STRING = ""
 
 # Configuration keys
 CONF_APP_NAME = "app_name"
+CONF_EMAIL = "email"
 CONF_LOGIN_CODE = "login_code"
+CONF_LOGIN_METHOD = "login_method"
 CONF_PASSWORD = "password"
 CONF_PHONE_NUMBER = "phone_number"
 CONF_PHONE_PREFIX = "phone_prefix"
 CONF_TOKEN = "token"
+
+# Login methods (Vmoto Soco)
+LOGIN_METHOD_PHONE = "phone"
+LOGIN_METHOD_EMAIL = "email"
+LOGIN_METHODS = {
+    LOGIN_METHOD_PHONE: "Phone",
+    LOGIN_METHOD_EMAIL: "Email",
+}
 
 # Option keys
 OPT_EMAIL = "email"

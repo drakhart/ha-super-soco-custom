@@ -9,6 +9,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
     CONF_APP_NAME,
+    CONF_EMAIL,
     CONF_PASSWORD,
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
@@ -41,20 +42,37 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         hass.data.setdefault(DOMAIN, {})
 
     app_name: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_APP_NAME))
-    phone_prefix: int = cast(int, config_entry.data.get(CONF_PHONE_PREFIX))
-    phone_number: str = cast(str, config_entry.data.get(CONF_PHONE_NUMBER))
-    password: str = cast(str, config_entry.data.get(CONF_PASSWORD))
+    phone_prefix: Optional[int] = cast(
+        Optional[int], config_entry.data.get(CONF_PHONE_PREFIX)
+    )
+    phone_number: Optional[str] = cast(
+        Optional[str], config_entry.data.get(CONF_PHONE_NUMBER)
+    )
+    password: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_PASSWORD))
     token: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_TOKEN))
-    email: Optional[str] = cast(Optional[str], config_entry.data.get(OPT_EMAIL))
+    conf_email: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_EMAIL))
+    opt_email: Optional[str] = cast(Optional[str], config_entry.data.get(OPT_EMAIL))
 
     session = async_get_clientsession(hass)
 
     if app_name == SUPER_SOCO:
-        client = SuperSocoAPI(session, phone_prefix, phone_number, password, token)
+        client = SuperSocoAPI(
+            session,
+            cast(int, phone_prefix),
+            cast(str, phone_number),
+            cast(str, password),
+            token,
+        )
     else:
-        client = VmotoSocoAPI(session, phone_prefix, phone_number, token)
+        client = VmotoSocoAPI(
+            session,
+            phone_prefix=phone_prefix,
+            phone_number=phone_number,
+            email=conf_email,
+            token=token,
+        )
 
-    open_street_map_api = OpenStreetMapAPI(session, email)
+    open_street_map_api = OpenStreetMapAPI(session, opt_email)
     open_topo_data_api = OpenTopoDataAPI(session)
     coordinator = SuperSocoCustomDataUpdateCoordinator(
         hass,
