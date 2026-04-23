@@ -8,7 +8,11 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
-from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+)
 
 from .const import (
     CONF_EMAIL,
@@ -56,7 +60,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._reauth_entry = None
         self._user_input = {
             CONF_LOGIN_METHOD: None,
-            CONF_PHONE_PREFIX: PHONE_PREFIXES[0][1],
+            CONF_PHONE_PREFIX: str(PHONE_PREFIXES[0][1]),
             CONF_PHONE_NUMBER: None,
             CONF_EMAIL: None,
             CONF_LOGIN_CODE: None,
@@ -123,7 +127,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
             )
 
-        prefix_dict = {code: name for name, code in PHONE_PREFIXES}
+        prefix_options = [
+            SelectOptionDict(value=str(code), label=name)
+            for name, code in PHONE_PREFIXES
+        ]
         return cast(
             "FlowResult",
             self.async_show_form(
@@ -132,8 +139,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {
                         vol.Required(
                             CONF_PHONE_PREFIX,
-                            default=self._user_input[CONF_PHONE_PREFIX],
-                        ): vol.In(prefix_dict),
+                            default=str(self._user_input[CONF_PHONE_PREFIX]),
+                        ): SelectSelector(SelectSelectorConfig(options=prefix_options)),
                         vol.Required(
                             CONF_PHONE_NUMBER,
                             default=self._user_input[CONF_PHONE_NUMBER],
@@ -251,9 +258,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self._session
 
     def _get_vmoto_client(self) -> VmotoAPI:
+        phone_prefix_raw = self._user_input.get(CONF_PHONE_PREFIX)
         return VmotoAPI(
             self._get_session(),
-            phone_prefix=self._user_input.get(CONF_PHONE_PREFIX),
+            phone_prefix=(
+                int(phone_prefix_raw) if phone_prefix_raw is not None else None
+            ),
             phone_number=self._user_input.get(CONF_PHONE_NUMBER),
             email=self._user_input.get(CONF_EMAIL),
         )

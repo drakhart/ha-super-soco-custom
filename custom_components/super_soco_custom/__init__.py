@@ -36,7 +36,10 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     """Set up this integration using UI."""
     hass.data.setdefault(DOMAIN, {})
 
-    phone_prefix: int | None = config_entry.data.get(CONF_PHONE_PREFIX)
+    phone_prefix_raw = config_entry.data.get(CONF_PHONE_PREFIX)
+    phone_prefix: int | None = (
+        int(phone_prefix_raw) if phone_prefix_raw is not None else None
+    )
     phone_number: str | None = config_entry.data.get(CONF_PHONE_NUMBER)
     token: str | None = config_entry.data.get(CONF_TOKEN)
     conf_email: str | None = config_entry.data.get(CONF_EMAIL)
