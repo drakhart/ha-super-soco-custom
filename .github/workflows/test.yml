@@ -13,14 +13,18 @@ jobs:
     name: "Pytest"
     runs-on: "ubuntu-latest"
     steps:
-      - name: "Checkout the repository"
-        uses: "actions/checkout@v4.2.2"
-      - name: Setup Python
-        uses: "actions/setup-python@v5.4.0"
+      - name: Checkout the repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: "3.13"
-      - name: "Install requirements"
+          python-version: "3.14"
+          cache: "pip"
+
+      - name: "Install test requirements"
         run: python3 -m pip install -r requirements_test.txt
+
       - name: "Run tests"
         run: |
           pytest \
@@ -28,7 +32,7 @@ jobs:
             --timeout=9 \
             --durations=10 \
             -n auto \
-            --cov custom_components.super_soco_custom \
+            --cov custom_components.vmoto \
             --cov-report term-missing \
             -o console_output_style=count \
             -p no:sugar \

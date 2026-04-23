@@ -1,6 +1,6 @@
 {
-  "name": "Super Soco Custom",
-  "hacs": "2.0.1",
-  "homeassistant": "2026.2.3",
+  "name": "Vmoto",
+  "hacs": "2.0.5",
+  "homeassistant": "2026.3.2",
   "render_readme": true
 }

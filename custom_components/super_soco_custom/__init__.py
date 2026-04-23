@@ -1,6 +1,4 @@
 import logging
-from typing import Optional, cast
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.core_config import Config
@@ -8,23 +6,21 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
-    CONF_APP_NAME,
     CONF_EMAIL,
-    CONF_PASSWORD,
+    CONF_LOGIN_METHOD,
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
     CONF_TOKEN,
     DOMAIN,
+    LOGIN_METHOD_PHONE,
     NAME,
     OPT_EMAIL,
     PLATFORMS,
-    SUPER_SOCO,
 )
-from .coordinator import SuperSocoCustomDataUpdateCoordinator
+from .coordinator import VmotoDataUpdateCoordinator
 from .open_street_map_api import OpenStreetMapAPI
 from .open_topo_data_api import OpenTopoDataAPI
-from .super_soco_api import SuperSocoAPI
-from .vmoto_soco_api import VmotoSocoAPI
+from .vmoto_api import VmotoAPI
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,43 +34,26 @@ async def async_setup(
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
-    if hass.data.get(DOMAIN) is None:
-        hass.data.setdefault(DOMAIN, {})
+    hass.data.setdefault(DOMAIN, {})
 
-    app_name: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_APP_NAME))
-    phone_prefix: Optional[int] = cast(
-        Optional[int], config_entry.data.get(CONF_PHONE_PREFIX)
-    )
-    phone_number: Optional[str] = cast(
-        Optional[str], config_entry.data.get(CONF_PHONE_NUMBER)
-    )
-    password: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_PASSWORD))
-    token: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_TOKEN))
-    conf_email: Optional[str] = cast(Optional[str], config_entry.data.get(CONF_EMAIL))
-    opt_email: Optional[str] = cast(Optional[str], config_entry.data.get(OPT_EMAIL))
+    phone_prefix: int | None = config_entry.data.get(CONF_PHONE_PREFIX)
+    phone_number: str | None = config_entry.data.get(CONF_PHONE_NUMBER)
+    token: str | None = config_entry.data.get(CONF_TOKEN)
+    conf_email: str | None = config_entry.data.get(CONF_EMAIL)
+    opt_email: str | None = config_entry.options.get(OPT_EMAIL)
 
     session = async_get_clientsession(hass)
-
-    if app_name == SUPER_SOCO:
-        client = SuperSocoAPI(
-            session,
-            cast(int, phone_prefix),
-            cast(str, phone_number),
-            cast(str, password),
-            token,
-        )
-    else:
-        client = VmotoSocoAPI(
-            session,
-            phone_prefix=phone_prefix,
-            phone_number=phone_number,
-            email=conf_email,
-            token=token,
-        )
+    client = VmotoAPI(
+        session,
+        phone_prefix=phone_prefix,
+        phone_number=phone_number,
+        email=conf_email,
+        token=token,
+    )
 
     open_street_map_api = OpenStreetMapAPI(session, opt_email)
     open_topo_data_api = OpenTopoDataAPI(session)
-    coordinator = SuperSocoCustomDataUpdateCoordinator(
+    coordinator = VmotoDataUpdateCoordinator(
         hass,
         config_entry,
         client,
@@ -120,14 +99,17 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 
     if config_entry.version == 1:
         new = {**config_entry.data}
-        new.update(
-            {
-                CONF_APP_NAME: SUPER_SOCO,
-                CONF_TOKEN: None,
-            }
-        )
+        new[CONF_TOKEN] = None
 
         hass.config_entries.async_update_entry(config_entry, data=new, version=2)
+
+    if config_entry.version == 2:
+        new = {**config_entry.data}
+
+        if new.get(CONF_EMAIL) is None:
+            new[CONF_LOGIN_METHOD] = LOGIN_METHOD_PHONE
+
+        hass.config_entries.async_update_entry(config_entry, data=new, version=3)
 
     _LOGGER.info("Migration to version %s successful", config_entry.version)
 

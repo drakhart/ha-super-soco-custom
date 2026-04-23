@@ -1,7 +1,11 @@
+colorlog==6.10.1
+gTTS==2.5.3
+ha-ffmpeg==3.2.2
 hassil==3.5.0
-home-assistant-intents==2026.3.24
-homeassistant==2026.2.3
+home-assistant-frontend==20260312.0
+home-assistant-intents==2026.3.3
+homeassistant==2026.3.2
 mutagen==1.47.0
-pymicro-vad==2.0.1
-pyspeex-noise==2.0.0
-PyTurboJPEG==1.7.5
+pymicro-vad==1.0.1
+pyspeex-noise==1.0.2
+PyTurboJPEG==1.8.0

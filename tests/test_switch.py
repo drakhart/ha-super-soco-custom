@@ -1,123 +1,41 @@
-"""Test super_soco_custom switch."""
+"""Test vmoto switch."""
+
+from unittest.mock import AsyncMock, create_autospec
 
 import pytest
-
-from homeassistant.components.switch.const import DOMAIN as SWITCH_DOMAIN
-from homeassistant.const import ATTR_ENTITY_ID, SERVICE_TURN_OFF, SERVICE_TURN_ON
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-from unittest.mock import AsyncMock, call, create_autospec, patch
 
 from custom_components.super_soco_custom.const import (
-    DATA_NATIVE_PUSH_NOTIFICATIONS,
     DOMAIN,
 )
 from custom_components.super_soco_custom.coordinator import (
-    SuperSocoCustomDataUpdateCoordinator,
+    VmotoDataUpdateCoordinator,
 )
 from custom_components.super_soco_custom.switch import (
-    SuperSocoCustomSwitch,
+    VmotoSwitch,
 )
 
-from .const import MOCK_SUPER_SOCO_CONFIG
+from .const import MOCK_VMOTO_CONFIG
 
 
-@pytest.mark.asyncio
-async def test_switch_services(
-    hass,
-    bypass_coordinator_switch_delay,
-    bypass_get_mapzen,
-    bypass_super_soco_get_device,
-    bypass_super_soco_get_user,
-    bypass_super_soco_get_tracking_history_list,
-    bypass_super_soco_get_warning_list,
-):
-    """Test switch services."""
-    # Create a mock entry so we don't have to go through config flow
-    config_entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
-    config_entry.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
-
-    # Assert that the on/off services are called for push notifications switch
-    with patch(
-        "custom_components.super_soco_custom.SuperSocoCustomDataUpdateCoordinator.set_switch_state"
-    ) as push_func:
-        await hass.services.async_call(
-            SWITCH_DOMAIN,
-            SERVICE_TURN_OFF,
-            service_data={
-                ATTR_ENTITY_ID: f"{SWITCH_DOMAIN}.super_soco_ts_native_push_notifications"
-            },
-            blocking=True,
-        )
-        assert push_func.called
-        assert push_func.call_args == call(DATA_NATIVE_PUSH_NOTIFICATIONS, False)
-
-        push_func.reset_mock()
-
-        await hass.services.async_call(
-            SWITCH_DOMAIN,
-            SERVICE_TURN_ON,
-            service_data={
-                ATTR_ENTITY_ID: f"{SWITCH_DOMAIN}.super_soco_ts_native_push_notifications"
-            },
-            blocking=True,
-        )
-        assert push_func.called
-        assert push_func.call_args == call(DATA_NATIVE_PUSH_NOTIFICATIONS, True)
-
-    # Assert that the on/off services are called for tracking history switch
-    with patch(
-        "custom_components.super_soco_custom.SuperSocoAPI.set_tracking_history"
-    ) as push_func:
-        await hass.services.async_call(
-            SWITCH_DOMAIN,
-            SERVICE_TURN_OFF,
-            service_data={
-                ATTR_ENTITY_ID: f"{SWITCH_DOMAIN}.super_soco_ts_native_tracking_history"
-            },
-            blocking=True,
-        )
-        assert push_func.called
-        assert push_func.call_args == call(False)
-
-        push_func.reset_mock()
-
-        await hass.services.async_call(
-            SWITCH_DOMAIN,
-            SERVICE_TURN_ON,
-            service_data={
-                ATTR_ENTITY_ID: f"{SWITCH_DOMAIN}.super_soco_ts_native_tracking_history"
-            },
-            blocking=True,
-        )
-        assert push_func.called
-        assert push_func.call_args == call(True)
-
-    await hass.config_entries.async_unload(config_entry.entry_id)
-    await hass.async_block_till_done()
-
-
-@pytest.mark.asyncio
-async def test_switch_extra_state_attributes_mapping():
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
-    coord = create_autospec(SuperSocoCustomDataUpdateCoordinator, instance=True)
+def test_switch_extra_state_attributes_mapping():
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG)
+    coord = create_autospec(VmotoDataUpdateCoordinator, instance=True)
     coord.data = {"a": "one", "b": "two"}
 
-    switch = SuperSocoCustomSwitch(entry, coord, "sid", "a", 1, "ic", {"x": "b"})
+    switch = VmotoSwitch(entry, coord, "sid", "a", 1, "ic", {"x": "b"})
 
     assert switch.extra_state_attributes == {"x": "two"}
 
 
 @pytest.mark.asyncio
 async def test_switch_turns_call_coordinator():
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
-    coord = create_autospec(SuperSocoCustomDataUpdateCoordinator, instance=True)
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG)
+    coord = create_autospec(VmotoDataUpdateCoordinator, instance=True)
     coord.data = {"k": 0}
     coord.set_switch_state = AsyncMock()
 
-    switch = SuperSocoCustomSwitch(entry, coord, "sid", "k", 1, "ic", None)
+    switch = VmotoSwitch(entry, coord, "sid", "k", 1, "ic", None)
 
     await switch.async_turn_on()
     await switch.async_turn_off()
@@ -126,3 +44,57 @@ async def test_switch_turns_call_coordinator():
         (("k", True),),
         (("k", False),),
     ]
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_skips_missing_key(hass):
+    """async_setup_entry logs and skips switches whose key is absent from coordinator.data."""
+    from custom_components.super_soco_custom.switch import async_setup_entry
+
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG, entry_id="test")
+
+    coord = create_autospec(VmotoDataUpdateCoordinator, instance=True)
+    coord.data = {}
+
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = coord
+
+    added = []
+    await async_setup_entry(hass, entry, lambda entities: added.extend(entities))
+
+    assert added == []
+
+
+def test_switch_is_on():
+    """is_on returns True when data matches condition."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG)
+    coord = create_autospec(VmotoDataUpdateCoordinator, instance=True)
+    coord.data = {"k": 1}
+
+    switch = VmotoSwitch(entry, coord, "sid", "k", 1, "mdi:test", None)
+
+    assert switch.is_on is True
+    coord.data = {"k": 0}
+    assert switch.is_on is False
+
+
+def test_switch_icon():
+    """icon returns the icon value passed at construction."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG)
+    coord = create_autospec(VmotoDataUpdateCoordinator, instance=True)
+    coord.data = {}
+
+    switch = VmotoSwitch(entry, coord, "sid", "k", 1, "mdi:power", None)
+
+    assert switch.icon == "mdi:power"
+
+
+def test_switch_extra_state_attributes_returns_none_when_not_dict():
+    """extra_state_attributes returns None when extra_attrs is not a dict."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG)
+    coord = create_autospec(VmotoDataUpdateCoordinator, instance=True)
+    coord.data = {"k": 1}
+
+    switch = VmotoSwitch(entry, coord, "sid", "k", 1, "ic", None)
+
+    assert switch.extra_state_attributes is None

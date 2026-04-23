@@ -1,20 +1,20 @@
-# Super Soco Custom
+# Vmoto & Super Soco Home Assistant Integration
 
 [![hacs][hacsbadge]][hacs] [![GitHub Release][releases-shield]][releases] [![GitHub Activity][commits-shield]][commits]
 
 [![License][license-shield]][license] [![Project Maintenance][maintenance-shield]][user_profile]
 
-Custom component for integrating your Super Soco or Vmoto Soco motorcycle into Home Assistant. It provides meaningful data like power status, battery percentage, location and a lot more.
+Custom component for integrating your Vmoto or Super Soco motorcycle into Home Assistant. It provides meaningful data like power status, battery percentage, location and a lot more.
 
 ![Example][img-example]
 
 ## Disclaimers
 
-> This integration is based on the Super Soco & Vmoto Soco APIs, so it needs a combination of official ECU and active SIM contract that's currently working and sending data to Super Soco or Vmoto Soco servers. If this is not your case then sadly there's little to no chance that this integration will work for you. To put it simple: if your mobile app is not working, this won't work either.
+> This integration is based on the Vmoto API, so it needs a combination of official ECU and active SIM contract that's currently working and sending data to Vmoto servers. If this is not your case then sadly there's little to no chance that this integration will work for you. To put it simple: if your mobile app is not working, this won't work either.
 
-> Please note that Super Soco & Vmoto Soco do not allow more than one client at a time, so any open session in the official app will be closed when using this integration (same as if you'd log in from a new device).
+> Please note that Vmoto do not allow more than one client at a time, so any open session in the official app will be closed when using this integration (same as if you'd log in from a new device).
 
-> This integration is not officially a part of Super Soco or Vmoto Soco. Additionally, this is NOT endorsed by Super Soco or Vmoto Soco in any way. Super Soco and Vmoto Soco are trademarks of Vmoto Limited.
+> This integration is not officially a part of Vmoto or Super Soco. Additionally, this is NOT endorsed by Vmoto or Super Soco in any way. Vmoto and Super Soco are trademarks of Vmoto Limited.
 
 ## Installation
 
@@ -29,7 +29,7 @@ You can install this either using [HACS][hacs] (recommended way) or manually cop
 
 ## Configuration
 
-Configuration is done in the UI; go to "Configuration" -> "Integrations" click "+ Add Integration" and search for "Super Soco Custom", then enter your login credentials as you would do in the official app:
+Configuration is done in the UI; go to "Configuration" -> "Integrations" click "+ Add Integration" and search for "Vmoto & Super Soco", then select the login method and enter your login credentials as you would do in the official app:
 
 ![Setup][img-setup]
 
@@ -39,7 +39,7 @@ You can configure some extra options by clicking on "Configure" once the integra
 
 ## Supported entities
 
-- Power status and switch\*\*
+- Power status and switch
 - Battery percentage
 - Estimated range
 - ECU battery percentage
@@ -56,29 +56,25 @@ You can configure some extra options by clicking on "Configure" once the integra
 - Last GPS fix time
 - Last warning time\* with title and content
 - Last trip time*, distance* and average speed\* (requires native tracking history to be enabled; updates every 10 minutes at most)
-- Agreement (SIM card validity) start and end time\*\*
-- Image URLs for both the vehicle and its logo\*\*
+- Image URL for the vehicle
 - Switches to enable/disable native tracking history and push notifications
 
 _\* These entities include extra attributes with more details._
-_\*\* These entities may not be available depending on native app support (Super Soco vs Vmoto Soco)._
 
 ## Known limitations
 
-- Only one vehicle can be seen by this integration (I'm not lucky enough to own two Super Socos, so I don't know how would that look in the API responses)
+- Only one vehicle can be seen by this integration (I'm not lucky enough to own two motorbikes, so I don't know how would that look in the API responses)
 - Vehicle diagnose can't be initiated from this integration, nor the resulting report be shown in HA
 - Vehicle model seen by this integration may not match the actual model (the same issue happens in the official app if your ECU has been replaced with another one intended for a different model)
 - ECU may always report a voltage level equal to zero (and hence zero battery percentage); the cause remains unknown
 
 ## Roadmap
 
-- [x] ~~Increase test coverage~~
-- [ ] Add email login for Vmoto Soco
 - [ ] Add altitude and reverse geocoding cache
 - [ ] Allow speed threshold customization (this is used to filter out unwanted GPS noise when the vehicle is virtually still)
 - [ ] Allow update interval customization while the vehicle is powered on (instead of forcing a 5 seconds interval)
-- [ ] Add vehicle diagnosis for Vmoto Soco (Super Soco API doesn't support it)
-- [ ] Add detailed battery information for Vmoto Soco (Super Soco API doesn't support it)
+- [ ] Add vehicle diagnosis
+- [ ] Add detailed battery information
 
 ## Contributions are welcome!
 

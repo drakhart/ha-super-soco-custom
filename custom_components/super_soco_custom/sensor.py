@@ -1,14 +1,14 @@
 import logging
 
-from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.components.sensor import SensorEntity
+from homeassistant.const import STATE_UNAVAILABLE
 
 from .const import (
     DEFAULT_STRING,
     DOMAIN,
     SENSORS,
 )
-from .entity import SuperSocoCustomEntity
+from .entity import VmotoEntity
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -19,7 +19,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     sensors = []
 
     for (
-        id,
+        sensor_id,
         key,
         unit,
         icon,
@@ -31,10 +31,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             _LOGGER.debug("Unable to set up sensor due to missing data key: %s", key)
         else:
             sensors.append(
-                SuperSocoCustomSensor(
+                VmotoSensor(
                     config_entry,
                     coordinator,
-                    id,
+                    sensor_id,
                     key,
                     unit,
                     icon,
@@ -47,12 +47,12 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities(sensors)
 
 
-class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
+class VmotoSensor(VmotoEntity, SensorEntity):
     def __init__(
         self,
         config_entry,
         coordinator,
-        id,
+        sensor_id,
         key,
         unit,
         icon,
@@ -61,7 +61,7 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
         extra_attrs,
     ):
         super().__init__(config_entry, coordinator)
-        self._id = id
+        self._id = sensor_id
         self._key = key
         self._unit = unit
         self._icon = icon
@@ -110,7 +110,7 @@ class SuperSocoCustomSensor(SuperSocoCustomEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        if type(self._extra_attrs) is dict:
+        if isinstance(self._extra_attrs, dict):
             extra_attrs = {}
 
             for key, value in self._extra_attrs.items():

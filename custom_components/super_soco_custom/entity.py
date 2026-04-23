@@ -8,7 +8,7 @@ from .const import (
 )
 
 
-class SuperSocoCustomEntity(CoordinatorEntity):
+class VmotoEntity(CoordinatorEntity):
     def __init__(self, config_entry, coordinator):
         super().__init__(coordinator)
         self.config_entry = config_entry

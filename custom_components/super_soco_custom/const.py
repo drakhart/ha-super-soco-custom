@@ -1,11 +1,12 @@
 from homeassistant.components.device_tracker.const import SourceType
 from homeassistant.components.sensor import (
-    SensorStateClass,
     SensorDeviceClass,
+    SensorStateClass,
 )
 from homeassistant.const import (
     DEGREE,
     PERCENTAGE,
+    Platform,
     UnitOfLength,
     UnitOfSpeed,
     UnitOfTime,
@@ -13,22 +14,19 @@ from homeassistant.const import (
 
 # Component
 DOMAIN = "super_soco_custom"
-NAME = "Super Soco Custom"
-MANUFACTURER = "Super Soco"
+NAME = "Vmoto & Super Soco"
+MANUFACTURER = "Vmoto"
 PLATFORMS = [
-    "binary_sensor",
-    "device_tracker",
-    "sensor",
-    "switch",
+    Platform.DEVICE_TRACKER,
+    Platform.SENSOR,
+    Platform.SWITCH,
 ]
 
 # General
 API_GEO_PRECISION = 4  # 4 decimals = 11.1 meters
-CDN_BASE_URL = "https://oimg.supersocoeg.com:8996"
-CONFIG_FLOW_VERSION = 2
+CONFIG_FLOW_VERSION = 3
 COURSE_ROUNDING_DECIMALS = 2
 DISTANCE_ROUNDING_DECIMALS = 2
-ECU_MAX_VOLTAGE = 6  # It goes from 0 to 6
 GPS_MAX_ACCURACY = 15  # It goes from 0 to 15
 HOME_ZONE = "zone.home"
 KM_IN_A_M = 0.001
@@ -40,9 +38,7 @@ POWER_OFF_DISTANCE_THRESHOLD_METERS = 16
 POWER_ON_UPDATE_SECONDS = 5
 SECONDS_IN_A_MINUTE = 60
 SIGNAL_MAX_STRENGTH = 4  # It goes from 0 to 4
-SUPER_SOCO = "super_soco"
 SWITCH_REFRESH_SLEEP_SECONDS = 10
-VMOTO_SOCO = "vmoto_soco"
 
 # Directions of travel
 DIR_ARRIVED = "arrived"
@@ -56,22 +52,16 @@ DEFAULT_INTEGER = 0
 DEFAULT_STRING = ""
 
 # Configuration keys
-CONF_APP_NAME = "app_name"
 CONF_EMAIL = "email"
 CONF_LOGIN_CODE = "login_code"
 CONF_LOGIN_METHOD = "login_method"
-CONF_PASSWORD = "password"
 CONF_PHONE_NUMBER = "phone_number"
 CONF_PHONE_PREFIX = "phone_prefix"
 CONF_TOKEN = "token"
 
-# Login methods (Vmoto Soco)
+# Login methods
 LOGIN_METHOD_PHONE = "phone"
 LOGIN_METHOD_EMAIL = "email"
-LOGIN_METHODS = {
-    LOGIN_METHOD_PHONE: "Phone",
-    LOGIN_METHOD_EMAIL: "Email",
-}
 
 # Option keys
 OPT_EMAIL = "email"
@@ -92,8 +82,6 @@ MIN_UPDATE_INTERVAL_MINUTES = 1
 
 # Data keys
 DATA_ADDRESS = "address"
-DATA_AGREEMENT_END_TIME = "agreementEndTime"
-DATA_AGREEMENT_START_TIME = "agreemenStartTime"  # Intended typo
 DATA_ALTITUDE = "altitude"
 DATA_BATTERY = "nowElec"
 DATA_CONTENT = "content"
@@ -106,7 +94,6 @@ DATA_DIR_OF_TRAVEL = "dir_of_travel"
 DATA_DISPLAY_NAME = "display_name"
 DATA_DISTANCE_FROM_HOME = "distance_from_home"
 DATA_ECU_BATTERY = "ecuElec"
-DATA_ECU_VOLTAGE = "voltage"
 DATA_ELEVATION = "elevation"
 DATA_ESTIMATED_RANGE = "endurance"
 DATA_GPS_ACCURACY = "gps"
@@ -126,8 +113,6 @@ DATA_LAST_WARNING_MESSAGE = "lastWarningMessage"
 DATA_LAST_WARNING_TIME = "lastWarningTime"
 DATA_LAST_WARNING_TITLE = "lastWarningTitle"
 DATA_LATITUDE = "latitude"
-DATA_LIST = "list"
-DATA_LOGO_IMAGE_URL = "logoImg"
 DATA_LONGITUDE = "longitude"
 DATA_MODEL_NAME = "carModelName"
 DATA_NATIVE_PUSH_NOTIFICATIONS = "isWarnPush"
@@ -155,36 +140,23 @@ DATA_TRIP_DISTANCE = "mileages"
 DATA_USER = "user"
 DATA_USER_BIND_DEVICE = "userBindDevice"
 DATA_USER_ID = "userId"
-DATA_VEHICLE_IMAGE_URL = "imgUrl"
-DATA_VEHICLE_IMAGE_URL_VMOTO = "fileUrl"
+DATA_VEHICLE_IMAGE_URL = "fileUrl"
 DATA_WIND_ROSE_COURSE = "wind_rose_course"
 
 # Error keys
-ERROR_ALREADY_CONFIGURED = "already_configured"
 ERROR_CANNOT_CONNECT = "cannot_connect"
 ERROR_INVALID_AUTH = "invalid_auth"
 ERROR_UNKNOWN = "unknown"
 
 # Entities
-BINARY_SENSORS = [
-    (
-        "power",  # Id
-        DATA_POWER_STATUS,  # Data key
-        1,  # Comparison condition
-        "mdi:power-standby",  # Icon
-        SensorDeviceClass.POWER,  # Device class
-        None,  # Extra attributes
-    ),
-]
-
 DEVICE_TRACKERS = [
     (
         "location",  # Id
         SourceType.GPS,  # Source type
         DATA_LATITUDE,  # Latitude data key
-        DATA_LONGITUDE,  # Latitude data key
+        DATA_LONGITUDE,  # Longitude data key
         DATA_GPS_ACCURACY,  # GPS accuracy data key
-        "mdi:mdi:map-marker",  # Icon
+        "mdi:map-marker",  # Icon
         {  # Extra attributes
             "altitude": DATA_ALTITUDE,
             "course": DATA_COURSE,
@@ -194,24 +166,6 @@ DEVICE_TRACKERS = [
 ]
 
 SENSORS = [
-    (
-        "agreement_end_time",  # Id
-        DATA_AGREEMENT_END_TIME,  # Data key
-        None,  # Unit of measurement
-        "mdi:calendar-end",  # Icon
-        SensorDeviceClass.TIMESTAMP,  # Device class
-        None,  # State class
-        None,  # Extra attributes
-    ),
-    (
-        "agreement_start_time",
-        DATA_AGREEMENT_START_TIME,
-        None,
-        "mdi:calendar-start",
-        SensorDeviceClass.TIMESTAMP,
-        None,
-        None,
-    ),
     (
         "altitude",
         DATA_ALTITUDE,
@@ -343,15 +297,6 @@ SENSORS = [
         },
     ),
     (
-        "logo",
-        DATA_LOGO_IMAGE_URL,
-        None,
-        "mdi:image",
-        None,
-        None,
-        None,
-    ),
-    (
         "reverse_geocoding",
         DATA_REVERSE_GEOCODING,
         None,
@@ -432,13 +377,6 @@ SWITCHES = [
         None,
     ),
 ]
-
-# Switch API methods
-SWITCH_API_METHODS = {
-    DATA_NATIVE_PUSH_NOTIFICATIONS: "set_push_notifications",
-    DATA_NATIVE_TRACKING_HISTORY: "set_tracking_history",
-    DATA_POWER_SWITCH: "switch_power",
-}
 
 # Phone prefixes
 PHONE_PREFIXES = [
@@ -659,9 +597,3 @@ PHONE_PREFIXES = [
     ["Zambia (260)", 260],
     ["Zimbabwe (263)", 263],
 ]
-
-# App names
-APP_NAMES = {
-    SUPER_SOCO: "Super Soco",
-    VMOTO_SOCO: "Vmoto Soco",
-}

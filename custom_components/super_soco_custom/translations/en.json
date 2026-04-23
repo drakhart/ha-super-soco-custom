@@ -1,7 +1,6 @@
 {
     "config": {
         "abort": {
-            "already_configured": "Device is already configured",
             "reauth_successful": "Reauthentication successful"
         },
         "error": {
@@ -10,37 +9,23 @@
             "unknown": "Unexpected error"
         },
         "step": {
-            "app": {
-                "description": "Please choose the specific Vmoto Super Soco app used to register your bike.\n\n*Disclaimer: Please note that Vmoto Super Soco does not allow more than one client at a time, so any open session in the official app will be closed when using this integration.*",
-                "data": {
-                    "app_name": "Application name"
-                }
-            },
-            "super_soco_credentials": {
-                "description": "Please enter the credentials used to log in to the Super Soco app.",
-                "data": {
-                    "phone_prefix": "Phone prefix",
-                    "phone_number": "Phone number",
-                    "password": "Password"
-                }
-            },
-            "vmoto_soco_login_method": {
-                "description": "Please choose the login method for the Vmoto Soco app.",
+            "login_method": {
+                "description": "Please choose the login method for the Vmoto app.",
                 "data": {
                     "login_method": "Login method"
                 },
                 "data_description": {}
             },
-            "vmoto_soco_credentials": {
-                "description": "Please enter the credentials used to log in to the Vmoto Soco app.",
+            "credentials": {
+                "description": "Please enter the credentials used to log in to the Vmoto app.",
                 "data": {
                     "phone_prefix": "Phone prefix",
                     "phone_number": "Phone number",
                     "email": "Email"
                 }
             },
-            "vmoto_soco_login_code": {
-                "description": "Please enter the verification code sent via SMS or email.\n\nPlease note that Vmoto Soco's session will expire every month; the integration will automatically ask you to reauthenticate whenever that happens.",
+            "login_code": {
+                "description": "Please enter the verification code sent via SMS or email.\n\nPlease note that the session will expire every month; the integration will automatically ask you to reauthenticate whenever that happens.",
                 "data": {
                     "login_code": "Verification code"
                 }
@@ -48,11 +33,6 @@
         }
     },
     "entity": {
-        "binary_sensor": {
-            "power": {
-                "name": "Power"
-            }
-        },
         "device_tracker": {
             "location": {
                 "name": "Location",
@@ -70,12 +50,6 @@
             }
         },
         "sensor": {
-            "agreement_start_time": {
-                "name": "Agreement Start Time"
-            },
-            "agreement_end_time": {
-                "name": "Agreement End Time"
-            },
             "altitude": {
                 "name": "Altitude"
             },
@@ -156,9 +130,6 @@
                     }
                 }
             },
-            "logo": {
-                "name": "Logo"
-            },
             "reverse_geocoding": {
                 "name": "Reverse Geocoding",
                 "state_attributes": {
@@ -233,8 +204,8 @@
                 "data_description": {
                     "email": "Email for Open Street Maps API; only used if reverse geocoding is enabled (please read {nominatim_url} to know more)",
                     "enable_altitude_entity": "Downloads additional data from Open Topo Data using the Mapzen dataset",
-                    "enable_last_trip_entities": "Downloads additional data from Super Soco; only available if native history is enabled; will be updated every 10 minutes at most",
-                    "enable_last_warning_entity": "Downloads additional data from Super Soco",
+                    "enable_last_trip_entities": "Downloads additional data from Vmoto; only available if native history is enabled; will be updated every 10 minutes at most",
+                    "enable_last_warning_entity": "Downloads additional data from Vmoto",
                     "enable_reverse_geocoding_entity": "Downloads additional data from Open Street Maps",
                     "update_interval": "Only when the vehicle is powered off; when it's on the interval will be 5 seconds"
                 }

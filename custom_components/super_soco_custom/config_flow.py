@@ -1,10 +1,8 @@
 import logging
-from typing import Optional, cast
+from typing import cast
 
 import voluptuous as vol
-
 from aiohttp import ClientResponseError, ClientSession, ServerTimeoutError
-
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
@@ -13,24 +11,20 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
-    APP_NAMES,
-    CONF_APP_NAME,
     CONF_EMAIL,
     CONF_LOGIN_CODE,
     CONF_LOGIN_METHOD,
-    CONF_PASSWORD,
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
     CONF_TOKEN,
     CONFIG_FLOW_VERSION,
     DEFAULT_ENABLE_ALTITUDE_ENTITY,
-    DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
     DEFAULT_ENABLE_LAST_TRIP_ENTITIES,
     DEFAULT_ENABLE_LAST_WARNING_ENTITY,
+    DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
     DEFAULT_STRING,
     DEFAULT_UPDATE_INTERVAL_MINUTES,
     DOMAIN,
-    ERROR_ALREADY_CONFIGURED,
     ERROR_CANNOT_CONNECT,
     ERROR_INVALID_AUTH,
     ERROR_UNKNOWN,
@@ -41,42 +35,36 @@ from .const import (
     NAME,
     OPT_EMAIL,
     OPT_ENABLE_ALTITUDE_ENTITY,
-    OPT_ENABLE_REVERSE_GEOCODING_ENTITY,
     OPT_ENABLE_LAST_TRIP_ENTITIES,
     OPT_ENABLE_LAST_WARNING_ENTITY,
+    OPT_ENABLE_REVERSE_GEOCODING_ENTITY,
     OPT_UPDATE_INTERVAL,
     PHONE_PREFIXES,
-    SUPER_SOCO,
 )
 from .errors import CannotConnect, InvalidAuth
-from .super_soco_api import SuperSocoAPI
-from .vmoto_soco_api import VmotoSocoAPI
+from .vmoto_api import VmotoAPI
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = CONFIG_FLOW_VERSION
-    CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
 
     def __init__(self) -> None:
         self._errors = {}
         self._session = None
-        self._client = None
         self._reauth_entry = None
         self._user_input = {
-            CONF_APP_NAME: SUPER_SOCO,
             CONF_LOGIN_METHOD: None,
             CONF_PHONE_PREFIX: PHONE_PREFIXES[0][1],
             CONF_PHONE_NUMBER: None,
             CONF_EMAIL: None,
-            CONF_PASSWORD: None,
             CONF_LOGIN_CODE: None,
         }
 
     async def async_step_reauth(self, user_input=None) -> FlowResult:
         self._errors = {}
-        entry_id: Optional[str] = self.context.get("entry_id")
+        entry_id: str | None = self.context.get("entry_id")
         if entry_id is None:
             self._reauth_entry = None
         else:
@@ -85,9 +73,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return await self.async_step_user(user_input)
 
     async def async_step_user(self, user_input=None) -> FlowResult:
-        if self._async_current_entries() and not self._reauth_entry:
-            return cast(FlowResult, self.async_abort(reason=ERROR_ALREADY_CONFIGURED))
-
         if user_input:
             self._user_input.update(user_input)
 
@@ -95,56 +80,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
 
         return cast(
-            FlowResult,
+            "FlowResult",
             self.async_show_form(
-                step_id="app",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(
-                            CONF_APP_NAME, default=self._user_input[CONF_APP_NAME]
-                        ): vol.In(APP_NAMES),
-                    }
-                ),
-                errors=errors,
-            ),
-        )
-
-    async def async_step_app(self, user_input=None) -> FlowResult:
-        if user_input:
-            self._user_input.update(user_input)
-
-        errors = self._errors
-        self._errors = {}
-
-        if self._user_input[CONF_APP_NAME] == SUPER_SOCO:
-            prefix_dict = {code: name for name, code in PHONE_PREFIXES}
-            return cast(
-                FlowResult,
-                self.async_show_form(
-                    step_id="super_soco_credentials",
-                    data_schema=vol.Schema(
-                        {
-                            vol.Required(
-                                CONF_PHONE_PREFIX,
-                                default=self._user_input[CONF_PHONE_PREFIX],
-                            ): vol.In(prefix_dict),
-                            vol.Required(
-                                CONF_PHONE_NUMBER,
-                                default=self._user_input[CONF_PHONE_NUMBER],
-                            ): str,
-                            vol.Required(
-                                CONF_PASSWORD, default=self._user_input[CONF_PASSWORD]
-                            ): str,
-                        }
-                    ),
-                    errors=errors,
-                ),
-            )
-
-        return cast(
-            FlowResult,
-            self.async_show_form(
-                step_id="vmoto_soco_login_method",
+                step_id="login_method",
                 data_schema=vol.Schema(
                     {
                         vol.Required(
@@ -162,10 +100,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    async def async_step_super_soco_credentials(self, user_input=None) -> FlowResult:
-        return await self.async_step_login(user_input)
-
-    async def async_step_vmoto_soco_login_method(self, user_input=None) -> FlowResult:
+    async def async_step_login_method(self, user_input=None) -> FlowResult:
         if user_input:
             self._user_input.update(user_input)
 
@@ -174,9 +109,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if self._user_input[CONF_LOGIN_METHOD] == LOGIN_METHOD_EMAIL:
             return cast(
-                FlowResult,
+                "FlowResult",
                 self.async_show_form(
-                    step_id="vmoto_soco_credentials",
+                    step_id="credentials",
                     data_schema=vol.Schema(
                         {
                             vol.Required(
@@ -190,9 +125,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         prefix_dict = {code: name for name, code in PHONE_PREFIXES}
         return cast(
-            FlowResult,
+            "FlowResult",
             self.async_show_form(
-                step_id="vmoto_soco_credentials",
+                step_id="credentials",
                 data_schema=vol.Schema(
                     {
                         vol.Required(
@@ -209,7 +144,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    async def async_step_vmoto_soco_credentials(self, user_input=None) -> FlowResult:
+    async def async_step_credentials(self, user_input=None) -> FlowResult:
         if user_input:
             self._user_input.update(user_input)
 
@@ -217,9 +152,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await self._get_login_code()
 
             return cast(
-                FlowResult,
+                "FlowResult",
                 self.async_show_form(
-                    step_id="vmoto_soco_login_code",
+                    step_id="login_code",
                     data_schema=vol.Schema(
                         {
                             vol.Required(CONF_LOGIN_CODE): str,
@@ -238,7 +173,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return await self.async_step_user(user_input)
 
-    async def async_step_vmoto_soco_login_code(self, user_input=None) -> FlowResult:
+    async def async_step_login_code(self, user_input=None) -> FlowResult:
         return await self.async_step_login(user_input)
 
     async def async_step_login(self, user_input=None) -> FlowResult:
@@ -254,10 +189,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
 
-                return cast(FlowResult, self.async_abort(reason="reauth_successful"))
+                return cast("FlowResult", self.async_abort(reason="reauth_successful"))
 
             return cast(
-                FlowResult, self.async_create_entry(title=NAME, data=self._user_input)
+                "FlowResult", self.async_create_entry(title=NAME, data=self._user_input)
             )
         except CannotConnect:
             self._errors["base"] = ERROR_CANNOT_CONNECT
@@ -272,18 +207,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return SuperSocoCustomOptionsFlowHandler(config_entry)
+        return VmotoOptionsFlowHandler(config_entry)
 
     async def _login(self):
         try:
-            if self._user_input[CONF_APP_NAME] == SUPER_SOCO:
-                client = self._get_super_soco_client()
-                await client.login()
-            else:
-                client = self._get_vmoto_soco_client()
-                await client.login(self._user_input[CONF_LOGIN_CODE])
+            client = self._get_vmoto_client()
+            await client.login(self._user_input[CONF_LOGIN_CODE])
 
-            token = await client.get_token()
+            token = client.get_token()
 
             return token
         except ServerTimeoutError as exc:
@@ -298,7 +229,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _get_login_code(self) -> bool:
         try:
-            client = self._get_vmoto_soco_client()
+            client = self._get_vmoto_client()
 
             await client.get_login_code()
 
@@ -319,16 +250,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self._session
 
-    def _get_super_soco_client(self) -> SuperSocoAPI:
-        return SuperSocoAPI(
-            self._get_session(),
-            self._user_input[CONF_PHONE_PREFIX],
-            self._user_input[CONF_PHONE_NUMBER],
-            self._user_input[CONF_PASSWORD],
-        )
-
-    def _get_vmoto_soco_client(self) -> VmotoSocoAPI:
-        return VmotoSocoAPI(
+    def _get_vmoto_client(self) -> VmotoAPI:
+        return VmotoAPI(
             self._get_session(),
             phone_prefix=self._user_input.get(CONF_PHONE_PREFIX),
             phone_number=self._user_input.get(CONF_PHONE_NUMBER),
@@ -336,7 +259,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
+class VmotoOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry) -> None:
         self.options = dict(config_entry.options)
 
@@ -350,7 +273,7 @@ class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
             return await self._update_options()
 
         return cast(
-            FlowResult,
+            "FlowResult",
             self.async_show_form(
                 step_id="user",
                 description_placeholders={
@@ -409,4 +332,6 @@ class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def _update_options(self) -> FlowResult:
-        return cast(FlowResult, self.async_create_entry(title=NAME, data=self.options))
+        return cast(
+            "FlowResult", self.async_create_entry(title=NAME, data=self.options)
+        )

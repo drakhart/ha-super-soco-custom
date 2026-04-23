@@ -1,12 +1,9 @@
-ffmpeg:
-  ffmpeg_bin: /usr/bin/ffmpeg
-
 frontend:
+
+homeassistant:
+  debug: true
 
 logger:
   default: info
   logs:
-    custom_components.super_soco_custom: debug
-
-# If you need to debug uncomment the line below (doc: https://www.home-assistant.io/integrations/debugpy/)
-# debugpy:
+    custom_components.vmoto: debug

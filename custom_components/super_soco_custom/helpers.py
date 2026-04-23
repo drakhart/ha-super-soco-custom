@@ -1,8 +1,8 @@
 import re
-import pytz
-
 from datetime import datetime
-from math import acos, cos, sin, radians
+from math import acos, cos, radians, sin
+
+import pytz
 from numpy import arctan2, degrees
 
 from .const import (
@@ -17,12 +17,12 @@ def calculate_course(lat1: float, lon1: float, lat2: float, lon2: float) -> floa
     if lat1 == lat2 and lon1 == lon2:
         return DEFAULT_FLOAT
 
-    dLon = lon2 - lon1
+    d_lon = lon2 - lon1
 
-    x = cos(radians(lat2)) * sin(radians(dLon))
+    x = cos(radians(lat2)) * sin(radians(d_lon))
     y = cos(radians(lat1)) * sin(radians(lat2)) - sin(radians(lat1)) * cos(
         radians(lat2)
-    ) * cos(radians(dLon))
+    ) * cos(radians(d_lon))
 
     course = degrees(arctan2(x, y))
 
@@ -73,7 +73,7 @@ def parse_date(date_string: str) -> datetime:
     return datetime.strptime(clean_string, "%d/%m/%Y %H:%M%z")
 
 
-def parse_timestamp(timestampMilliseconds: int) -> datetime:
-    timestamp = timestampMilliseconds / MILLISECONDS_IN_A_SECOND
+def parse_timestamp(timestamp_ms: int) -> datetime:
+    timestamp = timestamp_ms / MILLISECONDS_IN_A_SECOND
 
     return datetime.fromtimestamp(timestamp, tz=pytz.UTC)

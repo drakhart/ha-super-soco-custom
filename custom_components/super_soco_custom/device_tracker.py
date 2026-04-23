@@ -9,7 +9,7 @@ from .const import (
     DEVICE_TRACKERS,
     DOMAIN,
 )
-from .entity import SuperSocoCustomEntity
+from .entity import VmotoEntity
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -20,7 +20,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     device_trackers = []
 
     for (
-        id,
+        device_tracker_id,
         source_type,
         latitude_key,
         longitude_key,
@@ -35,10 +35,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             _LOGGER.debug("Unable to set up device tracker due to missing data key")
         else:
             device_trackers.append(
-                SuperSocoCustomDeviceTracker(
+                VmotoDeviceTracker(
                     config_entry,
                     coordinator,
-                    id,
+                    device_tracker_id,
                     source_type,
                     latitude_key,
                     longitude_key,
@@ -51,12 +51,12 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities(device_trackers)
 
 
-class SuperSocoCustomDeviceTracker(SuperSocoCustomEntity, TrackerEntity):
+class VmotoDeviceTracker(VmotoEntity, TrackerEntity):
     def __init__(
         self,
         config_entry,
         coordinator,
-        id,
+        device_tracker_id,
         source_type,
         latitude_key,
         longitude_key,
@@ -65,7 +65,7 @@ class SuperSocoCustomDeviceTracker(SuperSocoCustomEntity, TrackerEntity):
         extra_attrs,
     ):
         super().__init__(config_entry, coordinator)
-        self._id = id
+        self._id = device_tracker_id
         self._source_type = source_type
         self._latitude_key = latitude_key
         self._longitude_key = longitude_key
@@ -107,7 +107,7 @@ class SuperSocoCustomDeviceTracker(SuperSocoCustomEntity, TrackerEntity):
 
     @property
     def extra_state_attributes(self):
-        if type(self._extra_attrs) is dict:
+        if isinstance(self._extra_attrs, dict):
             extra_attrs = {}
 
             for key, value in self._extra_attrs.items():

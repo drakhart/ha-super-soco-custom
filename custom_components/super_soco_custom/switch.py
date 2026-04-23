@@ -9,8 +9,8 @@ from .const import (
     DOMAIN,
     SWITCHES,
 )
-from .entity import SuperSocoCustomEntity
-from .coordinator import SuperSocoCustomDataUpdateCoordinator
+from .coordinator import VmotoDataUpdateCoordinator
+from .entity import VmotoEntity
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -21,7 +21,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     switches = []
 
     for (
-        id,
+        switch_id,
         key,
         condition,
         icon,
@@ -31,10 +31,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             _LOGGER.debug("Unable to set up switch due to missing data key: %s", key)
         else:
             switches.append(
-                SuperSocoCustomSwitch(
+                VmotoSwitch(
                     config_entry,
                     coordinator,
-                    id,
+                    switch_id,
                     key,
                     condition,
                     icon,
@@ -45,33 +45,33 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities(switches)
 
 
-class SuperSocoCustomSwitch(SuperSocoCustomEntity, SwitchEntity):
+class VmotoSwitch(VmotoEntity, SwitchEntity):
     def __init__(
         self,
         config_entry,
         coordinator,
-        id,
+        switch_id,
         key,
         condition,
         icon,
         extra_attrs,
     ):
         super().__init__(config_entry, coordinator)
-        self._id = id
+        self._id = switch_id
         self._key = key
         self._condition = condition
         self._icon = icon
         self._extra_attrs = extra_attrs
 
     async def async_turn_on(self, **kwargs):
-        await cast(
-            SuperSocoCustomDataUpdateCoordinator, self.coordinator
-        ).set_switch_state(self._key, True)
+        await cast("VmotoDataUpdateCoordinator", self.coordinator).set_switch_state(
+            self._key, True
+        )
 
     async def async_turn_off(self, **kwargs):
-        await cast(
-            SuperSocoCustomDataUpdateCoordinator, self.coordinator
-        ).set_switch_state(self._key, False)
+        await cast("VmotoDataUpdateCoordinator", self.coordinator).set_switch_state(
+            self._key, False
+        )
 
     @property
     def unique_id(self):
@@ -95,7 +95,7 @@ class SuperSocoCustomSwitch(SuperSocoCustomEntity, SwitchEntity):
 
     @property
     def extra_state_attributes(self):
-        if type(self._extra_attrs) is dict:
+        if isinstance(self._extra_attrs, dict):
             extra_attrs = {}
 
             for key, value in self._extra_attrs.items():
