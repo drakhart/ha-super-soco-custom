@@ -3,6 +3,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.core_config import Config
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import config_validation
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
@@ -23,6 +24,7 @@ from .open_topo_data_api import OpenTopoDataAPI
 from .vmoto_api import VmotoAPI
 
 _LOGGER = logging.getLogger(__name__)
+CONFIG_SCHEMA = config_validation.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(
