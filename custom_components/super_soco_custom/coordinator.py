@@ -1,5 +1,5 @@
 import logging
-from asyncio import sleep
+from asyncio import gather, sleep
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -7,9 +7,7 @@ from aiohttp import ClientResponseError
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import (
-    ConfigEntryAuthFailed,
-)
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -236,19 +234,20 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                     }
                 )
 
-            # Inject additional API data
-            data.update(
-                await self._get_altitude_data(
+            # Inject additional API data (run in parallel)
+            results = await gather(
+                self._get_altitude_data(
                     float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
-                )
-            )
-            data.update(
-                await self._get_reverse_geocoding_data(
+                ),
+                self._get_reverse_geocoding_data(
                     float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
-                )
+                ),
+                self._get_last_trip_data(),
+                self._get_last_warning_data(),
             )
-            data.update(await self._get_last_trip_data())
-            data.update(await self._get_last_warning_data())
+
+            for result in results:
+                data.update(result)
 
             # Cache data
             self._last_data = data
@@ -442,6 +441,10 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 self._last_trip_timestamp = timestamp
             except IndexError:
                 _LOGGER.debug("Last trip data is empty")
+            except ClientResponseError as error:
+                if error.status in (400, 2004):
+                    raise
+                _LOGGER.exception(error)
             except Exception as exception:
                 _LOGGER.exception(exception)
         else:
@@ -492,6 +495,10 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 }
             except IndexError:
                 _LOGGER.debug("Last warning data is empty")
+            except ClientResponseError as error:
+                if error.status in (400, 2004):
+                    raise
+                _LOGGER.exception(error)
             except Exception as exception:
                 _LOGGER.exception(exception)
         else:

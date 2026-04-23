@@ -57,7 +57,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         self._errors = {}
         self._session = None
-        self._reauth_entry = None
         self._user_input = {
             CONF_LOGIN_METHOD: None,
             CONF_PHONE_PREFIX: str(PHONE_PREFIXES[0][1]),
@@ -68,17 +67,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(self, user_input=None) -> FlowResult:
         self._errors = {}
-        entry_id: str | None = self.context.get("entry_id")
-        if entry_id is None:
-            self._reauth_entry = None
-        else:
-            self._reauth_entry = self.hass.config_entries.async_get_entry(entry_id)
-
-        return await self.async_step_user(user_input)
+        self._user_input.update(user_input or {})
+        return await self.async_step_user()
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         if user_input:
             self._user_input.update(user_input)
+            return await self.async_step_credentials()
 
         errors = self._errors
         self._errors = {}
@@ -86,7 +81,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return cast(
             "FlowResult",
             self.async_show_form(
-                step_id="login_method",
+                step_id="user",
                 data_schema=vol.Schema(
                     {
                         vol.Required(
@@ -104,12 +99,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    async def async_step_login_method(self, user_input=None) -> FlowResult:
+    async def async_step_credentials(self, user_input=None) -> FlowResult:
         if user_input:
             self._user_input.update(user_input)
-
-        errors = self._errors
-        self._errors = {}
+            return await self.async_step_login_code()
 
         if self._user_input[CONF_LOGIN_METHOD] == LOGIN_METHOD_EMAIL:
             return cast(
@@ -123,7 +116,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             ): str,
                         }
                     ),
-                    errors=errors,
                 ),
             )
 
@@ -147,13 +139,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ): str,
                     }
                 ),
-                errors=errors,
             ),
         )
 
-    async def async_step_credentials(self, user_input=None) -> FlowResult:
+    async def async_step_login_code(self, user_input=None) -> FlowResult:
         if user_input:
             self._user_input.update(user_input)
+            return await self.async_step_login()
 
         try:
             await self._get_login_code()
@@ -167,7 +159,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             vol.Required(CONF_LOGIN_CODE): str,
                         }
                     ),
-                    errors={},
                 ),
             )
         except CannotConnect:
@@ -178,23 +169,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.exception(error)
             self._errors["base"] = ERROR_UNKNOWN
 
-        return await self.async_step_user(user_input)
+        return await self.async_step_user()
 
-    async def async_step_login_code(self, user_input=None) -> FlowResult:
-        return await self.async_step_login(user_input)
-
-    async def async_step_login(self, user_input=None) -> FlowResult:
-        if user_input:
-            self._user_input.update(user_input)
-
+    async def async_step_login(self) -> FlowResult:
         try:
             self._user_input[CONF_TOKEN] = await self._login()
+            entry_id = self.context.get("entry_id")
 
-            if self._reauth_entry:
-                self.hass.config_entries.async_update_entry(
-                    self._reauth_entry, data=self._user_input
-                )
-                await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
+            if entry_id:
+                entry = self.hass.config_entries.async_get_entry(entry_id)
+
+                if entry:
+                    self.hass.config_entries.async_update_entry(
+                        entry, data=self._user_input
+                    )
+                    await self.hass.config_entries.async_reload(entry_id)
 
                 return cast("FlowResult", self.async_abort(reason="reauth_successful"))
 
@@ -209,7 +198,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.exception(error)
             self._errors["base"] = ERROR_UNKNOWN
 
-        return await self.async_step_user(user_input)
+        return await self.async_step_user()
 
     @staticmethod
     @callback
@@ -224,8 +213,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             token = client.get_token()
 
             return token
-        except ServerTimeoutError as exc:
-            raise CannotConnect from exc
+        except ServerTimeoutError as error:
+            raise CannotConnect from error
         except ClientResponseError as error:
             if error.status == 400:
                 raise InvalidAuth from error
@@ -241,8 +230,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await client.get_login_code()
 
             return True
-        except ServerTimeoutError as exc:
-            raise CannotConnect from exc
+        except ServerTimeoutError as error:
+            raise CannotConnect from error
         except ClientResponseError as error:
             if error.status == 400:
                 raise InvalidAuth from error
@@ -252,7 +241,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             raise error
 
     def _get_session(self) -> ClientSession:
-        if not self._session:
+        if not self._session or self._session.closed:
             self._session = async_create_clientsession(self.hass)
 
         return self._session

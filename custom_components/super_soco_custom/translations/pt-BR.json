@@ -9,7 +9,7 @@
             "unknown": "Erro inesperado"
         },
         "step": {
-            "login_method": {
+            "user": {
                 "description": "Por favor, escolha o método de login para o aplicativo Vmoto.",
                 "data": {
                     "login_method": "Método de login"

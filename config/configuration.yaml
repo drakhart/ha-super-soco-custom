@@ -6,4 +6,4 @@ homeassistant:
 logger:
   default: info
   logs:
-    custom_components.vmoto: debug
+    custom_components.super_soco_custom: debug

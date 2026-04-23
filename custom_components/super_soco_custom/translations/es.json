@@ -9,7 +9,7 @@
             "unknown": "Error desconocido"
         },
         "step": {
-            "login_method": {
+            "user": {
                 "description": "Selecciona el método de inicio de sesión para la aplicación Vmoto.",
                 "data": {
                     "login_method": "Método de inicio de sesión"

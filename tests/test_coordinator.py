@@ -12,6 +12,7 @@ from typing import (
 from unittest.mock import AsyncMock, create_autospec
 
 import pytest
+from aiohttp import ClientResponseError
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -786,6 +787,102 @@ def test_set_update_interval_power_on_and_off():
     assert coord.update_interval.total_seconds() == 5 * 60
 
 
+@pytest.mark.asyncio
+async def test_get_last_trip_client_response_error_non_auth(
+    hass, make_client_response_error
+):
+    """ClientResponseError with non-auth status in _get_last_trip_data should be logged, not re-raised."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={OPT_ENABLE_LAST_TRIP_ENTITIES: True},
+    )
+
+    client = create_autospec(VmotoAPI, instance=True)
+    client.get_tracking_history_list = AsyncMock(
+        side_effect=make_client_response_error(status=500)
+    )
+
+    coord = VmotoDataUpdateCoordinator(hass, entry, client, osm, otd)
+    coord._user_id = 1
+    coord._device_no = "d1"
+
+    res = await coord._get_last_trip_data()
+    assert isinstance(res, dict)
+
+
+@pytest.mark.asyncio
+async def test_get_last_trip_client_response_error_auth_reraises(
+    hass, make_client_response_error
+):
+    """ClientResponseError with auth-related status in _get_last_trip_data should be re-raised."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={OPT_ENABLE_LAST_TRIP_ENTITIES: True},
+    )
+
+    client = create_autospec(VmotoAPI, instance=True)
+    client.get_tracking_history_list = AsyncMock(
+        side_effect=make_client_response_error(status=400)
+    )
+
+    coord = VmotoDataUpdateCoordinator(hass, entry, client, osm, otd)
+    coord._user_id = 1
+    coord._device_no = "d1"
+
+    with pytest.raises(ClientResponseError):
+        await coord._get_last_trip_data()
+
+
+@pytest.mark.asyncio
+async def test_get_last_warning_client_response_error_non_auth(
+    hass, make_client_response_error
+):
+    """ClientResponseError with non-auth status in _get_last_warning_data should be logged, not re-raised."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={OPT_ENABLE_LAST_WARNING_ENTITY: True},
+    )
+
+    client = create_autospec(VmotoAPI, instance=True)
+    client.get_warning_list = AsyncMock(
+        side_effect=make_client_response_error(status=500)
+    )
+
+    coord = VmotoDataUpdateCoordinator(hass, entry, client, osm, otd)
+    coord._user_id = 1
+    coord._last_data = {}
+
+    res = await coord._get_last_warning_data()
+    assert isinstance(res, dict)
+
+
+@pytest.mark.asyncio
+async def test_get_last_warning_client_response_error_auth_reraises(
+    hass, make_client_response_error
+):
+    """ClientResponseError with auth-related status in _get_last_warning_data should be re-raised."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={OPT_ENABLE_LAST_WARNING_ENTITY: True},
+    )
+
+    client = create_autospec(VmotoAPI, instance=True)
+    client.get_warning_list = AsyncMock(
+        side_effect=make_client_response_error(status=400)
+    )
+
+    coord = VmotoDataUpdateCoordinator(hass, entry, client, osm, otd)
+    coord._user_id = 1
+    coord._last_data = {}
+
+    with pytest.raises(ClientResponseError):
+        await coord._get_last_warning_data()
+
+
 def test_get_course_data_with_last_data():
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
     coord = VmotoDataUpdateCoordinator(
@@ -894,31 +991,6 @@ async def test_get_last_warning_handles_index_error(hass):
         STATE_UNKNOWN,
         STATE_UNAVAILABLE,
     )
-
-
-@pytest.mark.asyncio
-async def test_force_last_trip_and_warning_index_error(hass):
-    """Force IndexError in last trip and last warning handlers to cover except branches."""
-    entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
-
-    bad_client = create_autospec(VmotoAPI, instance=True)
-    bad_client.get_tracking_history_list = AsyncMock(side_effect=IndexError())
-    bad_client.get_warning_list = AsyncMock(side_effect=IndexError())
-
-    coord = VmotoDataUpdateCoordinator(
-        hass,
-        entry,
-        bad_client,
-        osm,
-        otd,
-    )
-
-    res_trip = await coord._get_last_trip_data()
-    res_warn = await coord._get_last_warning_data()
-
-    # Ensure functions return defaults when IndexError occurs
-    assert DATA_LAST_TRIP_RIDE_DISTANCE in res_trip or res_trip
-    assert DATA_LAST_WARNING_TIME in res_warn or res_warn
 
 
 @pytest.mark.asyncio

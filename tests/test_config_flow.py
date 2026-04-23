@@ -85,7 +85,7 @@ async def test_successful_vmoto_config_flow(
 
     # Check that the config flow shows the login method form as the first step
     assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "login_method"
+    assert result["step_id"] == "user"
 
     # Continue past the login method step (select phone)
     result = await hass.config_entries.flow.async_configure(
@@ -173,7 +173,7 @@ async def test_async_step_reauth_and_get_session(hass):
     flow.context = {"entry_id": entry.entry_id}
 
     # call reauth step which delegates to async_step_user
-    res = await flow.async_step_reauth({CONF_LOGIN_CODE: "1234"})
+    res = await flow.async_step_reauth()
     assert isinstance(res, dict)
     assert res.get("type") in ("form", "create_entry", "abort")
 
@@ -192,29 +192,39 @@ async def test_async_step_reauth_with_no_entry_id(hass):
     # no entry_id in context
     flow.context = {}
 
-    res = await flow.async_step_reauth({CONF_LOGIN_CODE: "1234"})
+    res = await flow.async_step_reauth()
     assert isinstance(res, dict)
     assert res.get("type") in ("form", "create_entry", "abort")
 
 
 @pytest.mark.asyncio
-async def test_async_step_app_and_login_cannot_connect(hass, monkeypatch):
+async def test_async_step_login_cannot_connect(hass, monkeypatch):
     flow = ConfigFlow()
     flow.hass = hass
 
-    # make _get_login_code raise CannotConnect to exercise async_step_credentials except branch
-    monkeypatch.setattr(
-        flow, "_get_login_code", lambda: (_ for _ in ()).throw(CannotConnect())
-    )
-    res = await flow.async_step_credentials({})
+    monkeypatch.setattr(flow, "_login", lambda: (_ for _ in ()).throw(CannotConnect()))
+    res = await flow.async_step_login()
     assert isinstance(res, dict)
     assert res.get("type") == "form"
+    assert (res.get("errors") or {}).get("base") == "cannot_connect"
 
-    # make _login raise CannotConnect to exercise async_step_login except branch
-    monkeypatch.setattr(flow, "_login", lambda: (_ for _ in ()).throw(CannotConnect()))
-    res2 = await flow.async_step_login({CONF_LOGIN_CODE: "1234"})
-    assert isinstance(res2, dict)
-    assert res2.get("type") == "form"
+
+@pytest.mark.asyncio
+async def test_async_step_login_code_cannot_connect(hass, monkeypatch):
+    """async_step_login_code sets ERROR_CANNOT_CONNECT when _get_login_code raises CannotConnect."""
+    flow = ConfigFlow()
+    flow.hass = hass
+    flow._user_input[CONF_LOGIN_METHOD] = LOGIN_METHOD_PHONE
+
+    monkeypatch.setattr(
+        flow,
+        "_get_login_code",
+        lambda: (_ for _ in ()).throw(CannotConnect()),
+    )
+
+    res = await flow.async_step_login_code()
+    assert res.get("type") == "form"
+    assert res.get("errors", {}).get("base") == "cannot_connect"
 
 
 @pytest.mark.asyncio
@@ -336,14 +346,14 @@ async def test_async_step_login_reauth_success(hass, monkeypatch):
     entry = MockConfigEntry(domain=DOMAIN, data={})
     entry.add_to_hass(hass)
 
-    flow._reauth_entry = entry
+    flow.context = {"entry_id": entry.entry_id}
 
     async def fake_login(self=None):
         return "token"
 
     monkeypatch.setattr(ConfigFlow, "_login", fake_login)
 
-    res = await flow.async_step_login({CONF_LOGIN_CODE: "1234"})
+    res = await flow.async_step_login()
 
     assert isinstance(res, dict)
     assert res.get("type") == "abort"
@@ -385,7 +395,7 @@ async def test_async_step_login_handles_unknown_on_login_exception(hass, monkeyp
 
     monkeypatch.setattr(ConfigFlow, "_login", bad_login)
 
-    res = await flow.async_step_login({CONF_LOGIN_CODE: "1234"})
+    res = await flow.async_step_login()
     assert isinstance(res, dict)
     assert res.get("type") == "form"
     errors = res.get("errors") or {}
@@ -419,7 +429,7 @@ async def test_async_step_login_handles_invalid_auth(hass, monkeypatch):
 
     monkeypatch.setattr(ConfigFlow, "_login", bad_login)
 
-    res = await flow.async_step_login({CONF_LOGIN_CODE: "1234"})
+    res = await flow.async_step_login()
 
     assert isinstance(res, dict)
     assert res.get("type") == "form"
@@ -467,7 +477,7 @@ async def test_async_step_login_method_email_path(hass):
     flow.hass = hass
     flow._user_input[CONF_LOGIN_METHOD] = LOGIN_METHOD_EMAIL
 
-    res = await flow.async_step_login_method({CONF_LOGIN_METHOD: LOGIN_METHOD_EMAIL})
+    res = await flow.async_step_user({CONF_LOGIN_METHOD: LOGIN_METHOD_EMAIL})
 
     assert res.get("type") == "form"
     assert res.get("step_id") == "credentials"
