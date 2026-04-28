@@ -39,7 +39,7 @@ You can configure some extra options by clicking on "Configure" once the integra
 
 ## Supported entities
 
-- Power status and switch
+- Power switch
 - Battery percentage
 - Estimated range
 - ECU battery percentage

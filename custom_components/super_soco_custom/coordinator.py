@@ -138,7 +138,6 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
         )
         self._is_powered_on = False
         self._last_trip_timestamp = None
-        self._user_data: dict[str, Any] | None = None
         self._user_id: int | None = None
         self._device_no: str | None = None
 
@@ -152,15 +151,13 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         try:
-            # Get user and device data
-            if not self._user_data:
-                _LOGGER.debug("Requesting user data")
-                self._user_data = (await self._client.get_user())[DATA_DATA]
+            _LOGGER.debug("Requesting user data")
 
-            if not self._user_data:
+            user_data = (await self._client.get_user())[DATA_DATA]
+
+            if not user_data:
                 raise UpdateFailed("Missing user data")
 
-            user_data = self._user_data
             device_data = user_data[DATA_DEVICE]
 
             self._user_id = user_data[DATA_USER][DATA_USER_ID]
