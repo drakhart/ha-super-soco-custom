@@ -59,7 +59,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._session = None
         self._user_input = {
             CONF_LOGIN_METHOD: None,
-            CONF_PHONE_PREFIX: str(PHONE_PREFIXES[0][1]),
+            CONF_PHONE_PREFIX: PHONE_PREFIXES[0][1],
             CONF_PHONE_NUMBER: None,
             CONF_EMAIL: None,
             CONF_LOGIN_CODE: None,
@@ -86,7 +86,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {
                         vol.Required(
                             CONF_LOGIN_METHOD,
-                            default=self._user_input[CONF_LOGIN_METHOD],
+                            default=self._user_input.get(CONF_LOGIN_METHOD),
                         ): SelectSelector(
                             SelectSelectorConfig(
                                 options=[LOGIN_METHOD_PHONE, LOGIN_METHOD_EMAIL],
@@ -104,7 +104,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._user_input.update(user_input)
             return await self.async_step_login_code()
 
-        if self._user_input[CONF_LOGIN_METHOD] == LOGIN_METHOD_EMAIL:
+        if self._user_input.get(CONF_LOGIN_METHOD) == LOGIN_METHOD_EMAIL:
             return cast(
                 "FlowResult",
                 self.async_show_form(
@@ -112,7 +112,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data_schema=vol.Schema(
                         {
                             vol.Required(
-                                CONF_EMAIL, default=self._user_input[CONF_EMAIL]
+                                CONF_EMAIL, default=self._user_input.get(CONF_EMAIL)
                             ): str,
                         }
                     ),
@@ -120,7 +120,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         prefix_options = [
-            SelectOptionDict(value=str(code), label=name)
+            SelectOptionDict(value=code, label=f"{name} ({code})")
             for name, code in PHONE_PREFIXES
         ]
         return cast(
@@ -131,11 +131,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {
                         vol.Required(
                             CONF_PHONE_PREFIX,
-                            default=str(self._user_input[CONF_PHONE_PREFIX]),
+                            default=str(self._user_input.get(CONF_PHONE_PREFIX)),
                         ): SelectSelector(SelectSelectorConfig(options=prefix_options)),
                         vol.Required(
                             CONF_PHONE_NUMBER,
-                            default=self._user_input[CONF_PHONE_NUMBER],
+                            default=self._user_input.get(CONF_PHONE_NUMBER),
                         ): str,
                     }
                 ),
@@ -208,7 +208,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _login(self):
         try:
             client = self._get_vmoto_client()
-            await client.login(self._user_input[CONF_LOGIN_CODE])
+            await client.login(self._user_input.get(CONF_LOGIN_CODE, DEFAULT_STRING))
 
             token = client.get_token()
 

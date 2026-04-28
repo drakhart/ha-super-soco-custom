@@ -111,7 +111,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     if config_entry.version == 2:
         new = {**config_entry.data}
 
-        if new.get(CONF_EMAIL) is None:
+        if not new.get(CONF_EMAIL):
             new[CONF_LOGIN_METHOD] = LOGIN_METHOD_PHONE
 
         hass.config_entries.async_update_entry(config_entry, data=new, version=3)

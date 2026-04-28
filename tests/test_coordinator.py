@@ -636,7 +636,6 @@ async def test_vmoto_last_trip_and_warning_and_reverse(
 
     # ensure last_data empty to force updates
     coord._last_data = {}
-    coord._user_data = None
 
     # call reverse geocoding directly
     rev = await coord._get_reverse_geocoding_data(1.0, 1.0)
@@ -686,7 +685,6 @@ async def test_vmoto_full_data_path(hass):
 
     # ensure last_data empty to force updates
     coord._last_data = {}
-    coord._user_data = None
 
     data = await coord._async_update_data()
 

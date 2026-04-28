@@ -16,7 +16,7 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator = hass.data.get(DOMAIN).get(config_entry.entry_id)
 
     switches = []
 

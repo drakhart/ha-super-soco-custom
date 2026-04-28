@@ -27,7 +27,7 @@ class VmotoAPI:
         email: str | None = None,
         token: str | None = None,
     ) -> None:
-        if email is None and (phone_prefix is None or phone_number is None):
+        if not email and (not phone_prefix or not phone_number):
             raise ValueError(
                 "Either email or both phone_prefix and phone_number must be provided"
             )
@@ -39,7 +39,7 @@ class VmotoAPI:
         self._token: str | None = token
 
     def _extract_token(self, res: dict) -> str:
-        return str(res["data"]).replace(JWT_PREFIX, "")
+        return str(res.get("data", "")).replace(JWT_PREFIX, "")
 
     async def email_login(self, login_code: str) -> dict:
         url = f"{BASE_URL}/index/emailLoginByCode"
@@ -163,8 +163,8 @@ class VmotoAPI:
             res.raise_for_status()
             res_json = await res.json()
 
-            if res_json["status"] != "200":
-                res.status = int(res_json["status"])
+            if res_json.get("status") != "200":
+                res.status = int(res_json.get("status", 500))
                 res.raise_for_status()
 
             return res_json

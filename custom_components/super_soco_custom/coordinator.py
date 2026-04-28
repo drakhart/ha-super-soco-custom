@@ -1,7 +1,6 @@
 import logging
 from asyncio import gather, sleep
 from datetime import datetime, timedelta
-from typing import Any
 
 from aiohttp import ClientResponseError
 from homeassistant.config_entries import ConfigEntry
@@ -78,6 +77,7 @@ from .const import (
     DEFAULT_ENABLE_LAST_WARNING_ENTITY,
     DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
     DEFAULT_FLOAT,
+    DEFAULT_INTEGER,
     DEFAULT_UPDATE_INTERVAL_MINUTES,
     DIR_ARRIVED,
     DIR_AWAY_FROM_HOME,
@@ -153,62 +153,69 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             _LOGGER.debug("Requesting user data")
 
-            user_data = (await self._client.get_user())[DATA_DATA]
+            user_data = (await self._client.get_user()).get(DATA_DATA)
 
             if not user_data:
                 raise UpdateFailed("Missing user data")
 
-            device_data = user_data[DATA_DEVICE]
+            device_data = user_data.get(DATA_DEVICE)
 
-            self._user_id = user_data[DATA_USER][DATA_USER_ID]
-            self._device_no = device_data[DATA_DEVICE_NO]
+            self._user_id = user_data.get(DATA_USER).get(DATA_USER_ID)
+            self._device_no = device_data.get(DATA_DEVICE_NO)
 
             data = {
-                DATA_BATTERY: device_data[DATA_BATTERY],
-                DATA_ECU_BATTERY: device_data[DATA_ECU_BATTERY],
-                DATA_ESTIMATED_RANGE: device_data[DATA_ESTIMATED_RANGE],
+                DATA_BATTERY: device_data.get(DATA_BATTERY),
+                DATA_ECU_BATTERY: device_data.get(DATA_ECU_BATTERY),
+                DATA_ESTIMATED_RANGE: device_data.get(DATA_ESTIMATED_RANGE),
                 DATA_GPS_ACCURACY: calculate_percentage(
-                    device_data[DATA_GPS_ACCURACY], GPS_MAX_ACCURACY
+                    device_data.get(DATA_GPS_ACCURACY), GPS_MAX_ACCURACY
                 ),
                 DATA_LAST_GPS_TIME: parse_timestamp(
-                    device_data[DATA_LAST_GPS_TIME],
+                    device_data.get(DATA_LAST_GPS_TIME),
                 ),
-                DATA_LATITUDE: device_data[DATA_LATITUDE],
-                DATA_LONGITUDE: device_data[DATA_LONGITUDE],
-                DATA_MODEL_NAME: user_data[DATA_USER_BIND_DEVICE][DATA_MODEL_NAME],
-                DATA_NATIVE_PUSH_NOTIFICATIONS: device_data[
+                DATA_LATITUDE: device_data.get(DATA_LATITUDE),
+                DATA_LONGITUDE: device_data.get(DATA_LONGITUDE),
+                DATA_MODEL_NAME: user_data.get(DATA_USER_BIND_DEVICE).get(
+                    DATA_MODEL_NAME
+                ),
+                DATA_NATIVE_PUSH_NOTIFICATIONS: device_data.get(
                     DATA_NATIVE_PUSH_NOTIFICATIONS
-                ],
-                DATA_NATIVE_TRACKING_HISTORY: device_data[DATA_NATIVE_TRACKING_HISTORY],
-                DATA_POWER_SWITCH: device_data[DATA_POWER_STATUS],
+                ),
+                DATA_NATIVE_TRACKING_HISTORY: device_data.get(
+                    DATA_NATIVE_TRACKING_HISTORY
+                ),
+                DATA_POWER_SWITCH: device_data.get(DATA_POWER_STATUS),
                 DATA_SIGNAL_STRENGTH: calculate_percentage(
-                    device_data[DATA_SIGNAL_STRENGTH], SIGNAL_MAX_STRENGTH
+                    device_data.get(DATA_SIGNAL_STRENGTH), SIGNAL_MAX_STRENGTH
                 ),
-                DATA_SPEED: device_data[DATA_SPEED],
+                DATA_SPEED: device_data.get(DATA_SPEED),
                 DATA_TRIP_DISTANCE: round(
-                    device_data[DATA_TRIP_DISTANCE], DISTANCE_ROUNDING_DECIMALS
+                    device_data.get(DATA_TRIP_DISTANCE), DISTANCE_ROUNDING_DECIMALS
                 ),
-                DATA_VEHICLE_IMAGE_URL: user_data[DATA_USER_BIND_DEVICE][
+                DATA_VEHICLE_IMAGE_URL: user_data.get(DATA_USER_BIND_DEVICE).get(
                     DATA_VEHICLE_IMAGE_URL
-                ],
+                ),
             }
-            self._is_powered_on = data[DATA_POWER_SWITCH] == 1
+            self._is_powered_on = data.get(DATA_POWER_SWITCH, 1)
 
             # Inject home and course data only if vehicle is powered on or moving noticeably
             if self._is_powered_on or self._is_power_off_movement_noticeable(
-                float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
+                float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
+                float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
             ):
                 # Inject home data
                 data.update(
                     self._get_home_data(
-                        float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
+                        float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
+                        float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
                     )
                 )
 
                 # Inject course data
                 data.update(
                     self._get_course_data(
-                        float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
+                        float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
+                        float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
                     )
                 )
 
@@ -219,28 +226,32 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 )
                 data.update(
                     {
-                        DATA_COURSE: self._last_data[DATA_COURSE],
-                        DATA_DIR_OF_TRAVEL: self._last_data[DATA_DIR_OF_TRAVEL],
-                        DATA_DISTANCE_FROM_HOME: self._last_data[
+                        DATA_COURSE: self._last_data.get(DATA_COURSE),
+                        DATA_DIR_OF_TRAVEL: self._last_data.get(DATA_DIR_OF_TRAVEL),
+                        DATA_DISTANCE_FROM_HOME: self._last_data.get(
                             DATA_DISTANCE_FROM_HOME
-                        ],
-                        DATA_LATITUDE: self._last_data[DATA_LATITUDE],
-                        DATA_LONGITUDE: self._last_data[DATA_LONGITUDE],
+                        ),
+                        DATA_LATITUDE: self._last_data.get(DATA_LATITUDE),
+                        DATA_LONGITUDE: self._last_data.get(DATA_LONGITUDE),
                         DATA_SPEED: DEFAULT_FLOAT,
-                        DATA_WIND_ROSE_COURSE: self._last_data[DATA_WIND_ROSE_COURSE],
+                        DATA_WIND_ROSE_COURSE: self._last_data.get(
+                            DATA_WIND_ROSE_COURSE
+                        ),
                     }
                 )
 
             # Inject additional API data (run in parallel)
             results = await gather(
                 self._get_altitude_data(
-                    float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
-                ),
-                self._get_reverse_geocoding_data(
-                    float(data[DATA_LATITUDE]), float(data[DATA_LONGITUDE])
+                    float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
+                    float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
                 ),
                 self._get_last_trip_data(),
                 self._get_last_warning_data(),
+                self._get_reverse_geocoding_data(
+                    float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
+                    float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
+                ),
             )
 
             for result in results:
@@ -274,15 +285,15 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
 
         if (
             not self._last_data
-            or self._last_data[DATA_ALTITUDE] == STATE_UNAVAILABLE
-            or self._last_data[DATA_ALTITUDE] == STATE_UNKNOWN
+            or self._last_data.get(DATA_ALTITUDE) == STATE_UNAVAILABLE
+            or self._last_data.get(DATA_ALTITUDE) == STATE_UNKNOWN
             or self._is_geo_cache_outdated(latitude, longitude)
         ):
             try:
                 _LOGGER.debug("Requesting altitude data")
                 res = await self._open_topo_data_api.get_mapzen(latitude, longitude)
 
-                data = {DATA_ALTITUDE: res[DATA_RESULTS][0][DATA_ELEVATION]}
+                data = {DATA_ALTITUDE: res.get(DATA_RESULTS, {})[0].get(DATA_ELEVATION)}
             except Exception as exception:
                 _LOGGER.exception(exception)
         else:
@@ -303,11 +314,9 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
         if home:
             home_latitude = home.attributes.get(DATA_LATITUDE)
             home_longitude = home.attributes.get(DATA_LONGITUDE)
-            home_radius_raw = home.attributes.get(DATA_RADIUS)
+            home_radius_raw = home.attributes.get(DATA_RADIUS, DEFAULT_FLOAT)
             home_radius = round(
-                (float(home_radius_raw) if home_radius_raw is not None else 0)
-                * KM_IN_A_M,
-                DISTANCE_ROUNDING_DECIMALS,
+                float(home_radius_raw) * KM_IN_A_M, DISTANCE_ROUNDING_DECIMALS
             )
 
             if home_latitude is not None and home_longitude is not None:
@@ -319,21 +328,16 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                     DISTANCE_ROUNDING_DECIMALS,
                 )
 
-            if data[DATA_DISTANCE_FROM_HOME] <= home_radius:
+            if data.get(DATA_DISTANCE_FROM_HOME, DEFAULT_FLOAT) <= home_radius:
                 data[DATA_DIR_OF_TRAVEL] = DIR_ARRIVED
-            elif (
-                self._last_data
-                and self._last_data[DATA_DISTANCE_FROM_HOME] != STATE_UNKNOWN
-            ):
-                if (
-                    self._last_data[DATA_DISTANCE_FROM_HOME]
-                    > data[DATA_DISTANCE_FROM_HOME]
-                ):
+            elif self._last_data.get(DATA_DISTANCE_FROM_HOME) != STATE_UNKNOWN:
+                if self._last_data.get(
+                    DATA_DISTANCE_FROM_HOME, DEFAULT_FLOAT
+                ) > data.get(DATA_DISTANCE_FROM_HOME, DEFAULT_FLOAT):
                     data[DATA_DIR_OF_TRAVEL] = DIR_TOWARDS_HOME
-                elif (
-                    self._last_data[DATA_DISTANCE_FROM_HOME]
-                    < data[DATA_DISTANCE_FROM_HOME]
-                ):
+                elif self._last_data.get(
+                    DATA_DISTANCE_FROM_HOME, DEFAULT_FLOAT
+                ) < data.get(DATA_DISTANCE_FROM_HOME, DEFAULT_FLOAT):
                     data[DATA_DIR_OF_TRAVEL] = DIR_AWAY_FROM_HOME
                 else:
                     data[DATA_DIR_OF_TRAVEL] = DIR_STATIONARY
@@ -385,8 +389,8 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
         # Request data when no cache exists, cache is stale, or vehicle is powered off
         if (
             not self._last_data
-            or self._last_data[DATA_LAST_TRIP_RIDE_DISTANCE] == STATE_UNAVAILABLE
-            or self._last_data[DATA_LAST_TRIP_RIDE_DISTANCE] == STATE_UNKNOWN
+            or self._last_data.get(DATA_LAST_TRIP_RIDE_DISTANCE) == STATE_UNAVAILABLE
+            or self._last_data.get(DATA_LAST_TRIP_RIDE_DISTANCE) == STATE_UNKNOWN
             or (
                 not self._is_powered_on
                 and self._last_trip_timestamp
@@ -397,41 +401,43 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("Requesting last trip data")
 
                 client = self._client
-                if self._user_id is None or self._device_no is None:
-                    raise IndexError
+                if not self._user_id or not self._device_no:
+                    raise IndexError("Missing user id or device number")
 
                 res = await client.get_tracking_history_list(
                     self._user_id, self._device_no, 1, 1
                 )
-                trip = res[DATA_DATA][DATA_DATA][0]
+                trip = res.get(DATA_DATA, {}).get(DATA_DATA)[0]
                 data = {
                     DATA_LAST_TRIP_AVG_SPEED: round(
-                        trip[DATA_LAST_TRIP_MILEAGE]
-                        / trip[DATA_LAST_TRIP_MINUTES]
+                        trip.get(DATA_LAST_TRIP_MILEAGE)
+                        / trip.get(DATA_LAST_TRIP_MINUTES)
                         * MINUTES_IN_AN_HOUR,
                         1,
                     ),
                     DATA_LAST_TRIP_BEGIN_LATITUDE: str(
-                        trip[DATA_LAST_TRIP_BEGIN_LATITUDE]
+                        trip.get(DATA_LAST_TRIP_BEGIN_LATITUDE)
                     ),
                     DATA_LAST_TRIP_BEGIN_LONGITUDE: str(
-                        trip[DATA_LAST_TRIP_BEGIN_LONGITUDE]
+                        trip.get(DATA_LAST_TRIP_BEGIN_LONGITUDE)
                     ),
                     DATA_LAST_TRIP_BEGIN_TIME: parse_timestamp(
-                        trip[DATA_LAST_TRIP_BEGIN_TIME],
+                        trip.get(DATA_LAST_TRIP_BEGIN_TIME),
                     ),
-                    DATA_LAST_TRIP_END_LATITUDE: str(trip[DATA_LAST_TRIP_END_LATITUDE]),
+                    DATA_LAST_TRIP_END_LATITUDE: str(
+                        trip.get(DATA_LAST_TRIP_END_LATITUDE)
+                    ),
                     DATA_LAST_TRIP_END_LONGITUDE: str(
-                        trip[DATA_LAST_TRIP_END_LONGITUDE]
+                        trip.get(DATA_LAST_TRIP_END_LONGITUDE)
                     ),
                     DATA_LAST_TRIP_END_TIME: parse_timestamp(
-                        trip[DATA_LAST_TRIP_END_TIME],
+                        trip.get(DATA_LAST_TRIP_END_TIME),
                     ),
                     DATA_LAST_TRIP_RIDE_DISTANCE: round(
-                        trip[DATA_LAST_TRIP_MILEAGE], DISTANCE_ROUNDING_DECIMALS
+                        trip.get(DATA_LAST_TRIP_MILEAGE), DISTANCE_ROUNDING_DECIMALS
                     ),
                     DATA_LAST_TRIP_RIDE_TIME: int(
-                        float(trip[DATA_LAST_TRIP_MINUTES]) * SECONDS_IN_A_MINUTE
+                        float(trip.get(DATA_LAST_TRIP_MINUTES)) * SECONDS_IN_A_MINUTE
                     ),
                 }
 
@@ -460,7 +466,9 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
             DATA_LAST_WARNING_MESSAGE: self._last_data.get(
                 DATA_LAST_WARNING_MESSAGE, STATE_UNKNOWN
             ),
-            DATA_LAST_WARNING_TIME: self._last_data.get(DATA_LAST_WARNING_TIME),
+            DATA_LAST_WARNING_TIME: self._last_data.get(
+                DATA_LAST_WARNING_TIME, STATE_UNKNOWN
+            ),
             DATA_LAST_WARNING_TITLE: self._last_data.get(
                 DATA_LAST_WARNING_TITLE, STATE_UNKNOWN
             ),
@@ -470,25 +478,25 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
         if (
             not self._last_data
             or not self._is_powered_on
-            or self._last_data[DATA_LAST_WARNING_TIME] == STATE_UNAVAILABLE
-            or self._last_data[DATA_LAST_WARNING_TIME] is None
+            or not self._last_data.get(DATA_LAST_WARNING_TIME)
+            or self._last_data.get(DATA_LAST_WARNING_TIME) == STATE_UNAVAILABLE
         ):
             try:
                 _LOGGER.debug("Requesting last warning data")
 
                 client = self._client
-                if self._user_id is None:
+                if not self._user_id:
                     raise IndexError
 
                 res = await client.get_warning_list(self._user_id, 1, 1)
-                warning = res[DATA_DATA][DATA_DATA][0]
+                warning = res.get(DATA_DATA, {}).get(DATA_DATA)[0]
 
                 data = {
-                    DATA_LAST_WARNING_MESSAGE: warning[DATA_CONTENT],
+                    DATA_LAST_WARNING_MESSAGE: warning.get(DATA_CONTENT),
                     DATA_LAST_WARNING_TIME: parse_timestamp(
-                        warning[DATA_CREATE_TIME],
+                        warning.get(DATA_CREATE_TIME),
                     ),
-                    DATA_LAST_WARNING_TITLE: warning[DATA_TITLE],
+                    DATA_LAST_WARNING_TITLE: warning.get(DATA_TITLE),
                 }
             except IndexError:
                 _LOGGER.debug("Last warning data is empty")
@@ -550,8 +558,8 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
 
         if (
             not self._last_data
-            or self._last_data[DATA_REVERSE_GEOCODING] == STATE_UNAVAILABLE
-            or self._last_data[DATA_REVERSE_GEOCODING] == STATE_UNKNOWN
+            or self._last_data.get(DATA_REVERSE_GEOCODING) == STATE_UNAVAILABLE
+            or self._last_data.get(DATA_REVERSE_GEOCODING) == STATE_UNKNOWN
             or self._is_geo_cache_outdated(latitude, longitude)
         ):
             try:
@@ -559,40 +567,38 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 res = await self._open_street_map_api.get_reverse(latitude, longitude)
 
                 data = {
-                    DATA_REVERSE_GEOCODING: res[DATA_DISPLAY_NAME],
-                    DATA_REVERSE_GEOCODING_CITY: res[DATA_ADDRESS].get(
+                    DATA_REVERSE_GEOCODING: res.get(DATA_DISPLAY_NAME),
+                    DATA_REVERSE_GEOCODING_CITY: res.get(DATA_ADDRESS, {}).get(
                         DATA_REVERSE_GEOCODING_CITY,
-                        res[DATA_ADDRESS].get(
-                            DATA_REVERSE_GEOCODING_VILLAGE, STATE_UNKNOWN
-                        ),
+                        res.get(DATA_ADDRESS, {}).get(DATA_REVERSE_GEOCODING_VILLAGE),
                     ),
-                    DATA_REVERSE_GEOCODING_COUNTRY: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_COUNTRY, STATE_UNKNOWN
+                    DATA_REVERSE_GEOCODING_COUNTRY: res.get(DATA_ADDRESS, {}).get(
+                        DATA_REVERSE_GEOCODING_COUNTRY
                     ),
-                    DATA_REVERSE_GEOCODING_COUNTRY_CODE: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_COUNTRY_CODE, STATE_UNKNOWN
+                    DATA_REVERSE_GEOCODING_COUNTRY_CODE: res.get(DATA_ADDRESS, {}).get(
+                        DATA_REVERSE_GEOCODING_COUNTRY_CODE
                     ),
-                    DATA_REVERSE_GEOCODING_COUNTY: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_COUNTY, STATE_UNKNOWN
+                    DATA_REVERSE_GEOCODING_COUNTY: res.get(DATA_ADDRESS, {}).get(
+                        DATA_REVERSE_GEOCODING_COUNTY
                     ),
-                    DATA_REVERSE_GEOCODING_HOUSE_NUMBER: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_HOUSE_NUMBER, STATE_UNKNOWN
+                    DATA_REVERSE_GEOCODING_HOUSE_NUMBER: res.get(DATA_ADDRESS, {}).get(
+                        DATA_REVERSE_GEOCODING_HOUSE_NUMBER
                     ),
-                    DATA_REVERSE_GEOCODING_NEIGHBOURHOOD: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_NEIGHBOURHOOD, STATE_UNKNOWN
+                    DATA_REVERSE_GEOCODING_NEIGHBOURHOOD: res.get(DATA_ADDRESS, {}).get(
+                        DATA_REVERSE_GEOCODING_NEIGHBOURHOOD
                     ),
-                    DATA_REVERSE_GEOCODING_POSTCODE: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_POSTCODE, STATE_UNKNOWN
+                    DATA_REVERSE_GEOCODING_POSTCODE: res.get(DATA_ADDRESS, {}).get(
+                        DATA_REVERSE_GEOCODING_POSTCODE
                     ),
-                    DATA_REVERSE_GEOCODING_ROAD: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_ROAD, STATE_UNKNOWN
+                    DATA_REVERSE_GEOCODING_ROAD: res.get(DATA_ADDRESS, {}).get(
+                        DATA_REVERSE_GEOCODING_ROAD
                     ),
-                    DATA_REVERSE_GEOCODING_STATE: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_STATE, STATE_UNKNOWN
+                    DATA_REVERSE_GEOCODING_STATE: res.get(DATA_ADDRESS, {}).get(
+                        DATA_REVERSE_GEOCODING_STATE
                     ),
-                    DATA_REVERSE_GEOCODING_STATE_DISTRICT: res[DATA_ADDRESS].get(
-                        DATA_REVERSE_GEOCODING_STATE_DISTRICT, STATE_UNKNOWN
-                    ),
+                    DATA_REVERSE_GEOCODING_STATE_DISTRICT: res.get(
+                        DATA_ADDRESS, {}
+                    ).get(DATA_REVERSE_GEOCODING_STATE_DISTRICT),
                 }
             except Exception as exception:
                 _LOGGER.exception(exception)
@@ -608,13 +614,15 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
 
         if self._last_data:
             data[DATA_COURSE] = calculate_course(
-                float(self._last_data[DATA_LATITUDE]),
-                float(self._last_data[DATA_LONGITUDE]),
+                float(self._last_data.get(DATA_LATITUDE, DEFAULT_FLOAT)),
+                float(self._last_data.get(DATA_LONGITUDE, DEFAULT_FLOAT)),
                 latitude,
                 longitude,
             )
 
-        data[DATA_WIND_ROSE_COURSE] = calculate_wind_rose_course(data[DATA_COURSE])
+        data[DATA_WIND_ROSE_COURSE] = calculate_wind_rose_course(
+            data.get(DATA_COURSE, DEFAULT_FLOAT)
+        )
 
         return data
 
@@ -634,8 +642,8 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
             return True
 
         try:
-            last_lat = float(self._last_data[DATA_LATITUDE])
-            last_lon = float(self._last_data[DATA_LONGITUDE])
+            last_lat = float(self._last_data.get(DATA_LATITUDE, DEFAULT_FLOAT))
+            last_lon = float(self._last_data.get(DATA_LONGITUDE, DEFAULT_FLOAT))
         except Exception:
             return True
 
@@ -652,7 +660,7 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             client = self._client
             if data_key == DATA_NATIVE_PUSH_NOTIFICATIONS:
-                if self._user_id is None:
+                if not self._user_id:
                     raise UpdateFailed("Missing user id")
 
                 await client.set_user_privacy(
@@ -661,7 +669,7 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                     state,
                 )
             elif data_key == DATA_NATIVE_TRACKING_HISTORY:
-                if self._user_id is None:
+                if not self._user_id:
                     raise UpdateFailed("Missing user id")
 
                 await client.set_user_privacy(
@@ -670,7 +678,7 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                     bool(self._last_data.get(DATA_NATIVE_PUSH_NOTIFICATIONS, False)),
                 )
             elif data_key == DATA_POWER_SWITCH:
-                if self._device_no is None:
+                if not self._device_no:
                     raise UpdateFailed("Missing device number")
 
                 await client.switch_power(self._device_no)
