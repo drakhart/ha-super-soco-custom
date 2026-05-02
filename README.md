@@ -1,4 +1,4 @@
-# Vmoto & Super Soco Home Assistant Integration
+# Vmoto / Super Soco Home Assistant Integration
 
 [![hacs][hacsbadge]][hacs] [![GitHub Release][releases-shield]][releases] [![GitHub Activity][commits-shield]][commits]
 
@@ -63,7 +63,7 @@ _\* These entities include extra attributes with more details._
 
 ## Known limitations
 
-- Only one vehicle can be seen by this integration (I'm not lucky enough to own two motorbikes, so I don't know how would that look in the API responses)
+- Only one vehicle can be seen by this integration (I'm not lucky enough to own two motorcycles, so I don't know how would that look in the API responses)
 - Vehicle diagnose can't be initiated from this integration, nor the resulting report be shown in HA
 - Vehicle model seen by this integration may not match the actual model (the same issue happens in the official app if your ECU has been replaced with another one intended for a different model)
 - ECU may always report a voltage level equal to zero (and hence zero battery percentage); the cause remains unknown

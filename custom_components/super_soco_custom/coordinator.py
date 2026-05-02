@@ -150,98 +150,19 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=update_interval)
 
     async def _async_update_data(self):
-        try:
-            _LOGGER.debug("Requesting user data")
+        data = {}
+        requests = []
 
-            user_data = (await self._client.get_user()).get(DATA_DATA)
+        # Inject user data first as it contains critical info for subsequent API calls
+        if not self._user_id or not self._device_no:
+            result = await self._get_user_data()
+            data.update(result)
+        else:
+            requests.append(self._get_user_data())
 
-            if not user_data:
-                raise UpdateFailed("Missing user data")
-
-            device_data = user_data.get(DATA_DEVICE)
-
-            self._user_id = user_data.get(DATA_USER).get(DATA_USER_ID)
-            self._device_no = device_data.get(DATA_DEVICE_NO)
-
-            data = {
-                DATA_BATTERY: device_data.get(DATA_BATTERY),
-                DATA_ECU_BATTERY: device_data.get(DATA_ECU_BATTERY),
-                DATA_ESTIMATED_RANGE: device_data.get(DATA_ESTIMATED_RANGE),
-                DATA_GPS_ACCURACY: calculate_percentage(
-                    device_data.get(DATA_GPS_ACCURACY), GPS_MAX_ACCURACY
-                ),
-                DATA_LAST_GPS_TIME: parse_timestamp(
-                    device_data.get(DATA_LAST_GPS_TIME),
-                ),
-                DATA_LATITUDE: device_data.get(DATA_LATITUDE),
-                DATA_LONGITUDE: device_data.get(DATA_LONGITUDE),
-                DATA_MODEL_NAME: user_data.get(DATA_USER_BIND_DEVICE).get(
-                    DATA_MODEL_NAME
-                ),
-                DATA_NATIVE_PUSH_NOTIFICATIONS: device_data.get(
-                    DATA_NATIVE_PUSH_NOTIFICATIONS
-                ),
-                DATA_NATIVE_TRACKING_HISTORY: device_data.get(
-                    DATA_NATIVE_TRACKING_HISTORY
-                ),
-                DATA_POWER_SWITCH: device_data.get(DATA_POWER_STATUS),
-                DATA_SIGNAL_STRENGTH: calculate_percentage(
-                    device_data.get(DATA_SIGNAL_STRENGTH), SIGNAL_MAX_STRENGTH
-                ),
-                DATA_SPEED: device_data.get(DATA_SPEED),
-                DATA_TRIP_DISTANCE: round(
-                    device_data.get(DATA_TRIP_DISTANCE), DISTANCE_ROUNDING_DECIMALS
-                ),
-                DATA_VEHICLE_IMAGE_URL: user_data.get(DATA_USER_BIND_DEVICE).get(
-                    DATA_VEHICLE_IMAGE_URL
-                ),
-            }
-            self._is_powered_on = data.get(DATA_POWER_SWITCH, 1)
-
-            # Inject home and course data only if vehicle is powered on or moving noticeably
-            if self._is_powered_on or self._is_power_off_movement_noticeable(
-                float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
-                float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
-            ):
-                # Inject home data
-                data.update(
-                    self._get_home_data(
-                        float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
-                        float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
-                    )
-                )
-
-                # Inject course data
-                data.update(
-                    self._get_course_data(
-                        float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
-                        float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
-                    )
-                )
-
-            # ... otherwise use last cached data to reduce GPS jitter
-            else:
-                _LOGGER.debug(
-                    "Current powered off displacement is too small, using last cached data"
-                )
-                data.update(
-                    {
-                        DATA_COURSE: self._last_data.get(DATA_COURSE),
-                        DATA_DIR_OF_TRAVEL: self._last_data.get(DATA_DIR_OF_TRAVEL),
-                        DATA_DISTANCE_FROM_HOME: self._last_data.get(
-                            DATA_DISTANCE_FROM_HOME
-                        ),
-                        DATA_LATITUDE: self._last_data.get(DATA_LATITUDE),
-                        DATA_LONGITUDE: self._last_data.get(DATA_LONGITUDE),
-                        DATA_SPEED: DEFAULT_FLOAT,
-                        DATA_WIND_ROSE_COURSE: self._last_data.get(
-                            DATA_WIND_ROSE_COURSE
-                        ),
-                    }
-                )
-
-            # Inject additional API data (run in parallel)
-            results = await gather(
+        # Inject additional API data (run in parallel)
+        requests.extend(
+            [
                 self._get_altitude_data(
                     float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
                     float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
@@ -252,27 +173,59 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                     float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
                     float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
                 ),
+            ]
+        )
+
+        for result in await gather(*requests):
+            data.update(result)
+
+        # Inject home and course data only if vehicle is powered on or moving noticeably
+        if self._is_powered_on or self._is_power_off_movement_noticeable(
+            float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
+            float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
+        ):
+            # Inject home data
+            data.update(
+                self._get_home_data(
+                    float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
+                    float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
+                )
             )
 
-            for result in results:
-                data.update(result)
-
-            # Cache data
-            self._last_data = data
-
-            # Set next update interval
-            self._set_update_interval()
-
-            return data
-        except ClientResponseError as error:
-            if error.status in (400, 2004):
-                _LOGGER.exception(
-                    "Authentication expired or revoked, please reauthenticate"
+            # Inject course data
+            data.update(
+                self._get_course_data(
+                    float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
+                    float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
                 )
-                raise ConfigEntryAuthFailed from error
-        except Exception as error:
-            _LOGGER.exception(error)
-            raise UpdateFailed from error
+            )
+
+        # ... otherwise use last cached data to reduce GPS jitter
+        else:
+            _LOGGER.debug(
+                "Current powered off displacement is too small, using last cached data"
+            )
+            data.update(
+                {
+                    DATA_COURSE: self._last_data.get(DATA_COURSE),
+                    DATA_DIR_OF_TRAVEL: self._last_data.get(DATA_DIR_OF_TRAVEL),
+                    DATA_DISTANCE_FROM_HOME: self._last_data.get(
+                        DATA_DISTANCE_FROM_HOME
+                    ),
+                    DATA_LATITUDE: self._last_data.get(DATA_LATITUDE),
+                    DATA_LONGITUDE: self._last_data.get(DATA_LONGITUDE),
+                    DATA_SPEED: DEFAULT_FLOAT,
+                    DATA_WIND_ROSE_COURSE: self._last_data.get(DATA_WIND_ROSE_COURSE),
+                }
+            )
+
+        # Cache data
+        self._last_data = data
+
+        # Set next update interval
+        self._set_update_interval()
+
+        return data
 
     async def _get_altitude_data(self, latitude: float, longitude: float) -> dict:
         if not self._config_entry.options.get(
@@ -344,6 +297,72 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
 
         return data
 
+    async def _get_user_data(self) -> dict:
+        data = {}
+
+        try:
+            _LOGGER.debug("Requesting user data")
+
+            user_data = (await self._client.get_user()).get(DATA_DATA)
+
+            if not user_data:
+                raise UpdateFailed("Missing user data")
+
+            device_data = user_data.get(DATA_DEVICE)
+
+            if not self._user_id:
+                self._user_id = user_data.get(DATA_USER).get(DATA_USER_ID)
+
+            if not self._device_no:
+                self._device_no = device_data.get(DATA_DEVICE_NO)
+
+            self._is_powered_on = device_data.get(DATA_POWER_STATUS)
+
+            data = {
+                DATA_BATTERY: device_data.get(DATA_BATTERY),
+                DATA_ECU_BATTERY: device_data.get(DATA_ECU_BATTERY),
+                DATA_ESTIMATED_RANGE: device_data.get(DATA_ESTIMATED_RANGE),
+                DATA_GPS_ACCURACY: calculate_percentage(
+                    device_data.get(DATA_GPS_ACCURACY), GPS_MAX_ACCURACY
+                ),
+                DATA_LAST_GPS_TIME: parse_timestamp(
+                    device_data.get(DATA_LAST_GPS_TIME),
+                ),
+                DATA_LATITUDE: device_data.get(DATA_LATITUDE),
+                DATA_LONGITUDE: device_data.get(DATA_LONGITUDE),
+                DATA_MODEL_NAME: user_data.get(DATA_USER_BIND_DEVICE).get(
+                    DATA_MODEL_NAME
+                ),
+                DATA_NATIVE_PUSH_NOTIFICATIONS: device_data.get(
+                    DATA_NATIVE_PUSH_NOTIFICATIONS
+                ),
+                DATA_NATIVE_TRACKING_HISTORY: device_data.get(
+                    DATA_NATIVE_TRACKING_HISTORY
+                ),
+                DATA_POWER_SWITCH: device_data.get(DATA_POWER_STATUS),
+                DATA_SIGNAL_STRENGTH: calculate_percentage(
+                    device_data.get(DATA_SIGNAL_STRENGTH), SIGNAL_MAX_STRENGTH
+                ),
+                DATA_SPEED: device_data.get(DATA_SPEED),
+                DATA_TRIP_DISTANCE: round(
+                    device_data.get(DATA_TRIP_DISTANCE), DISTANCE_ROUNDING_DECIMALS
+                ),
+                DATA_VEHICLE_IMAGE_URL: user_data.get(DATA_USER_BIND_DEVICE).get(
+                    DATA_VEHICLE_IMAGE_URL
+                ),
+            }
+        except ClientResponseError as error:
+            if error.status in (400, 2004):
+                _LOGGER.exception(
+                    "Authentication expired or revoked, please reauthenticate"
+                )
+                raise ConfigEntryAuthFailed from error
+        except Exception as error:
+            _LOGGER.exception(error)
+            raise UpdateFailed from error
+
+        return data
+
     async def _get_last_trip_data(self) -> dict:
         if not self._config_entry.options.get(
             OPT_ENABLE_LAST_TRIP_ENTITIES, DEFAULT_ENABLE_LAST_TRIP_ENTITIES
@@ -408,6 +427,7 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                     self._user_id, self._device_no, 1, 1
                 )
                 trip = res.get(DATA_DATA, {}).get(DATA_DATA)[0]
+
                 data = {
                     DATA_LAST_TRIP_AVG_SPEED: round(
                         trip.get(DATA_LAST_TRIP_MILEAGE)
@@ -442,14 +462,15 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 }
 
                 self._last_trip_timestamp = timestamp
-            except IndexError:
-                _LOGGER.debug("Last trip data is empty")
             except ClientResponseError as error:
                 if error.status in (400, 2004):
-                    raise
+                    _LOGGER.exception(
+                        "Authentication expired or revoked, please reauthenticate"
+                    )
+                    raise ConfigEntryAuthFailed from error
+            except Exception as error:
                 _LOGGER.exception(error)
-            except Exception as exception:
-                _LOGGER.exception(exception)
+                raise UpdateFailed from error
         else:
             _LOGGER.debug("Last trip data is up to date")
 
@@ -498,14 +519,15 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                     ),
                     DATA_LAST_WARNING_TITLE: warning.get(DATA_TITLE),
                 }
-            except IndexError:
-                _LOGGER.debug("Last warning data is empty")
             except ClientResponseError as error:
                 if error.status in (400, 2004):
-                    raise
+                    _LOGGER.exception(
+                        "Authentication expired or revoked, please reauthenticate"
+                    )
+                    raise ConfigEntryAuthFailed from error
+            except Exception as error:
                 _LOGGER.exception(error)
-            except Exception as exception:
-                _LOGGER.exception(exception)
+                raise UpdateFailed from error
         else:
             _LOGGER.debug("Last warning data is up to date")
 
@@ -565,35 +587,36 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
             try:
                 _LOGGER.debug("Requesting reverse geocoding data")
                 res = await self._open_street_map_api.get_reverse(latitude, longitude)
+                address = res.get(DATA_ADDRESS, {})
 
                 data = {
                     DATA_REVERSE_GEOCODING: res.get(DATA_DISPLAY_NAME),
-                    DATA_REVERSE_GEOCODING_CITY: res.get(DATA_ADDRESS, {}).get(
+                    DATA_REVERSE_GEOCODING_CITY: address.get(
                         DATA_REVERSE_GEOCODING_CITY,
-                        res.get(DATA_ADDRESS, {}).get(DATA_REVERSE_GEOCODING_VILLAGE),
+                        address.get(DATA_REVERSE_GEOCODING_VILLAGE),
                     ),
-                    DATA_REVERSE_GEOCODING_COUNTRY: res.get(DATA_ADDRESS, {}).get(
+                    DATA_REVERSE_GEOCODING_COUNTRY: address.get(
                         DATA_REVERSE_GEOCODING_COUNTRY
                     ),
-                    DATA_REVERSE_GEOCODING_COUNTRY_CODE: res.get(DATA_ADDRESS, {}).get(
+                    DATA_REVERSE_GEOCODING_COUNTRY_CODE: address.get(
                         DATA_REVERSE_GEOCODING_COUNTRY_CODE
                     ),
-                    DATA_REVERSE_GEOCODING_COUNTY: res.get(DATA_ADDRESS, {}).get(
+                    DATA_REVERSE_GEOCODING_COUNTY: address.get(
                         DATA_REVERSE_GEOCODING_COUNTY
                     ),
-                    DATA_REVERSE_GEOCODING_HOUSE_NUMBER: res.get(DATA_ADDRESS, {}).get(
-                        DATA_REVERSE_GEOCODING_HOUSE_NUMBER
+                    DATA_REVERSE_GEOCODING_HOUSE_NUMBER: address.get(
+                        DATA_REVERSE_GEOCODING_HOUSE_NUMBER, STATE_UNKNOWN
                     ),
-                    DATA_REVERSE_GEOCODING_NEIGHBOURHOOD: res.get(DATA_ADDRESS, {}).get(
+                    DATA_REVERSE_GEOCODING_NEIGHBOURHOOD: address.get(
                         DATA_REVERSE_GEOCODING_NEIGHBOURHOOD
                     ),
-                    DATA_REVERSE_GEOCODING_POSTCODE: res.get(DATA_ADDRESS, {}).get(
+                    DATA_REVERSE_GEOCODING_POSTCODE: address.get(
                         DATA_REVERSE_GEOCODING_POSTCODE
                     ),
-                    DATA_REVERSE_GEOCODING_ROAD: res.get(DATA_ADDRESS, {}).get(
+                    DATA_REVERSE_GEOCODING_ROAD: address.get(
                         DATA_REVERSE_GEOCODING_ROAD
                     ),
-                    DATA_REVERSE_GEOCODING_STATE: res.get(DATA_ADDRESS, {}).get(
+                    DATA_REVERSE_GEOCODING_STATE: address.get(
                         DATA_REVERSE_GEOCODING_STATE
                     ),
                     DATA_REVERSE_GEOCODING_STATE_DISTRICT: res.get(

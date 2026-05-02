@@ -12,7 +12,6 @@ from typing import (
 from unittest.mock import AsyncMock, create_autospec
 
 import pytest
-from aiohttp import ClientResponseError
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -195,11 +194,12 @@ async def test_get_last_trip_and_warning_handle_exceptions_vmoto(hass):
     coord._user_id = 1
     coord._device_no = "d1"
 
-    trip = await coord._get_last_trip_data()
-    warn = await coord._get_last_warning_data()
+    # Coordinator now raises UpdateFailed on generic API exceptions
+    with pytest.raises(UpdateFailed):
+        await coord._get_last_trip_data()
 
-    assert isinstance(trip, dict)
-    assert isinstance(warn, dict)
+    with pytest.raises(UpdateFailed):
+        await coord._get_last_warning_data()
 
 
 def test_is_power_off_movement_noticeable_exception():
@@ -355,12 +355,13 @@ async def test_coordinator_altitude_home_course_and_index_errors(hass):
     res = coord._get_home_data(0.0, 0.0)
     assert DATA_DISTANCE_FROM_HOME in res
 
-    # last trip and warning index error should be handled gracefully
+    # last trip and warning index error now raise UpdateFailed
     coord._last_data = {}
-    trip = await coord._get_last_trip_data()
-    warn = await coord._get_last_warning_data()
-    assert DATA_LAST_TRIP_RIDE_DISTANCE in trip
-    assert DATA_LAST_WARNING_TIME in warn
+    with pytest.raises(UpdateFailed):
+        await coord._get_last_trip_data()
+
+    with pytest.raises(UpdateFailed):
+        await coord._get_last_warning_data()
 
 
 @pytest.mark.asyncio
@@ -829,7 +830,8 @@ async def test_get_last_trip_client_response_error_auth_reraises(
     coord._user_id = 1
     coord._device_no = "d1"
 
-    with pytest.raises(ClientResponseError):
+    # Auth-related client errors are re-raised as ConfigEntryAuthFailed
+    with pytest.raises(ConfigEntryAuthFailed):
         await coord._get_last_trip_data()
 
 
@@ -877,7 +879,8 @@ async def test_get_last_warning_client_response_error_auth_reraises(
     coord._user_id = 1
     coord._last_data = {}
 
-    with pytest.raises(ClientResponseError):
+    # Auth-related client errors are re-raised as ConfigEntryAuthFailed
+    with pytest.raises(ConfigEntryAuthFailed):
         await coord._get_last_warning_data()
 
 
@@ -954,16 +957,9 @@ async def test_get_last_trip_handles_index_error(hass):
         otd,
     )
 
-    res = await coord._get_last_trip_data()
-    assert isinstance(res, dict)
-
-    assert DATA_LAST_TRIP_RIDE_DISTANCE not in res or res.get(
-        DATA_LAST_TRIP_RIDE_DISTANCE
-    ) in (
-        STATE_UNKNOWN,
-        STATE_UNAVAILABLE,
-        None,
-    )
+    # Missing ids now result in UpdateFailed
+    with pytest.raises(UpdateFailed):
+        await coord._get_last_trip_data()
 
 
 @pytest.mark.asyncio
@@ -981,14 +977,9 @@ async def test_get_last_warning_handles_index_error(hass):
         otd,
     )
 
-    res = await coord._get_last_warning_data()
-    assert isinstance(res, dict)
-
-    assert res.get(DATA_LAST_WARNING_TIME) in (
-        None,
-        STATE_UNKNOWN,
-        STATE_UNAVAILABLE,
-    )
+    # Missing ids now result in UpdateFailed
+    with pytest.raises(UpdateFailed):
+        await coord._get_last_warning_data()
 
 
 @pytest.mark.asyncio

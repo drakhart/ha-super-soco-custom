@@ -14,7 +14,7 @@ from homeassistant.const import (
 
 # Component
 DOMAIN = "super_soco_custom"
-NAME = "Vmoto & Super Soco"
+NAME = "Vmoto / Super Soco"
 MANUFACTURER = "Vmoto"
 PLATFORMS = [
     Platform.DEVICE_TRACKER,
