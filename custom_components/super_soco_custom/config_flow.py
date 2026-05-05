@@ -67,12 +67,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(self, user_input=None) -> FlowResult:
         self._errors = {}
-        self._user_input.update(user_input or {})
+        self._user_input |= user_input or {}
         return await self.async_step_user()
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         if user_input:
-            self._user_input.update(user_input)
+            self._user_input |= user_input
             return await self.async_step_credentials()
 
         errors = self._errors
@@ -86,7 +86,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {
                         vol.Required(
                             CONF_LOGIN_METHOD,
-                            default=self._user_input.get(CONF_LOGIN_METHOD),
+                            default=(
+                                self._user_input.get(CONF_LOGIN_METHOD)
+                                if self._user_input.get(CONF_LOGIN_METHOD)
+                                else LOGIN_METHOD_PHONE
+                            ),
                         ): SelectSelector(
                             SelectSelectorConfig(
                                 options=[LOGIN_METHOD_PHONE, LOGIN_METHOD_EMAIL],
@@ -101,7 +105,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_credentials(self, user_input=None) -> FlowResult:
         if user_input:
-            self._user_input.update(user_input)
+            self._user_input |= user_input
             return await self.async_step_login_code()
 
         if self._user_input.get(CONF_LOGIN_METHOD) == LOGIN_METHOD_EMAIL:
@@ -112,7 +116,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data_schema=vol.Schema(
                         {
                             vol.Required(
-                                CONF_EMAIL, default=self._user_input.get(CONF_EMAIL)
+                                CONF_EMAIL,
+                                default=self._user_input.get(
+                                    CONF_EMAIL, DEFAULT_STRING
+                                ),
                             ): str,
                         }
                     ),
@@ -131,11 +138,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {
                         vol.Required(
                             CONF_PHONE_PREFIX,
-                            default=str(self._user_input.get(CONF_PHONE_PREFIX)),
+                            default=str(
+                                self._user_input.get(
+                                    CONF_PHONE_PREFIX, PHONE_PREFIXES[0][1]
+                                )
+                            ),
                         ): SelectSelector(SelectSelectorConfig(options=prefix_options)),
                         vol.Required(
                             CONF_PHONE_NUMBER,
-                            default=self._user_input.get(CONF_PHONE_NUMBER),
+                            default=self._user_input.get(
+                                CONF_PHONE_NUMBER, DEFAULT_STRING
+                            ),
                         ): str,
                     }
                 ),
@@ -144,7 +157,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_login_code(self, user_input=None) -> FlowResult:
         if user_input:
-            self._user_input.update(user_input)
+            self._user_input |= user_input
             return await self.async_step_login()
 
         try:
@@ -267,7 +280,7 @@ class VmotoOptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         if user_input is not None:
-            self.options.update(user_input)
+            self.options |= user_input
 
             return await self._update_options()
 

@@ -151,53 +151,43 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         data = {}
-        requests = []
 
         # Inject user data first as it contains critical info for subsequent API calls
-        if not self._user_id or not self._device_no:
-            result = await self._get_user_data()
-            data.update(result)
-        else:
-            requests.append(self._get_user_data())
+        result = await self._get_user_data()
+        data |= result
 
         # Inject additional API data (run in parallel)
-        requests.extend(
-            [
-                self._get_altitude_data(
-                    float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
-                    float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
-                ),
-                self._get_last_trip_data(),
-                self._get_last_warning_data(),
-                self._get_reverse_geocoding_data(
-                    float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
-                    float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
-                ),
-            ]
+        results = await gather(
+            self._get_altitude_data(
+                float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
+                float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
+            ),
+            self._get_last_trip_data(),
+            self._get_last_warning_data(),
+            self._get_reverse_geocoding_data(
+                float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
+                float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
+            ),
         )
 
-        for result in await gather(*requests):
-            data.update(result)
+        for result in results:
+            data |= result
 
         # Inject home and course data only if vehicle is powered on or moving noticeably
         if self._is_powered_on or self._is_power_off_movement_noticeable(
-            float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
-            float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
+            float(data.get(DATA_LATITUDE, DEFAULT_FLOAT)),
+            float(data.get(DATA_LONGITUDE, DEFAULT_FLOAT)),
         ):
             # Inject home data
-            data.update(
-                self._get_home_data(
-                    float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
-                    float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
-                )
+            data |= self._get_home_data(
+                float(data.get(DATA_LATITUDE, DEFAULT_FLOAT)),
+                float(data.get(DATA_LONGITUDE, DEFAULT_FLOAT)),
             )
 
             # Inject course data
-            data.update(
-                self._get_course_data(
-                    float(data.get(DATA_LATITUDE, DEFAULT_INTEGER)),
-                    float(data.get(DATA_LONGITUDE, DEFAULT_INTEGER)),
-                )
+            data |= self._get_course_data(
+                float(data.get(DATA_LATITUDE, DEFAULT_FLOAT)),
+                float(data.get(DATA_LONGITUDE, DEFAULT_FLOAT)),
             )
 
         # ... otherwise use last cached data to reduce GPS jitter
@@ -205,19 +195,21 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.debug(
                 "Current powered off displacement is too small, using last cached data"
             )
-            data.update(
-                {
-                    DATA_COURSE: self._last_data.get(DATA_COURSE),
-                    DATA_DIR_OF_TRAVEL: self._last_data.get(DATA_DIR_OF_TRAVEL),
-                    DATA_DISTANCE_FROM_HOME: self._last_data.get(
-                        DATA_DISTANCE_FROM_HOME
-                    ),
-                    DATA_LATITUDE: self._last_data.get(DATA_LATITUDE),
-                    DATA_LONGITUDE: self._last_data.get(DATA_LONGITUDE),
-                    DATA_SPEED: DEFAULT_FLOAT,
-                    DATA_WIND_ROSE_COURSE: self._last_data.get(DATA_WIND_ROSE_COURSE),
-                }
-            )
+            data |= {
+                DATA_COURSE: self._last_data.get(DATA_COURSE, STATE_UNKNOWN),
+                DATA_DIR_OF_TRAVEL: self._last_data.get(
+                    DATA_DIR_OF_TRAVEL, STATE_UNKNOWN
+                ),
+                DATA_DISTANCE_FROM_HOME: self._last_data.get(
+                    DATA_DISTANCE_FROM_HOME, STATE_UNKNOWN
+                ),
+                DATA_LATITUDE: self._last_data.get(DATA_LATITUDE, STATE_UNKNOWN),
+                DATA_LONGITUDE: self._last_data.get(DATA_LONGITUDE, STATE_UNKNOWN),
+                DATA_SPEED: DEFAULT_FLOAT,
+                DATA_WIND_ROSE_COURSE: self._last_data.get(
+                    DATA_WIND_ROSE_COURSE, STATE_UNKNOWN
+                ),
+            }
 
         # Cache data
         self._last_data = data
@@ -245,8 +237,15 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
             try:
                 _LOGGER.debug("Requesting altitude data")
                 res = await self._open_topo_data_api.get_mapzen(latitude, longitude)
+                result = res.get(DATA_RESULTS, [{}])[0]
 
-                data = {DATA_ALTITUDE: res.get(DATA_RESULTS, {})[0].get(DATA_ELEVATION)}
+                data = {
+                    DATA_ALTITUDE: (
+                        int(result.get(DATA_ELEVATION))
+                        if result.get(DATA_ELEVATION)
+                        else STATE_UNKNOWN
+                    ),
+                }
             except Exception as exception:
                 _LOGGER.exception(exception)
         else:
@@ -319,17 +318,17 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
             self._is_powered_on = device_data.get(DATA_POWER_STATUS)
 
             data = {
-                DATA_BATTERY: device_data.get(DATA_BATTERY),
-                DATA_ECU_BATTERY: device_data.get(DATA_ECU_BATTERY),
-                DATA_ESTIMATED_RANGE: device_data.get(DATA_ESTIMATED_RANGE),
+                DATA_BATTERY: int(device_data.get(DATA_BATTERY)),
+                DATA_ECU_BATTERY: int(device_data.get(DATA_ECU_BATTERY)),
+                DATA_ESTIMATED_RANGE: int(device_data.get(DATA_ESTIMATED_RANGE)),
                 DATA_GPS_ACCURACY: calculate_percentage(
                     device_data.get(DATA_GPS_ACCURACY), GPS_MAX_ACCURACY
                 ),
                 DATA_LAST_GPS_TIME: parse_timestamp(
                     device_data.get(DATA_LAST_GPS_TIME),
                 ),
-                DATA_LATITUDE: device_data.get(DATA_LATITUDE),
-                DATA_LONGITUDE: device_data.get(DATA_LONGITUDE),
+                DATA_LATITUDE: float(device_data.get(DATA_LATITUDE)),
+                DATA_LONGITUDE: float(device_data.get(DATA_LONGITUDE)),
                 DATA_MODEL_NAME: user_data.get(DATA_USER_BIND_DEVICE).get(
                     DATA_MODEL_NAME
                 ),
@@ -343,9 +342,10 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 DATA_SIGNAL_STRENGTH: calculate_percentage(
                     device_data.get(DATA_SIGNAL_STRENGTH), SIGNAL_MAX_STRENGTH
                 ),
-                DATA_SPEED: device_data.get(DATA_SPEED),
+                DATA_SPEED: float(device_data.get(DATA_SPEED)),
                 DATA_TRIP_DISTANCE: round(
-                    device_data.get(DATA_TRIP_DISTANCE), DISTANCE_ROUNDING_DECIMALS
+                    float(device_data.get(DATA_TRIP_DISTANCE)),
+                    DISTANCE_ROUNDING_DECIMALS,
                 ),
                 DATA_VEHICLE_IMAGE_URL: user_data.get(DATA_USER_BIND_DEVICE).get(
                     DATA_VEHICLE_IMAGE_URL
@@ -429,35 +429,57 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 trip = res.get(DATA_DATA, {}).get(DATA_DATA)[0]
 
                 data = {
-                    DATA_LAST_TRIP_AVG_SPEED: round(
-                        trip.get(DATA_LAST_TRIP_MILEAGE)
-                        / trip.get(DATA_LAST_TRIP_MINUTES)
-                        * MINUTES_IN_AN_HOUR,
-                        1,
+                    DATA_LAST_TRIP_AVG_SPEED: (
+                        round(
+                            trip.get(DATA_LAST_TRIP_MILEAGE)
+                            / trip.get(DATA_LAST_TRIP_MINUTES)
+                            * MINUTES_IN_AN_HOUR,
+                            1,
+                        )
+                        if trip.get(DATA_LAST_TRIP_MILEAGE)
+                        and trip.get(DATA_LAST_TRIP_MINUTES)
+                        else STATE_UNKNOWN
                     ),
                     DATA_LAST_TRIP_BEGIN_LATITUDE: str(
-                        trip.get(DATA_LAST_TRIP_BEGIN_LATITUDE)
+                        trip.get(DATA_LAST_TRIP_BEGIN_LATITUDE, STATE_UNKNOWN)
                     ),
                     DATA_LAST_TRIP_BEGIN_LONGITUDE: str(
-                        trip.get(DATA_LAST_TRIP_BEGIN_LONGITUDE)
+                        trip.get(DATA_LAST_TRIP_BEGIN_LONGITUDE, STATE_UNKNOWN)
                     ),
-                    DATA_LAST_TRIP_BEGIN_TIME: parse_timestamp(
-                        trip.get(DATA_LAST_TRIP_BEGIN_TIME),
+                    DATA_LAST_TRIP_BEGIN_TIME: (
+                        parse_timestamp(
+                            trip.get(DATA_LAST_TRIP_BEGIN_TIME),
+                        )
+                        if trip.get(DATA_LAST_TRIP_BEGIN_TIME)
+                        else STATE_UNKNOWN
                     ),
                     DATA_LAST_TRIP_END_LATITUDE: str(
-                        trip.get(DATA_LAST_TRIP_END_LATITUDE)
+                        trip.get(DATA_LAST_TRIP_END_LATITUDE, STATE_UNKNOWN)
                     ),
                     DATA_LAST_TRIP_END_LONGITUDE: str(
-                        trip.get(DATA_LAST_TRIP_END_LONGITUDE)
+                        trip.get(DATA_LAST_TRIP_END_LONGITUDE, STATE_UNKNOWN)
                     ),
-                    DATA_LAST_TRIP_END_TIME: parse_timestamp(
-                        trip.get(DATA_LAST_TRIP_END_TIME),
+                    DATA_LAST_TRIP_END_TIME: (
+                        parse_timestamp(
+                            trip.get(DATA_LAST_TRIP_END_TIME),
+                        )
+                        if trip.get(DATA_LAST_TRIP_END_TIME)
+                        else STATE_UNKNOWN
                     ),
-                    DATA_LAST_TRIP_RIDE_DISTANCE: round(
-                        trip.get(DATA_LAST_TRIP_MILEAGE), DISTANCE_ROUNDING_DECIMALS
+                    DATA_LAST_TRIP_RIDE_DISTANCE: (
+                        round(
+                            trip.get(DATA_LAST_TRIP_MILEAGE), DISTANCE_ROUNDING_DECIMALS
+                        )
+                        if trip.get(DATA_LAST_TRIP_MILEAGE)
+                        else STATE_UNKNOWN
                     ),
-                    DATA_LAST_TRIP_RIDE_TIME: int(
-                        float(trip.get(DATA_LAST_TRIP_MINUTES)) * SECONDS_IN_A_MINUTE
+                    DATA_LAST_TRIP_RIDE_TIME: (
+                        int(
+                            float(trip.get(DATA_LAST_TRIP_MINUTES))
+                            * SECONDS_IN_A_MINUTE
+                        )
+                        if trip.get(DATA_LAST_TRIP_MINUTES)
+                        else STATE_UNKNOWN
                     ),
                 }
 
@@ -513,11 +535,15 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 warning = res.get(DATA_DATA, {}).get(DATA_DATA)[0]
 
                 data = {
-                    DATA_LAST_WARNING_MESSAGE: warning.get(DATA_CONTENT),
-                    DATA_LAST_WARNING_TIME: parse_timestamp(
-                        warning.get(DATA_CREATE_TIME),
+                    DATA_LAST_WARNING_MESSAGE: warning.get(DATA_CONTENT, STATE_UNKNOWN),
+                    DATA_LAST_WARNING_TIME: (
+                        parse_timestamp(
+                            warning.get(DATA_CREATE_TIME),
+                        )
+                        if warning.get(DATA_CREATE_TIME)
+                        else STATE_UNKNOWN
                     ),
-                    DATA_LAST_WARNING_TITLE: warning.get(DATA_TITLE),
+                    DATA_LAST_WARNING_TITLE: warning.get(DATA_TITLE, STATE_UNKNOWN),
                 }
             except ClientResponseError as error:
                 if error.status in (400, 2004):
@@ -590,38 +616,38 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 address = res.get(DATA_ADDRESS, {})
 
                 data = {
-                    DATA_REVERSE_GEOCODING: res.get(DATA_DISPLAY_NAME),
+                    DATA_REVERSE_GEOCODING: res.get(DATA_DISPLAY_NAME, STATE_UNKNOWN),
                     DATA_REVERSE_GEOCODING_CITY: address.get(
                         DATA_REVERSE_GEOCODING_CITY,
-                        address.get(DATA_REVERSE_GEOCODING_VILLAGE),
+                        address.get(DATA_REVERSE_GEOCODING_VILLAGE, STATE_UNKNOWN),
                     ),
                     DATA_REVERSE_GEOCODING_COUNTRY: address.get(
-                        DATA_REVERSE_GEOCODING_COUNTRY
+                        DATA_REVERSE_GEOCODING_COUNTRY, STATE_UNKNOWN
                     ),
                     DATA_REVERSE_GEOCODING_COUNTRY_CODE: address.get(
-                        DATA_REVERSE_GEOCODING_COUNTRY_CODE
+                        DATA_REVERSE_GEOCODING_COUNTRY_CODE, STATE_UNKNOWN
                     ),
                     DATA_REVERSE_GEOCODING_COUNTY: address.get(
-                        DATA_REVERSE_GEOCODING_COUNTY
+                        DATA_REVERSE_GEOCODING_COUNTY, STATE_UNKNOWN
                     ),
                     DATA_REVERSE_GEOCODING_HOUSE_NUMBER: address.get(
                         DATA_REVERSE_GEOCODING_HOUSE_NUMBER, STATE_UNKNOWN
                     ),
                     DATA_REVERSE_GEOCODING_NEIGHBOURHOOD: address.get(
-                        DATA_REVERSE_GEOCODING_NEIGHBOURHOOD
+                        DATA_REVERSE_GEOCODING_NEIGHBOURHOOD, STATE_UNKNOWN
                     ),
                     DATA_REVERSE_GEOCODING_POSTCODE: address.get(
-                        DATA_REVERSE_GEOCODING_POSTCODE
+                        DATA_REVERSE_GEOCODING_POSTCODE, STATE_UNKNOWN
                     ),
                     DATA_REVERSE_GEOCODING_ROAD: address.get(
-                        DATA_REVERSE_GEOCODING_ROAD
+                        DATA_REVERSE_GEOCODING_ROAD, STATE_UNKNOWN
                     ),
                     DATA_REVERSE_GEOCODING_STATE: address.get(
-                        DATA_REVERSE_GEOCODING_STATE
+                        DATA_REVERSE_GEOCODING_STATE, STATE_UNKNOWN
                     ),
-                    DATA_REVERSE_GEOCODING_STATE_DISTRICT: res.get(
-                        DATA_ADDRESS, {}
-                    ).get(DATA_REVERSE_GEOCODING_STATE_DISTRICT),
+                    DATA_REVERSE_GEOCODING_STATE_DISTRICT: address.get(
+                        DATA_REVERSE_GEOCODING_STATE_DISTRICT, STATE_UNKNOWN
+                    ),
                 }
             except Exception as exception:
                 _LOGGER.exception(exception)

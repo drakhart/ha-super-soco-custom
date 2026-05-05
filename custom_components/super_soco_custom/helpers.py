@@ -58,8 +58,8 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return METERS_IN_EARTH_RADIUS * theta
 
 
-def calculate_percentage(current: float, maximum: float, decimals: int = 0) -> float:
-    return min(round(100 * (current / maximum), decimals), 100)
+def calculate_percentage(current: float, maximum: float) -> int:
+    return min(int(100 * (current / maximum)), 100)
 
 
 def calculate_wind_rose_course(course: float) -> str:
