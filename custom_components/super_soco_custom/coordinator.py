@@ -426,64 +426,69 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 res = await client.get_tracking_history_list(
                     self._user_id, self._device_no, 1, 1
                 )
-                trip = res.get(DATA_DATA, {}).get(DATA_DATA)[0]
+                entries = res.get(DATA_DATA, {}).get(DATA_DATA)
 
-                data = {
-                    DATA_LAST_TRIP_AVG_SPEED: (
-                        round(
-                            trip.get(DATA_LAST_TRIP_MILEAGE)
-                            / trip.get(DATA_LAST_TRIP_MINUTES)
-                            * MINUTES_IN_AN_HOUR,
-                            1,
-                        )
-                        if trip.get(DATA_LAST_TRIP_MILEAGE)
-                        and trip.get(DATA_LAST_TRIP_MINUTES)
-                        else STATE_UNKNOWN
-                    ),
-                    DATA_LAST_TRIP_BEGIN_LATITUDE: str(
-                        trip.get(DATA_LAST_TRIP_BEGIN_LATITUDE, STATE_UNKNOWN)
-                    ),
-                    DATA_LAST_TRIP_BEGIN_LONGITUDE: str(
-                        trip.get(DATA_LAST_TRIP_BEGIN_LONGITUDE, STATE_UNKNOWN)
-                    ),
-                    DATA_LAST_TRIP_BEGIN_TIME: (
-                        parse_timestamp(
-                            trip.get(DATA_LAST_TRIP_BEGIN_TIME),
-                        )
-                        if trip.get(DATA_LAST_TRIP_BEGIN_TIME)
-                        else STATE_UNKNOWN
-                    ),
-                    DATA_LAST_TRIP_END_LATITUDE: str(
-                        trip.get(DATA_LAST_TRIP_END_LATITUDE, STATE_UNKNOWN)
-                    ),
-                    DATA_LAST_TRIP_END_LONGITUDE: str(
-                        trip.get(DATA_LAST_TRIP_END_LONGITUDE, STATE_UNKNOWN)
-                    ),
-                    DATA_LAST_TRIP_END_TIME: (
-                        parse_timestamp(
-                            trip.get(DATA_LAST_TRIP_END_TIME),
-                        )
-                        if trip.get(DATA_LAST_TRIP_END_TIME)
-                        else STATE_UNKNOWN
-                    ),
-                    DATA_LAST_TRIP_RIDE_DISTANCE: (
-                        round(
-                            trip.get(DATA_LAST_TRIP_MILEAGE), DISTANCE_ROUNDING_DECIMALS
-                        )
-                        if trip.get(DATA_LAST_TRIP_MILEAGE)
-                        else STATE_UNKNOWN
-                    ),
-                    DATA_LAST_TRIP_RIDE_TIME: (
-                        int(
-                            float(trip.get(DATA_LAST_TRIP_MINUTES))
-                            * SECONDS_IN_A_MINUTE
-                        )
-                        if trip.get(DATA_LAST_TRIP_MINUTES)
-                        else STATE_UNKNOWN
-                    ),
-                }
+                if not entries:
+                    _LOGGER.debug("No trip data returned")
+                else:
+                    trip = entries[0]
+                    data = {
+                        DATA_LAST_TRIP_AVG_SPEED: (
+                            round(
+                                trip.get(DATA_LAST_TRIP_MILEAGE)
+                                / trip.get(DATA_LAST_TRIP_MINUTES)
+                                * MINUTES_IN_AN_HOUR,
+                                1,
+                            )
+                            if trip.get(DATA_LAST_TRIP_MILEAGE)
+                            and trip.get(DATA_LAST_TRIP_MINUTES)
+                            else STATE_UNKNOWN
+                        ),
+                        DATA_LAST_TRIP_BEGIN_LATITUDE: str(
+                            trip.get(DATA_LAST_TRIP_BEGIN_LATITUDE, STATE_UNKNOWN)
+                        ),
+                        DATA_LAST_TRIP_BEGIN_LONGITUDE: str(
+                            trip.get(DATA_LAST_TRIP_BEGIN_LONGITUDE, STATE_UNKNOWN)
+                        ),
+                        DATA_LAST_TRIP_BEGIN_TIME: (
+                            parse_timestamp(
+                                trip.get(DATA_LAST_TRIP_BEGIN_TIME),
+                            )
+                            if trip.get(DATA_LAST_TRIP_BEGIN_TIME)
+                            else STATE_UNKNOWN
+                        ),
+                        DATA_LAST_TRIP_END_LATITUDE: str(
+                            trip.get(DATA_LAST_TRIP_END_LATITUDE, STATE_UNKNOWN)
+                        ),
+                        DATA_LAST_TRIP_END_LONGITUDE: str(
+                            trip.get(DATA_LAST_TRIP_END_LONGITUDE, STATE_UNKNOWN)
+                        ),
+                        DATA_LAST_TRIP_END_TIME: (
+                            parse_timestamp(
+                                trip.get(DATA_LAST_TRIP_END_TIME),
+                            )
+                            if trip.get(DATA_LAST_TRIP_END_TIME)
+                            else STATE_UNKNOWN
+                        ),
+                        DATA_LAST_TRIP_RIDE_DISTANCE: (
+                            round(
+                                trip.get(DATA_LAST_TRIP_MILEAGE),
+                                DISTANCE_ROUNDING_DECIMALS,
+                            )
+                            if trip.get(DATA_LAST_TRIP_MILEAGE)
+                            else STATE_UNKNOWN
+                        ),
+                        DATA_LAST_TRIP_RIDE_TIME: (
+                            int(
+                                float(trip.get(DATA_LAST_TRIP_MINUTES))
+                                * SECONDS_IN_A_MINUTE
+                            )
+                            if trip.get(DATA_LAST_TRIP_MINUTES)
+                            else STATE_UNKNOWN
+                        ),
+                    }
 
-                self._last_trip_timestamp = timestamp
+                    self._last_trip_timestamp = timestamp
             except ClientResponseError as error:
                 if error.status in (400, 2004):
                     _LOGGER.exception(
@@ -532,19 +537,25 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                     raise IndexError
 
                 res = await client.get_warning_list(self._user_id, 1, 1)
-                warning = res.get(DATA_DATA, {}).get(DATA_DATA)[0]
+                entries = res.get(DATA_DATA, {}).get(DATA_DATA)
 
-                data = {
-                    DATA_LAST_WARNING_MESSAGE: warning.get(DATA_CONTENT, STATE_UNKNOWN),
-                    DATA_LAST_WARNING_TIME: (
-                        parse_timestamp(
-                            warning.get(DATA_CREATE_TIME),
-                        )
-                        if warning.get(DATA_CREATE_TIME)
-                        else STATE_UNKNOWN
-                    ),
-                    DATA_LAST_WARNING_TITLE: warning.get(DATA_TITLE, STATE_UNKNOWN),
-                }
+                if not entries:
+                    _LOGGER.debug("No warning data returned")
+                else:
+                    warning = entries[0]
+                    data = {
+                        DATA_LAST_WARNING_MESSAGE: warning.get(
+                            DATA_CONTENT, STATE_UNKNOWN
+                        ),
+                        DATA_LAST_WARNING_TIME: (
+                            parse_timestamp(
+                                warning.get(DATA_CREATE_TIME),
+                            )
+                            if warning.get(DATA_CREATE_TIME)
+                            else STATE_UNKNOWN
+                        ),
+                        DATA_LAST_WARNING_TITLE: warning.get(DATA_TITLE, STATE_UNKNOWN),
+                    }
             except ClientResponseError as error:
                 if error.status in (400, 2004):
                     _LOGGER.exception(

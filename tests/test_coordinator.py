@@ -983,6 +983,42 @@ async def test_get_last_warning_handles_index_error(hass):
 
 
 @pytest.mark.asyncio
+async def test_get_last_trip_empty_list_returns_defaults(hass):
+    """When tracking history returns an empty list, coordinator returns defaults."""
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
+
+    client = create_autospec(VmotoAPI, instance=True)
+    client.get_tracking_history_list = AsyncMock(
+        return_value={DATA_DATA: {DATA_DATA: []}}
+    )
+
+    coord = VmotoDataUpdateCoordinator(hass, entry, client, osm, otd)
+    coord._user_id = 1
+    coord._device_no = "d1"
+
+    res = await coord._get_last_trip_data()
+    assert isinstance(res, dict)
+    assert DATA_LAST_TRIP_RIDE_DISTANCE in res
+
+
+@pytest.mark.asyncio
+async def test_get_last_warning_empty_list_returns_defaults(hass):
+    """When warning list returns an empty list, coordinator returns defaults."""
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
+
+    client = create_autospec(VmotoAPI, instance=True)
+    client.get_warning_list = AsyncMock(return_value={DATA_DATA: {DATA_DATA: []}})
+
+    coord = VmotoDataUpdateCoordinator(hass, entry, client, osm, otd)
+    coord._user_id = 1
+    coord._last_data = {}
+
+    res = await coord._get_last_warning_data()
+    assert isinstance(res, dict)
+    assert DATA_LAST_WARNING_TIME in res
+
+
+@pytest.mark.asyncio
 async def test_set_switch_state_attribute_error(hass, caplog):
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
     client = create_autospec(VmotoAPI, instance=True)
