@@ -253,6 +253,25 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
 
         return data
 
+    def _get_course_data(self, latitude: float, longitude: float) -> dict:
+        data = {
+            DATA_COURSE: self._last_data.get(DATA_COURSE, DEFAULT_FLOAT),
+        }
+
+        if self._last_data:
+            data[DATA_COURSE] = calculate_course(
+                float(self._last_data.get(DATA_LATITUDE, DEFAULT_FLOAT)),
+                float(self._last_data.get(DATA_LONGITUDE, DEFAULT_FLOAT)),
+                latitude,
+                longitude,
+            )
+
+        data[DATA_WIND_ROSE_COURSE] = calculate_wind_rose_course(
+            data.get(DATA_COURSE, DEFAULT_FLOAT)
+        )
+
+        return data
+
     def _get_home_data(self, latitude: float, longitude: float) -> dict:
         data = {
             DATA_DISTANCE_FROM_HOME: self._last_data.get(
@@ -293,73 +312,6 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                     data[DATA_DIR_OF_TRAVEL] = DIR_AWAY_FROM_HOME
                 else:
                     data[DATA_DIR_OF_TRAVEL] = DIR_STATIONARY
-
-        return data
-
-    async def _get_user_data(self) -> dict:
-        data = {}
-
-        try:
-            _LOGGER.debug("Requesting user data")
-
-            user_data = (await self._client.get_user()).get(DATA_DATA)
-
-            if not user_data:
-                raise UpdateFailed("Missing user data")
-
-            device_data = user_data.get(DATA_DEVICE)
-
-            if not self._user_id:
-                self._user_id = user_data.get(DATA_USER).get(DATA_USER_ID)
-
-            if not self._device_no:
-                self._device_no = device_data.get(DATA_DEVICE_NO)
-
-            self._is_powered_on = device_data.get(DATA_POWER_STATUS)
-
-            data = {
-                DATA_BATTERY: int(device_data.get(DATA_BATTERY)),
-                DATA_ECU_BATTERY: int(device_data.get(DATA_ECU_BATTERY)),
-                DATA_ESTIMATED_RANGE: int(device_data.get(DATA_ESTIMATED_RANGE)),
-                DATA_GPS_ACCURACY: calculate_percentage(
-                    device_data.get(DATA_GPS_ACCURACY), GPS_MAX_ACCURACY
-                ),
-                DATA_LAST_GPS_TIME: parse_timestamp(
-                    device_data.get(DATA_LAST_GPS_TIME),
-                ),
-                DATA_LATITUDE: float(device_data.get(DATA_LATITUDE)),
-                DATA_LONGITUDE: float(device_data.get(DATA_LONGITUDE)),
-                DATA_MODEL_NAME: user_data.get(DATA_USER_BIND_DEVICE).get(
-                    DATA_MODEL_NAME
-                ),
-                DATA_NATIVE_PUSH_NOTIFICATIONS: device_data.get(
-                    DATA_NATIVE_PUSH_NOTIFICATIONS
-                ),
-                DATA_NATIVE_TRACKING_HISTORY: device_data.get(
-                    DATA_NATIVE_TRACKING_HISTORY
-                ),
-                DATA_POWER_SWITCH: device_data.get(DATA_POWER_STATUS),
-                DATA_SIGNAL_STRENGTH: calculate_percentage(
-                    device_data.get(DATA_SIGNAL_STRENGTH), SIGNAL_MAX_STRENGTH
-                ),
-                DATA_SPEED: float(device_data.get(DATA_SPEED)),
-                DATA_TRIP_DISTANCE: round(
-                    float(device_data.get(DATA_TRIP_DISTANCE)),
-                    DISTANCE_ROUNDING_DECIMALS,
-                ),
-                DATA_VEHICLE_IMAGE_URL: user_data.get(DATA_USER_BIND_DEVICE).get(
-                    DATA_VEHICLE_IMAGE_URL
-                ),
-            }
-        except ClientResponseError as error:
-            if error.status in (400, 2004):
-                _LOGGER.exception(
-                    "Authentication expired or revoked, please reauthenticate"
-                )
-                raise ConfigEntryAuthFailed from error
-        except Exception as error:
-            _LOGGER.exception(error)
-            raise UpdateFailed from error
 
         return data
 
@@ -667,22 +619,73 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
 
         return data
 
-    def _get_course_data(self, latitude: float, longitude: float) -> dict:
-        data = {
-            DATA_COURSE: self._last_data.get(DATA_COURSE, DEFAULT_FLOAT),
-        }
+    async def _get_user_data(self) -> dict:
+        data = {}
 
-        if self._last_data:
-            data[DATA_COURSE] = calculate_course(
-                float(self._last_data.get(DATA_LATITUDE, DEFAULT_FLOAT)),
-                float(self._last_data.get(DATA_LONGITUDE, DEFAULT_FLOAT)),
-                latitude,
-                longitude,
-            )
+        try:
+            _LOGGER.debug("Requesting user data")
 
-        data[DATA_WIND_ROSE_COURSE] = calculate_wind_rose_course(
-            data.get(DATA_COURSE, DEFAULT_FLOAT)
-        )
+            user_data = (await self._client.get_user()).get(DATA_DATA)
+
+            if not user_data:
+                raise UpdateFailed("Missing user data")
+
+            if not self._user_id:
+                self._user_id = user_data.get(DATA_USER).get(DATA_USER_ID)
+
+            device_data = user_data.get(DATA_DEVICE)
+
+            if not device_data:
+                raise UpdateFailed("Missing device data")
+
+            if not self._device_no:
+                self._device_no = device_data.get(DATA_DEVICE_NO)
+
+            self._is_powered_on = device_data.get(DATA_POWER_STATUS)
+
+            data = {
+                DATA_BATTERY: int(device_data.get(DATA_BATTERY)),
+                DATA_ECU_BATTERY: int(device_data.get(DATA_ECU_BATTERY)),
+                DATA_ESTIMATED_RANGE: int(device_data.get(DATA_ESTIMATED_RANGE)),
+                DATA_GPS_ACCURACY: calculate_percentage(
+                    device_data.get(DATA_GPS_ACCURACY), GPS_MAX_ACCURACY
+                ),
+                DATA_LAST_GPS_TIME: parse_timestamp(
+                    device_data.get(DATA_LAST_GPS_TIME),
+                ),
+                DATA_LATITUDE: float(device_data.get(DATA_LATITUDE)),
+                DATA_LONGITUDE: float(device_data.get(DATA_LONGITUDE)),
+                DATA_MODEL_NAME: user_data.get(DATA_USER_BIND_DEVICE).get(
+                    DATA_MODEL_NAME
+                ),
+                DATA_NATIVE_PUSH_NOTIFICATIONS: device_data.get(
+                    DATA_NATIVE_PUSH_NOTIFICATIONS
+                ),
+                DATA_NATIVE_TRACKING_HISTORY: device_data.get(
+                    DATA_NATIVE_TRACKING_HISTORY
+                ),
+                DATA_POWER_SWITCH: device_data.get(DATA_POWER_STATUS),
+                DATA_SIGNAL_STRENGTH: calculate_percentage(
+                    device_data.get(DATA_SIGNAL_STRENGTH), SIGNAL_MAX_STRENGTH
+                ),
+                DATA_SPEED: float(device_data.get(DATA_SPEED)),
+                DATA_TRIP_DISTANCE: round(
+                    float(device_data.get(DATA_TRIP_DISTANCE)),
+                    DISTANCE_ROUNDING_DECIMALS,
+                ),
+                DATA_VEHICLE_IMAGE_URL: user_data.get(DATA_USER_BIND_DEVICE).get(
+                    DATA_VEHICLE_IMAGE_URL
+                ),
+            }
+        except ClientResponseError as error:
+            if error.status in (400, 2004):
+                _LOGGER.exception(
+                    "Authentication expired or revoked, please reauthenticate"
+                )
+                raise ConfigEntryAuthFailed from error
+        except Exception as error:
+            _LOGGER.exception(error)
+            raise UpdateFailed from error
 
         return data
 

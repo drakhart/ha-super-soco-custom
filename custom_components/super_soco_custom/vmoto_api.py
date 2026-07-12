@@ -38,8 +38,56 @@ class VmotoAPI:
         self._email = email
         self._token: str | None = token
 
+    async def _api_wrapper(self, url: str, headers: dict, data: dict) -> dict:
+        async with timeout(TIMEOUT):
+            res = await self._session.post(url, headers=headers, json=data)
+            res.raise_for_status()
+            res_json = await res.json()
+
+            if res_json.get("status") != "200":
+                res.status = int(res_json.get("status", 500))
+                res.raise_for_status()
+
+            return res_json
+
     def _extract_token(self, res: dict) -> str:
         return str(res.get("data", "")).replace(JWT_PREFIX, "")
+
+    def _get_headers(self, authz: bool) -> dict:
+        headers = {
+            "content-type": "application/json; charset=utf-8",
+            "language": LANGUAGE,
+            "timezone": TIMEZONE,
+            "timezonename": TIMEZONE_NAME,
+        }
+
+        if authz:
+            token = self.get_token()
+            if token is not None:
+                headers["authorization"] = f"{JWT_PREFIX}{token}"
+        else:
+            headers["temptoken"] = self._get_temp_token()
+
+        return headers
+
+    def _get_temp_token(self) -> str:
+        unhashed = LANGUAGE
+
+        if self._email is not None:
+            unhashed += EMAIL_PHONE_PREFIX + str(self._email).replace("@", "")
+        else:
+            unhashed += str(self._phone_prefix) + str(self._phone_number)
+
+        unhashed += TIMEZONE + TEMPTOKEN_SALT
+
+        return hashlib.md5(unhashed.encode()).hexdigest().upper()
+
+    async def bind_device(self, device_no: str) -> dict:
+        url = f"{BASE_URL}/userBind/bindDevice/{device_no}"
+        headers = self._get_headers(True)
+        data = {}
+
+        return await self._api_wrapper(url, headers, data)
 
     async def email_login(self, login_code: str) -> dict:
         url = f"{BASE_URL}/index/emailLoginByCode"
@@ -98,7 +146,7 @@ class VmotoAPI:
         return await self._api_wrapper(url, headers, data)
 
     async def get_user(self) -> dict:
-        url = f"{BASE_URL}/user/index"
+        url = f"{BASE_URL}/user/newindex"
         headers = self._get_headers(True)
 
         return await self._api_wrapper(url, headers, {})
@@ -157,43 +205,9 @@ class VmotoAPI:
 
         return await self._api_wrapper(url, headers, data)
 
-    async def _api_wrapper(self, url: str, headers: dict, data: dict) -> dict:
-        async with timeout(TIMEOUT):
-            res = await self._session.post(url, headers=headers, json=data)
-            res.raise_for_status()
-            res_json = await res.json()
+    async def unbind_device(self, device_no: str) -> dict:
+        url = f"{BASE_URL}/userBind/unbindDevice/{device_no}"
+        headers = self._get_headers(True)
+        data = {}
 
-            if res_json.get("status") != "200":
-                res.status = int(res_json.get("status", 500))
-                res.raise_for_status()
-
-            return res_json
-
-    def _get_temp_token(self) -> str:
-        unhashed = LANGUAGE
-
-        if self._email is not None:
-            unhashed += EMAIL_PHONE_PREFIX + str(self._email).replace("@", "")
-        else:
-            unhashed += str(self._phone_prefix) + str(self._phone_number)
-
-        unhashed += TIMEZONE + TEMPTOKEN_SALT
-
-        return hashlib.md5(unhashed.encode()).hexdigest().upper()
-
-    def _get_headers(self, authz: bool) -> dict:
-        headers = {
-            "content-type": "application/json; charset=utf-8",
-            "language": LANGUAGE,
-            "timezone": TIMEZONE,
-            "timezonename": TIMEZONE_NAME,
-        }
-
-        if authz:
-            token = self.get_token()
-            if token is not None:
-                headers["authorization"] = f"{JWT_PREFIX}{token}"
-        else:
-            headers["temptoken"] = self._get_temp_token()
-
-        return headers
+        return await self._api_wrapper(url, headers, data)

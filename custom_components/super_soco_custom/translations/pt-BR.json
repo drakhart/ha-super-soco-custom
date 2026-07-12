@@ -5,7 +5,7 @@
         },
         "error": {
             "cannot_connect": "Falhou ao conectar",
-            "invalid_auth": "Autenticação inválida ou muitos códigos de verificação solicitados",
+            "invalid_auth": "Muitos códigos de verificação solicitados, por favor aguarde 60 segundos antes de solicitar um novo",
             "unknown": "Erro inesperado"
         },
         "step": {
@@ -24,7 +24,7 @@
                 }
             },
             "login_code": {
-                "description": "Por favor, insira o código de verificação enviado via SMS ou email.\n\nObserve que a sessão expirará a cada mês; a integração solicitará automaticamente que você reautentique sempre que isso acontecer.",
+                "description": "Por favor, insira o código de verificação recebido via SMS ou email.\n\nObserve que a sessão expirará a cada mês; a integração solicitará automaticamente que você reautentique sempre que isso acontecer.",
                 "data": {
                     "login_code": "Código de verificação"
                 }

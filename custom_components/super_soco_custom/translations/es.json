@@ -5,7 +5,7 @@
         },
         "error": {
             "cannot_connect": "Error intentando conectar",
-            "invalid_auth": "Credenciales incorrectas o se han solicitado demasiados códigos de verificación",
+            "invalid_auth": "Se han solicitado demasiados códigos de verificación, por favor espera 60 segundos antes de solicitar uno nuevo",
             "unknown": "Error desconocido"
         },
         "step": {

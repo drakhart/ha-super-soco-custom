@@ -101,6 +101,34 @@ async def test_async_update_fetch_user_missing_data_raises_updatefailed(hass):
 
 
 @pytest.mark.asyncio
+async def test_async_update_null_device_in_response_raises_updatefailed(hass):
+    """Coordinator should raise UpdateFailed when get_user returns device: null."""
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+
+    bad_client = create_autospec(VmotoAPI, instance=True)
+    bad_client.get_user = AsyncMock(
+        return_value={
+            "data": {
+                "userBindDevice": None,
+                "user": {"userId": 1281},
+                "device": None,
+            }
+        }
+    )
+
+    coord = VmotoDataUpdateCoordinator(
+        hass,
+        entry,
+        bad_client,
+        cast("OpenStreetMapAPI", None),
+        cast("OpenTopoDataAPI", None),
+    )
+
+    with pytest.raises(UpdateFailed):
+        await coord._async_update_data()
+
+
+@pytest.mark.asyncio
 async def test_course_and_geo_and_set_switch_vmoto(hass, monkeypatch):
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
 

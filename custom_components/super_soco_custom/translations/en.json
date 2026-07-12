@@ -5,7 +5,7 @@
         },
         "error": {
             "cannot_connect": "Failed to connect",
-            "invalid_auth": "Invalid authentication or too many verification codes requested",
+            "invalid_auth": "Too many verification codes requested, please wait 60 seconds before requesting a new one",
             "unknown": "Unexpected error"
         },
         "step": {
@@ -25,7 +25,7 @@
                 }
             },
             "login_code": {
-                "description": "Please enter the verification code sent via SMS or email.\n\nPlease note that the session will expire every month; the integration will automatically ask you to reauthenticate whenever that happens.",
+                "description": "Please enter the verification code received via SMS or email.\n\nPlease note that the session will expire every month; the integration will automatically ask you to reauthenticate whenever that happens.",
                 "data": {
                     "login_code": "Verification code"
                 }

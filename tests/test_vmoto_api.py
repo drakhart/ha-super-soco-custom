@@ -55,7 +55,7 @@ async def test_api(hass, aioclient_mock):
     # Get user
     res_mock = json.loads(load_fixture("vmoto_user.json"))
 
-    aioclient_mock.post(f"{BASE_URL}/user/index", json=res_mock)
+    aioclient_mock.post(f"{BASE_URL}/user/newindex", json=res_mock)
     assert await api.get_user() == res_mock
 
     # Get warning list
@@ -77,6 +77,22 @@ async def test_api(hass, aioclient_mock):
 
     aioclient_mock.post(f"{BASE_URL}/device/click/{MOCK_DEVICE_NO}", json=res_mock)
     assert await api.switch_power(MOCK_DEVICE_NO) == res_mock
+
+    # Bind device
+    res_mock = json.loads(load_fixture("vmoto_bind_device.json"))
+
+    aioclient_mock.post(
+        f"{BASE_URL}/userBind/bindDevice/{MOCK_DEVICE_NO}", json=res_mock
+    )
+    assert await api.bind_device(MOCK_DEVICE_NO) == res_mock
+
+    # Unbind device
+    res_mock = json.loads(load_fixture("vmoto_unbind_device.json"))
+
+    aioclient_mock.post(
+        f"{BASE_URL}/userBind/unbindDevice/{MOCK_DEVICE_NO}", json=res_mock
+    )
+    assert await api.unbind_device(MOCK_DEVICE_NO) == res_mock
 
 
 def test_api_raises_value_error_without_credentials():
