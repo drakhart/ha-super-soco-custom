@@ -3,7 +3,7 @@ gTTS==2.5.3
 ha-ffmpeg==3.2.2
 hassil==3.5.0
 home-assistant-frontend==20260312.0
-home-assistant-intents==2026.3.3
+home-assistant-intents==2026.6.24
 homeassistant==2026.3.2
 mutagen==1.47.0
 pymicro-vad==1.0.1
