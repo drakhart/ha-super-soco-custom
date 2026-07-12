@@ -52,7 +52,11 @@ DEFAULT_INTEGER = 0
 DEFAULT_STRING = ""
 
 # Configuration keys
+CONF_ACTION = "action"
+CONF_ACTION_CONFIGURE = "configure"
+CONF_ACTION_UNBIND = "unbind_vehicle"
 CONF_EMAIL = "email"
+CONF_IMEI = "imei"
 CONF_LOGIN_CODE = "login_code"
 CONF_LOGIN_METHOD = "login_method"
 CONF_PHONE_NUMBER = "phone_number"
@@ -144,8 +148,9 @@ DATA_VEHICLE_IMAGE_URL = "fileUrl"
 DATA_WIND_ROSE_COURSE = "wind_rose_course"
 
 # Error keys
+ERROR_BIND_FAILED = "bind_failed"
 ERROR_CANNOT_CONNECT = "cannot_connect"
-ERROR_INVALID_AUTH = "invalid_auth"
+ERROR_LOGIN_CODE_FAILED = "login_code_failed"
 ERROR_UNKNOWN = "unknown"
 
 # Entities

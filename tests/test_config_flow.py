@@ -1,7 +1,7 @@
 """Test vmoto config flow."""
 
 from typing import cast
-from unittest.mock import AsyncMock, create_autospec, patch
+from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 
 import pytest
 from aiohttp import (
@@ -41,7 +41,7 @@ from custom_components.super_soco_custom.const import (
 )
 from custom_components.super_soco_custom.errors import (
     CannotConnect,
-    InvalidAuth,
+    LoginCodeFailed,
 )
 from custom_components.super_soco_custom.vmoto_api import VmotoAPI
 
@@ -126,16 +126,29 @@ async def test_successful_vmoto_config_flow(
 # Our config flow also has an options flow, so we must test it as well.
 @pytest.mark.asyncio
 async def test_options_flow(hass):
-    """Test an options flow."""
-    # Create a new MockConfigEntry and add to HASS (we're bypassing config
-    # flow entirely)
+    """Test an options flow through the configure path."""
     entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG, entry_id="test")
     entry.add_to_hass(hass)
+
+    # Inject a mock coordinator so the menu step can inspect device_no
+    mock_coordinator = MagicMock()
+    mock_coordinator._device_no = "DEVICE123"
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = mock_coordinator
 
     # Initialize an options flow
     result = await hass.config_entries.options.async_init(entry.entry_id)
 
-    # Verify that the first options step is a user form
+    # Verify that the first options step is the menu form
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "menu"
+
+    # Choose "configure the device"
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"action": "configure"},
+    )
+
+    # Verify the configure form is shown
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "user"
 
@@ -160,6 +173,183 @@ async def test_options_flow(hass):
         OPT_ENABLE_LAST_WARNING_ENTITY: True,
         OPT_ENABLE_REVERSE_GEOCODING_ENTITY: False,
     }
+
+
+@pytest.mark.asyncio
+async def test_options_flow_unbind_success(hass):
+    """Test the unbind path in the options flow with a successful API response."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG, entry_id="test")
+    entry.add_to_hass(hass)
+
+    mock_client = create_autospec(VmotoAPI, instance=True)
+    mock_client.unbind_device = AsyncMock(
+        return_value={
+            "status": 200,
+            "success": True,
+            "message": "SUCCESS",
+            "data": None,
+        }
+    )
+    mock_coordinator = MagicMock()
+    mock_coordinator._device_no = "DEVICE123"
+    mock_coordinator._client = mock_client
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = mock_coordinator
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["step_id"] == "menu"
+
+    # Choose unbind — should show the confirmation dialog
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"action": "unbind_vehicle"},
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "confirm_unbind"
+
+    # Confirm — entry is removed and flow aborts
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={},
+    )
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "unbind_successful"
+    mock_client.unbind_device.assert_called_once_with("DEVICE123")
+
+
+@pytest.mark.asyncio
+async def test_options_flow_unbind_error(hass):
+    """Test the unbind path in the options flow when the API raises an error."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG, entry_id="test")
+    entry.add_to_hass(hass)
+
+    mock_client = create_autospec(VmotoAPI, instance=True)
+    mock_client.unbind_device = AsyncMock(side_effect=Exception("400 Bad Request"))
+    mock_coordinator = MagicMock()
+    mock_coordinator._device_no = "DEVICE123"
+    mock_coordinator._client = mock_client
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = mock_coordinator
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"action": "unbind_vehicle"},
+    )
+    assert result["step_id"] == "confirm_unbind"
+
+    # Confirm — API fails, form is re-shown with an error
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={},
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "confirm_unbind"
+    assert (result.get("errors") or {}).get("base") == "unknown"
+
+
+@pytest.mark.asyncio
+async def test_config_flow_bind_device_step_success(
+    hass,
+    bypass_vmoto_get_login_code,
+    bypass_vmoto_login,
+):
+    """Config flow shows bind_device step when no device is bound, creates entry on success."""
+    with (
+        patch(
+            "custom_components.super_soco_custom.vmoto_api.VmotoAPI.get_user",
+            new=AsyncMock(
+                return_value={"data": {"user": {"userId": 1}, "device": None}}
+            ),
+        ),
+        patch(
+            "custom_components.super_soco_custom.vmoto_api.VmotoAPI.bind_device",
+            new=AsyncMock(
+                return_value={
+                    "status": 200,
+                    "success": True,
+                    "message": "SUCCESS",
+                    "data": "SUCCESS",
+                }
+            ),
+        ),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={CONF_LOGIN_METHOD: LOGIN_METHOD_PHONE},
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={
+                CONF_PHONE_PREFIX: MOCK_VMOTO_CONFIG[CONF_PHONE_PREFIX],
+                CONF_PHONE_NUMBER: MOCK_VMOTO_CONFIG[CONF_PHONE_NUMBER],
+            },
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={CONF_LOGIN_CODE: MOCK_VMOTO_CONFIG[CONF_LOGIN_CODE]},
+        )
+
+        # Should land on the bind_device step (no device bound)
+        assert result["type"] == FlowResultType.FORM
+        assert result["step_id"] == "bind_device"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={"imei": "123456789012345"},
+        )
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+
+
+@pytest.mark.asyncio
+async def test_config_flow_bind_device_step_error(
+    hass,
+    bypass_vmoto_get_login_code,
+    bypass_vmoto_login,
+    make_client_response_error,
+):
+    """Config flow bind_device step shows bind_failed on 400, unknown on other errors."""
+    get_user_mock = AsyncMock(
+        return_value={"data": {"user": {"userId": 1}, "device": None}}
+    )
+    with (
+        patch(
+            "custom_components.super_soco_custom.vmoto_api.VmotoAPI.get_user",
+            new=get_user_mock,
+        ),
+        patch(
+            "custom_components.super_soco_custom.vmoto_api.VmotoAPI.bind_device",
+            new=AsyncMock(side_effect=make_client_response_error(status=400)),
+        ),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input={CONF_LOGIN_METHOD: LOGIN_METHOD_PHONE}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={
+                CONF_PHONE_PREFIX: MOCK_VMOTO_CONFIG[CONF_PHONE_PREFIX],
+                CONF_PHONE_NUMBER: MOCK_VMOTO_CONFIG[CONF_PHONE_NUMBER],
+            },
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={CONF_LOGIN_CODE: MOCK_VMOTO_CONFIG[CONF_LOGIN_CODE]},
+        )
+        assert result["step_id"] == "bind_device"
+
+        # 400 → bind_failed
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={"imei": "000000000000000"},
+        )
+        assert result["type"] == FlowResultType.FORM
+        assert result["step_id"] == "bind_device"
+        assert (result.get("errors") or {}).get("base") == "bind_failed"
 
 
 @pytest.mark.asyncio
@@ -224,7 +414,7 @@ async def test_async_step_login_code_cannot_connect(hass, monkeypatch):
 
     res = await flow.async_step_login_code()
     assert res.get("type") == "form"
-    assert res.get("errors", {}).get("base") == "cannot_connect"
+    assert (res.get("errors") or {}).get("base") == "cannot_connect"
 
 
 @pytest.mark.asyncio
@@ -278,11 +468,11 @@ async def test_get_login_code_success(hass):
     good_client = create_autospec(VmotoAPI, instance=True)
     good_client.get_login_code = AsyncMock(return_value={"ok": True})
     flow._get_vmoto_client = lambda: good_client
-    assert await flow._get_login_code() is True
+    assert await flow._get_login_code() is None
 
 
 @pytest.mark.asyncio
-async def test_get_login_code_raises_invalid_auth_on_400(hass):
+async def test_get_login_code_raises_login_code_failed_on_400(hass):
     flow = ConfigFlow()
     flow.hass = hass
 
@@ -297,7 +487,7 @@ async def test_get_login_code_raises_invalid_auth_on_400(hass):
         side_effect=ClientResponseError(req_info, (), status=400, message="bad")
     )
     flow._get_vmoto_client = lambda: bad_client
-    with pytest.raises(InvalidAuth):
+    with pytest.raises(LoginCodeFailed):
         await flow._get_login_code()
 
 
@@ -323,7 +513,7 @@ async def test_async_step_app_handles_get_login_code_errors(hass, monkeypatch):
     monkeypatch.setattr(
         flow,
         "_get_login_code",
-        lambda: (_ for _ in ()).throw(InvalidAuth()),
+        lambda: (_ for _ in ()).throw(LoginCodeFailed()),
     )
 
     res = await flow.async_step_credentials(
@@ -334,7 +524,7 @@ async def test_async_step_app_handles_get_login_code_errors(hass, monkeypatch):
     )
 
     assert res.get("type") == "form"
-    assert res.get("errors") == {"base": "invalid_auth"}
+    assert res.get("errors") == {"base": "login_code_failed"}
 
 
 @pytest.mark.asyncio
@@ -420,12 +610,12 @@ async def test_async_step_user_already_configured(hass):
 
 
 @pytest.mark.asyncio
-async def test_async_step_login_handles_invalid_auth(hass, monkeypatch):
+async def test_async_step_login_handles_login_code_failed(hass, monkeypatch):
     flow = ConfigFlow()
     flow.hass = hass
 
     async def bad_login(self=None):
-        raise InvalidAuth()
+        raise LoginCodeFailed()
 
     monkeypatch.setattr(ConfigFlow, "_login", bad_login)
 
@@ -434,11 +624,11 @@ async def test_async_step_login_handles_invalid_auth(hass, monkeypatch):
     assert isinstance(res, dict)
     assert res.get("type") == "form"
     errors = res.get("errors") or {}
-    assert errors.get("base") == "invalid_auth"
+    assert errors.get("base") == "login_code_failed"
 
 
 @pytest.mark.asyncio
-async def test_login_raises_invalid_auth_on_400(hass):
+async def test_login_raises_login_code_failed_on_400(hass):
     flow = ConfigFlow()
     flow.hass = hass
 
@@ -454,7 +644,7 @@ async def test_login_raises_invalid_auth_on_400(hass):
     )
     bad_client.get_token = AsyncMock(return_value=None)
     flow._get_vmoto_client = lambda: bad_client
-    with pytest.raises(InvalidAuth):
+    with pytest.raises(LoginCodeFailed):
         await flow._login()
 
 
@@ -503,4 +693,118 @@ async def test_login_non_400_client_response_error_reraises(
     with pytest.raises(ClientResponseError) as exc_info:
         await flow._login()
 
+    assert exc_info.value.status == 500
+
+
+@pytest.mark.asyncio
+async def test_bind_device_step_cannot_connect(hass):
+    """async_step_bind_device maps CannotConnect to ERROR_CANNOT_CONNECT."""
+    flow = ConfigFlow()
+    flow.hass = hass
+    flow._user_input.update(MOCK_VMOTO_CONFIG)
+
+    async def _raise(_device_no):
+        raise CannotConnect()
+
+    flow._bind_device = _raise
+
+    result = await flow.async_step_bind_device({"imei": "123456789012345"})
+    assert result is not None
+    assert result.get("step_id") == "bind_device"
+    assert (result.get("errors") or {}).get("base") == "cannot_connect"
+
+
+@pytest.mark.asyncio
+async def test_bind_device_step_unknown_error(hass):
+    """async_step_bind_device maps generic Exception to ERROR_UNKNOWN."""
+    flow = ConfigFlow()
+    flow.hass = hass
+    flow._user_input.update(MOCK_VMOTO_CONFIG)
+
+    async def _raise(_device_no):
+        raise Exception("boom")
+
+    flow._bind_device = _raise
+
+    result = await flow.async_step_bind_device({"imei": "123456789012345"})
+    assert result is not None
+    assert result.get("step_id") == "bind_device"
+    assert (result.get("errors") or {}).get("base") == "unknown"
+
+
+@pytest.mark.asyncio
+async def test_bind_device_raises_cannot_connect_on_timeout(hass):
+    """_bind_device converts ServerTimeoutError to CannotConnect."""
+    flow = ConfigFlow()
+    flow.hass = hass
+    flow._user_input.update(MOCK_VMOTO_CONFIG)
+
+    bad_client = create_autospec(VmotoAPI, instance=True)
+    bad_client.bind_device = AsyncMock(side_effect=ServerTimeoutError())
+    flow._get_vmoto_client = lambda: bad_client
+
+    with pytest.raises(CannotConnect):
+        await flow._bind_device("123456789012345")
+
+
+@pytest.mark.asyncio
+async def test_bind_device_reraises_non_400_client_response_error(
+    hass, make_client_response_error
+):
+    """_bind_device re-raises non-400 ClientResponseError after logging it."""
+    flow = ConfigFlow()
+    flow.hass = hass
+    flow._user_input.update(MOCK_VMOTO_CONFIG)
+
+    bad_client = create_autospec(VmotoAPI, instance=True)
+    bad_client.bind_device = AsyncMock(
+        side_effect=make_client_response_error(status=500)
+    )
+    flow._get_vmoto_client = lambda: bad_client
+
+    with pytest.raises(ClientResponseError) as exc_info:
+        await flow._bind_device("123456789012345")
+    assert exc_info.value.status == 500
+
+
+@pytest.mark.asyncio
+async def test_unbind_device_raises_cannot_connect_on_timeout(hass):
+    """_unbind_device converts ServerTimeoutError to CannotConnect."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG, entry_id="test")
+    entry.add_to_hass(hass)
+
+    mock_client = create_autospec(VmotoAPI, instance=True)
+    mock_client.unbind_device = AsyncMock(side_effect=ServerTimeoutError())
+    mock_coordinator = MagicMock()
+    mock_coordinator._client = mock_client
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = mock_coordinator
+
+    handler = VmotoOptionsFlowHandler(entry)
+    handler.hass = hass
+
+    with pytest.raises(CannotConnect):
+        await handler._unbind_device()
+
+
+@pytest.mark.asyncio
+async def test_unbind_device_reraises_non_400_client_response_error(
+    hass, make_client_response_error
+):
+    """_unbind_device re-raises non-400 ClientResponseError after logging it."""
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG, entry_id="test")
+    entry.add_to_hass(hass)
+
+    mock_client = create_autospec(VmotoAPI, instance=True)
+    mock_client.unbind_device = AsyncMock(
+        side_effect=make_client_response_error(status=500)
+    )
+    mock_coordinator = MagicMock()
+    mock_coordinator._client = mock_client
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = mock_coordinator
+
+    handler = VmotoOptionsFlowHandler(entry)
+    handler.hass = hass
+
+    with pytest.raises(ClientResponseError) as exc_info:
+        await handler._unbind_device()
     assert exc_info.value.status == 500

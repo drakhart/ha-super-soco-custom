@@ -133,3 +133,14 @@ async def test_email_api(hass, aioclient_mock):
     aioclient_mock.post(f"{BASE_URL}/index/emailLoginByCode", json=res_mock2)
     result2 = await api.login(MOCK_VMOTO_CONFIG[CONF_LOGIN_CODE])
     assert result2 == res_mock2
+
+
+@pytest.mark.asyncio
+async def test_api_wrapper_raises_on_error_status(hass, make_fake_session):
+    """_api_wrapper raises when the JSON body reports a non-success status."""
+    error_payload = {"status": 400, "success": False, "message": "Error", "data": None}
+    session = make_fake_session([(error_payload, 200)])
+    api = VmotoAPI(session, phone_prefix=34, phone_number="123456789")
+
+    with pytest.raises(Exception):
+        await api.get_user()

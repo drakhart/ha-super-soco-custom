@@ -44,7 +44,7 @@ class VmotoAPI:
             res.raise_for_status()
             res_json = await res.json()
 
-            if res_json.get("status") != "200":
+            if res_json.get("status") not in ("200", 200):
                 res.status = int(res_json.get("status", 500))
                 res.raise_for_status()
 

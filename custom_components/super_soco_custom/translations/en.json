@@ -4,8 +4,9 @@
             "reauth_successful": "Reauthentication successful"
         },
         "error": {
+            "bind_failed": "The IMEI entered does not exist or is already bound to another account, please check it and try again.",
             "cannot_connect": "Failed to connect",
-            "invalid_auth": "Too many verification codes requested, please wait 60 seconds before requesting a new one",
+            "login_code_failed": "Too many verification codes requested, please wait 60 seconds before requesting a new one",
             "unknown": "Unexpected error"
         },
         "step": {
@@ -13,8 +14,7 @@
                 "description": "Please choose the login method for the Vmoto app.",
                 "data": {
                     "login_method": "Login method"
-                },
-                "data_description": {}
+                }
             },
             "credentials": {
                 "description": "Please enter the credentials used to log in to the Vmoto app.",
@@ -28,6 +28,13 @@
                 "description": "Please enter the verification code received via SMS or email.\n\nPlease note that the session will expire every month; the integration will automatically ask you to reauthenticate whenever that happens.",
                 "data": {
                     "login_code": "Verification code"
+                }
+            },
+            "bind_device": {
+                "title": "Bind vehicle",
+                "description": "Your account does not have any bound vehicles.\n\nPlease enter your vehicle's IMEI to bind it to your account. You can find the IMEI in the vehicle's documentation.",
+                "data": {
+                    "imei": "Vehicle IMEI"
                 }
             }
         }
@@ -191,7 +198,23 @@
         }
     },
     "options": {
+        "abort": {
+            "unbind_successful": "Vehicle unbound successfully. The integration has been removed."
+        },
+        "error": {
+            "unknown": "Unexpected error"
+        },
         "step": {
+            "menu": {
+                "title": "What would you like to do?",
+                "data": {
+                    "action": "Action"
+                }
+            },
+            "confirm_unbind": {
+                "title": "Are you sure?",
+                "description": "This will unbind the vehicle from your account and then remove the integration, since it cannot work without a bound vehicle.\n\nTo bind a new vehicle, add the integration again."
+            },
             "user": {
                 "data": {
                     "email": "Email",
@@ -213,6 +236,12 @@
         }
     },
     "selector": {
+        "action": {
+            "options": {
+                "configure": "Configure the device",
+                "unbind_vehicle": "Unbind vehicle"
+            }
+        },
         "login_method": {
             "options": {
                 "phone": "Phone",

@@ -15,7 +15,11 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
+    CONF_ACTION_CONFIGURE,
+    CONF_ACTION_UNBIND,
+    CONF_ACTION,
     CONF_EMAIL,
+    CONF_IMEI,
     CONF_LOGIN_CODE,
     CONF_LOGIN_METHOD,
     CONF_PHONE_NUMBER,
@@ -29,8 +33,9 @@ from .const import (
     DEFAULT_STRING,
     DEFAULT_UPDATE_INTERVAL_MINUTES,
     DOMAIN,
+    ERROR_BIND_FAILED,
     ERROR_CANNOT_CONNECT,
-    ERROR_INVALID_AUTH,
+    ERROR_LOGIN_CODE_FAILED,
     ERROR_UNKNOWN,
     LOGIN_METHOD_EMAIL,
     LOGIN_METHOD_PHONE,
@@ -45,7 +50,11 @@ from .const import (
     OPT_UPDATE_INTERVAL,
     PHONE_PREFIXES,
 )
-from .errors import CannotConnect, InvalidAuth
+from .errors import (
+    BindFailed,
+    CannotConnect,
+    LoginCodeFailed,
+)
 from .vmoto_api import VmotoAPI
 
 _LOGGER = logging.getLogger(__name__)
@@ -176,8 +185,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         except CannotConnect:
             self._errors["base"] = ERROR_CANNOT_CONNECT
-        except InvalidAuth:
-            self._errors["base"] = ERROR_INVALID_AUTH
+        except LoginCodeFailed:
+            self._errors["base"] = ERROR_LOGIN_CODE_FAILED
         except Exception as error:
             _LOGGER.exception(error)
             self._errors["base"] = ERROR_UNKNOWN
@@ -200,18 +209,56 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
                 return cast("FlowResult", self.async_abort(reason="reauth_successful"))
 
+            # Check whether a device is bound before creating the entry
+            try:
+                client = self._get_vmoto_client()
+                user_res = await client.get_user()
+                if not (user_res.get("data") or {}).get("device"):
+                    return await self.async_step_bind_device()
+            except Exception:
+                pass  # If the check fails, proceed; the coordinator will surface the error
+
             return cast(
                 "FlowResult", self.async_create_entry(title=NAME, data=self._user_input)
             )
         except CannotConnect:
             self._errors["base"] = ERROR_CANNOT_CONNECT
-        except InvalidAuth:
-            self._errors["base"] = ERROR_INVALID_AUTH
+        except LoginCodeFailed:
+            self._errors["base"] = ERROR_LOGIN_CODE_FAILED
         except Exception as error:
             _LOGGER.exception(error)
             self._errors["base"] = ERROR_UNKNOWN
 
         return await self.async_step_user()
+
+    async def async_step_bind_device(self, user_input=None) -> FlowResult:
+        if user_input:
+            try:
+                await self._bind_device(user_input[CONF_IMEI])
+            except BindFailed:
+                self._errors["base"] = ERROR_BIND_FAILED
+            except CannotConnect:
+                self._errors["base"] = ERROR_CANNOT_CONNECT
+            except Exception as error:
+                _LOGGER.exception(error)
+                self._errors["base"] = ERROR_UNKNOWN
+            else:
+                return cast(
+                    "FlowResult",
+                    self.async_create_entry(title=NAME, data=self._user_input),
+                )
+
+        errors = self._errors
+        self._errors = {}
+
+        return cast(
+            "FlowResult",
+            self.async_show_form(
+                step_id="bind_device",
+                data_schema=vol.Schema({vol.Required(CONF_IMEI): str}),
+                errors=errors,
+            ),
+        )
 
     @staticmethod
     @callback
@@ -230,24 +277,37 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             raise CannotConnect from error
         except ClientResponseError as error:
             if error.status == 400:
-                raise InvalidAuth from error
+                raise LoginCodeFailed from error
 
             _LOGGER.error(error)
 
             raise error
 
-    async def _get_login_code(self) -> bool:
+    async def _get_login_code(self) -> None:
         try:
             client = self._get_vmoto_client()
 
             await client.get_login_code()
-
-            return True
         except ServerTimeoutError as error:
             raise CannotConnect from error
         except ClientResponseError as error:
             if error.status == 400:
-                raise InvalidAuth from error
+                raise LoginCodeFailed from error
+
+            _LOGGER.error(error)
+
+            raise error
+
+    async def _bind_device(self, device_no: str) -> None:
+        try:
+            client = self._get_vmoto_client()
+
+            await client.bind_device(device_no)
+        except ServerTimeoutError as error:
+            raise CannotConnect from error
+        except ClientResponseError as error:
+            if error.status == 400:
+                raise BindFailed from error
 
             _LOGGER.error(error)
 
@@ -268,15 +328,83 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
             phone_number=self._user_input.get(CONF_PHONE_NUMBER),
             email=self._user_input.get(CONF_EMAIL),
+            token=self._user_input.get(CONF_TOKEN),
         )
 
 
 class VmotoOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry) -> None:
+        self._config_entry = config_entry
         self.options = dict(config_entry.options)
+        self._errors: dict[str, str] = {}
+
+    def _get_coordinator(self):
+        return self.hass.data.get(DOMAIN, {}).get(self._config_entry.entry_id)
+
+    async def _unbind_device(self) -> None:
+        coordinator = self._get_coordinator()
+        device_no = coordinator._device_no
+
+        try:
+            await coordinator._client.unbind_device(device_no)
+        except ServerTimeoutError as error:
+            raise CannotConnect from error
+        except ClientResponseError as error:
+            _LOGGER.error(error)
+
+            raise error
 
     async def async_step_init(self, user_input=None) -> FlowResult:
-        return await self.async_step_user()
+        return await self.async_step_menu()
+
+    async def async_step_menu(self, user_input=None) -> FlowResult:
+        if user_input is not None:
+            action = user_input[CONF_ACTION]
+
+            if action == CONF_ACTION_CONFIGURE:
+                return await self.async_step_user()
+            if action == CONF_ACTION_UNBIND:
+                return await self.async_step_confirm_unbind()
+
+        return cast(
+            "FlowResult",
+            self.async_show_form(
+                step_id="menu",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(CONF_ACTION): SelectSelector(
+                            SelectSelectorConfig(
+                                options=[CONF_ACTION_CONFIGURE, CONF_ACTION_UNBIND],
+                                translation_key=CONF_ACTION,
+                            )
+                        ),
+                    }
+                ),
+            ),
+        )
+
+    async def async_step_confirm_unbind(self, user_input=None) -> FlowResult:
+        if user_input is not None:
+            try:
+                await self._unbind_device()
+            except Exception as error:
+                _LOGGER.exception(error)
+                self._errors["base"] = ERROR_UNKNOWN
+            else:
+                await self.hass.config_entries.async_remove(self._config_entry.entry_id)
+                return cast("FlowResult", self.async_abort(reason="unbind_successful"))
+
+        errors = self._errors
+        self._errors = {}
+
+        return cast(
+            "FlowResult",
+            self.async_show_form(
+                step_id="confirm_unbind",
+                data_schema=vol.Schema({}),
+                errors=errors,
+            ),
+        )
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         if user_input is not None:

@@ -4,8 +4,9 @@
             "reauth_successful": "Reautenticação bem-sucedida"
         },
         "error": {
+            "bind_failed": "O IMEI inserido não existe ou já está vinculado a outra conta, verifique-o e tente novamente.",
             "cannot_connect": "Falhou ao conectar",
-            "invalid_auth": "Muitos códigos de verificação solicitados, por favor aguarde 60 segundos antes de solicitar um novo",
+            "login_code_failed": "Muitos códigos de verificação solicitados, por favor aguarde 60 segundos antes de solicitar um novo",
             "unknown": "Erro inesperado"
         },
         "step": {
@@ -27,6 +28,13 @@
                 "description": "Por favor, insira o código de verificação recebido via SMS ou email.\n\nObserve que a sessão expirará a cada mês; a integração solicitará automaticamente que você reautentique sempre que isso acontecer.",
                 "data": {
                     "login_code": "Código de verificação"
+                }
+            },
+            "bind_device": {
+                "title": "Vincular veículo",
+                "description": "Sua conta não possui nenhum veículo vinculado.\n\nInsira o IMEI do seu veículo para vinculá-lo à sua conta. Você pode encontrá-lo na documentação do veículo.",
+                "data": {
+                    "imei": "IMEI do veículo"
                 }
             }
         }
@@ -190,7 +198,23 @@
         }
     },
     "options": {
+        "abort": {
+            "unbind_successful": "Veículo desvinculado com sucesso. A integração foi removida."
+        },
+        "error": {
+            "unknown": "Erro inesperado"
+        },
         "step": {
+            "menu": {
+                "title": "O que você gostaria de fazer?",
+                "data": {
+                    "action": "Ação"
+                }
+            },
+            "confirm_unbind": {
+                "title": "Tem certeza?",
+                "description": "Isso desvinculará o veículo da sua conta e removerá a integração, pois ela não pode funcionar sem um veículo vinculado.\n\nPara vincular um novo veículo, adicione a integração novamente."
+            },
             "user": {
                 "data": {
                     "email": "E-mail",
@@ -212,6 +236,12 @@
         }
     },
     "selector": {
+        "action": {
+            "options": {
+                "configure": "Configurar o dispositivo",
+                "unbind_vehicle": "Desvincular veículo"
+            }
+        },
         "login_method": {
             "options": {
                 "phone": "Telefone",

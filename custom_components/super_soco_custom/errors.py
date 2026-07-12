@@ -5,5 +5,9 @@ class CannotConnect(HomeAssistantError):
     pass
 
 
-class InvalidAuth(HomeAssistantError):
+class LoginCodeFailed(HomeAssistantError):
+    pass
+
+
+class BindFailed(HomeAssistantError):
     pass
