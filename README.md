@@ -33,9 +33,13 @@ Configuration is done in the UI; go to "Configuration" -> "Integrations" click "
 
 ![Setup][img-setup]
 
+If no vehicle is detected for your account after login, the integration will ask you to enter your vehicle's **IMEI** to bind it before completing the setup.
+
 You can configure some extra options by clicking on "Configure" once the integration is up and running:
 
 ![Config][img-config]
+
+The options menu also lets you **unbind the vehicle** from your account. Doing so will remove the integration, since it cannot function without a bound vehicle. To use the integration again with a new vehicle, simply add it again.
 
 ## Supported entities
 
@@ -57,6 +61,8 @@ You can configure some extra options by clicking on "Configure" once the integra
 - Last warning time\* with title and content
 - Last trip time*, distance* and average speed\* (requires native tracking history to be enabled; updates every 10 minutes at most)
 - Image URL for the vehicle
+- Vehicle IMEI
+- Vehicle VIN (frame number)
 - Switches to enable/disable native tracking history and push notifications
 
 _\* These entities include extra attributes with more details._
