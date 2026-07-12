@@ -9,6 +9,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.super_soco_custom.const import (
     DATA_BATTERY,
+    DATA_DEVICE_NO,
+    DATA_VIN,
     DOMAIN,
 )
 from custom_components.super_soco_custom.coordinator import VmotoDataUpdateCoordinator
@@ -140,3 +142,29 @@ def test_sensor_icon():
     """icon returns the icon value passed at construction."""
     sensor = _make_sensor({DATA_BATTERY: 80}, DATA_BATTERY)
     assert sensor.icon == "mdi:test"
+
+
+def test_imei_sensor_value():
+    """IMEI sensor returns the device number string as its native value."""
+    sensor = _make_sensor({DATA_DEVICE_NO: "1234567890123456"}, DATA_DEVICE_NO)
+    assert sensor.native_value == "1234567890123456"
+
+
+def test_vin_sensor_value():
+    """VIN sensor returns the frame number string as its native value."""
+    sensor = _make_sensor({DATA_VIN: "LYSTCM123M1234567"}, DATA_VIN)
+    assert sensor.native_value == "LYSTCM123M1234567"
+
+
+def test_imei_sensor_no_unit_or_device_class():
+    """IMEI sensor has no unit of measurement or device class."""
+    sensor = _make_sensor({DATA_DEVICE_NO: "1234567890123456"}, DATA_DEVICE_NO)
+    assert sensor.native_unit_of_measurement is None
+    assert sensor.device_class is None
+
+
+def test_vin_sensor_no_unit_or_device_class():
+    """VIN sensor has no unit of measurement or device class."""
+    sensor = _make_sensor({DATA_VIN: "LYSTCM123M1234567"}, DATA_VIN)
+    assert sensor.native_unit_of_measurement is None
+    assert sensor.device_class is None

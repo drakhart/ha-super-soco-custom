@@ -703,7 +703,7 @@ async def test_bind_device_step_cannot_connect(hass):
     flow.hass = hass
     flow._user_input.update(MOCK_VMOTO_CONFIG)
 
-    async def _raise(_device_no):
+    async def _raise(device_no: str) -> None:
         raise CannotConnect()
 
     flow._bind_device = _raise
@@ -721,7 +721,7 @@ async def test_bind_device_step_unknown_error(hass):
     flow.hass = hass
     flow._user_input.update(MOCK_VMOTO_CONFIG)
 
-    async def _raise(_device_no):
+    async def _raise(device_no: str) -> None:
         raise Exception("boom")
 
     flow._bind_device = _raise

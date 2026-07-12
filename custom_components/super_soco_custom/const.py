@@ -145,6 +145,7 @@ DATA_USER = "user"
 DATA_USER_BIND_DEVICE = "userBindDevice"
 DATA_USER_ID = "userId"
 DATA_VEHICLE_IMAGE_URL = "fileUrl"
+DATA_VIN = "carFrameNumber"
 DATA_WIND_ROSE_COURSE = "wind_rose_course"
 
 # Error keys
@@ -241,6 +242,15 @@ SENSORS = [
         DATA_VEHICLE_IMAGE_URL,
         None,
         "mdi:image",
+        None,
+        None,
+        None,
+    ),
+    (
+        "imei",
+        DATA_DEVICE_NO,
+        None,
+        "mdi:sim",
         None,
         None,
         None,
@@ -346,6 +356,15 @@ SENSORS = [
         "mdi:map-marker-distance",
         SensorDeviceClass.DISTANCE,
         SensorStateClass.TOTAL_INCREASING,
+        None,
+    ),
+    (
+        "vin",
+        DATA_VIN,
+        None,
+        "mdi:car-info",
+        None,
+        None,
         None,
     ),
     (

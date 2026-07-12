@@ -71,6 +71,7 @@ from .const import (
     DATA_USER_BIND_DEVICE,
     DATA_USER_ID,
     DATA_VEHICLE_IMAGE_URL,
+    DATA_VIN,
     DATA_WIND_ROSE_COURSE,
     DEFAULT_ENABLE_ALTITUDE_ENTITY,
     DEFAULT_ENABLE_LAST_TRIP_ENTITIES,
@@ -645,6 +646,7 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
 
             data = {
                 DATA_BATTERY: int(device_data.get(DATA_BATTERY)),
+                DATA_DEVICE_NO: device_data.get(DATA_DEVICE_NO),
                 DATA_ECU_BATTERY: int(device_data.get(DATA_ECU_BATTERY)),
                 DATA_ESTIMATED_RANGE: int(device_data.get(DATA_ESTIMATED_RANGE)),
                 DATA_GPS_ACCURACY: calculate_percentage(
@@ -676,6 +678,7 @@ class VmotoDataUpdateCoordinator(DataUpdateCoordinator):
                 DATA_VEHICLE_IMAGE_URL: user_data.get(DATA_USER_BIND_DEVICE).get(
                     DATA_VEHICLE_IMAGE_URL
                 ),
+                DATA_VIN: user_data.get(DATA_USER_BIND_DEVICE).get(DATA_VIN),
             }
         except ClientResponseError as error:
             if error.status in (400, 2004):

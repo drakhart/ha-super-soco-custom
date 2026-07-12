@@ -92,6 +92,9 @@
             "image": {
                 "name": "Image"
             },
+            "imei": {
+                "name": "IMEI"
+            },
             "last_gps_time": {
                 "name": "Last GPS Time"
             },
@@ -180,6 +183,9 @@
             },
             "trip_distance": {
                 "name": "Trip Distance"
+            },
+            "vin": {
+                "name": "VIN"
             },
             "wind_rose_course": {
                 "name": "Wind Rose Course"

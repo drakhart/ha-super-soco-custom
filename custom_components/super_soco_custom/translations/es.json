@@ -92,6 +92,9 @@
             "image": {
                 "name": "Imagen"
             },
+            "imei": {
+                "name": "IMEI"
+            },
             "last_gps_time": {
                 "name": "Hora Última Ubicación"
             },
@@ -180,6 +183,9 @@
             },
             "trip_distance": {
                 "name": "Distancia Viaje"
+            },
+            "vin": {
+                "name": "VIN"
             },
             "wind_rose_course": {
                 "name": "Rumbo Cardinal"

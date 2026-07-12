@@ -27,6 +27,7 @@ from custom_components.super_soco_custom.const import (
     DATA_BATTERY,
     DATA_COURSE,
     DATA_DATA,
+    DATA_DEVICE_NO,
     DATA_DIR_OF_TRAVEL,
     DATA_DISPLAY_NAME,
     DATA_DISTANCE_FROM_HOME,
@@ -43,6 +44,7 @@ from custom_components.super_soco_custom.const import (
     DATA_RADIUS,
     DATA_RESULTS,
     DATA_REVERSE_GEOCODING,
+    DATA_VIN,
     DATA_WIND_ROSE_COURSE,
     DIR_ARRIVED,
     DIR_AWAY_FROM_HOME,
@@ -624,9 +626,11 @@ async def test_coordinator_full_data_path(
 
     # confirm many keys present (values come from shared fixtures)
     assert isinstance(data, dict)
-    assert data.get(DATA_BATTERY) is not None
     assert data.get(DATA_ALTITUDE) is not None
+    assert data.get(DATA_BATTERY) is not None
+    assert data.get(DATA_DEVICE_NO) is not None
     assert data.get(DATA_REVERSE_GEOCODING) is not None
+    assert data.get(DATA_VIN) is not None
     # last trip fields may be absent depending on fixture shapes; ensure data loaded
     assert data
 

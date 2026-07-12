@@ -92,6 +92,9 @@
             "image": {
                 "name": "Imagem"
             },
+            "imei": {
+                "name": "IMEI"
+            },
             "last_gps_time": {
                 "name": "Último Horário do GPS"
             },
@@ -180,6 +183,9 @@
             },
             "trip_distance": {
                 "name": "Distância da Viagem"
+            },
+            "vin": {
+                "name": "VIN"
             },
             "wind_rose_course": {
                 "name": "Curso da Rosa dos Ventos"

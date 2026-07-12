@@ -22,7 +22,8 @@
     },
     "userBindDevice": {
       "carModelName": "TCMAX",
-      "fileUrl": "http://test.com/TCMAX.png"
+      "fileUrl": "http://test.com/TCMAX.png",
+      "carFrameNumber": "LYSTCM123M1234567"
     }
   }
 }
