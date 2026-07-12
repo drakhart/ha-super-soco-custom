@@ -1,38 +1,41 @@
 import logging
-from typing import Optional, cast
+from typing import cast
 
 import voluptuous as vol
-
 from aiohttp import ClientResponseError, ClientSession, ServerTimeoutError
-
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
-from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+)
 
 from .const import (
-    APP_NAMES,
-    CONF_APP_NAME,
+    CONF_ACTION_CONFIGURE,
+    CONF_ACTION_UNBIND,
+    CONF_ACTION,
     CONF_EMAIL,
+    CONF_IMEI,
     CONF_LOGIN_CODE,
     CONF_LOGIN_METHOD,
-    CONF_PASSWORD,
     CONF_PHONE_NUMBER,
     CONF_PHONE_PREFIX,
     CONF_TOKEN,
     CONFIG_FLOW_VERSION,
     DEFAULT_ENABLE_ALTITUDE_ENTITY,
-    DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
     DEFAULT_ENABLE_LAST_TRIP_ENTITIES,
     DEFAULT_ENABLE_LAST_WARNING_ENTITY,
+    DEFAULT_ENABLE_REVERSE_GEOCODING_ENTITY,
     DEFAULT_STRING,
     DEFAULT_UPDATE_INTERVAL_MINUTES,
     DOMAIN,
-    ERROR_ALREADY_CONFIGURED,
+    ERROR_BIND_FAILED,
     ERROR_CANNOT_CONNECT,
-    ERROR_INVALID_AUTH,
+    ERROR_LOGIN_CODE_FAILED,
     ERROR_UNKNOWN,
     LOGIN_METHOD_EMAIL,
     LOGIN_METHOD_PHONE,
@@ -41,115 +44,62 @@ from .const import (
     NAME,
     OPT_EMAIL,
     OPT_ENABLE_ALTITUDE_ENTITY,
-    OPT_ENABLE_REVERSE_GEOCODING_ENTITY,
     OPT_ENABLE_LAST_TRIP_ENTITIES,
     OPT_ENABLE_LAST_WARNING_ENTITY,
+    OPT_ENABLE_REVERSE_GEOCODING_ENTITY,
     OPT_UPDATE_INTERVAL,
     PHONE_PREFIXES,
-    SUPER_SOCO,
 )
-from .errors import CannotConnect, InvalidAuth
-from .super_soco_api import SuperSocoAPI
-from .vmoto_soco_api import VmotoSocoAPI
+from .errors import (
+    BindFailed,
+    CannotConnect,
+    LoginCodeFailed,
+)
+from .vmoto_api import VmotoAPI
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = CONFIG_FLOW_VERSION
-    CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
 
     def __init__(self) -> None:
         self._errors = {}
         self._session = None
-        self._client = None
-        self._reauth_entry = None
         self._user_input = {
-            CONF_APP_NAME: SUPER_SOCO,
             CONF_LOGIN_METHOD: None,
             CONF_PHONE_PREFIX: PHONE_PREFIXES[0][1],
             CONF_PHONE_NUMBER: None,
             CONF_EMAIL: None,
-            CONF_PASSWORD: None,
             CONF_LOGIN_CODE: None,
         }
 
     async def async_step_reauth(self, user_input=None) -> FlowResult:
         self._errors = {}
-        entry_id: Optional[str] = self.context.get("entry_id")
-        if entry_id is None:
-            self._reauth_entry = None
-        else:
-            self._reauth_entry = self.hass.config_entries.async_get_entry(entry_id)
-
-        return await self.async_step_user(user_input)
+        self._user_input |= user_input or {}
+        return await self.async_step_user()
 
     async def async_step_user(self, user_input=None) -> FlowResult:
-        if self._async_current_entries() and not self._reauth_entry:
-            return cast(FlowResult, self.async_abort(reason=ERROR_ALREADY_CONFIGURED))
-
         if user_input:
-            self._user_input.update(user_input)
+            self._user_input |= user_input
+            return await self.async_step_credentials()
 
         errors = self._errors
         self._errors = {}
 
         return cast(
-            FlowResult,
+            "FlowResult",
             self.async_show_form(
-                step_id="app",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(
-                            CONF_APP_NAME, default=self._user_input[CONF_APP_NAME]
-                        ): vol.In(APP_NAMES),
-                    }
-                ),
-                errors=errors,
-            ),
-        )
-
-    async def async_step_app(self, user_input=None) -> FlowResult:
-        if user_input:
-            self._user_input.update(user_input)
-
-        errors = self._errors
-        self._errors = {}
-
-        if self._user_input[CONF_APP_NAME] == SUPER_SOCO:
-            prefix_dict = {code: name for name, code in PHONE_PREFIXES}
-            return cast(
-                FlowResult,
-                self.async_show_form(
-                    step_id="super_soco_credentials",
-                    data_schema=vol.Schema(
-                        {
-                            vol.Required(
-                                CONF_PHONE_PREFIX,
-                                default=self._user_input[CONF_PHONE_PREFIX],
-                            ): vol.In(prefix_dict),
-                            vol.Required(
-                                CONF_PHONE_NUMBER,
-                                default=self._user_input[CONF_PHONE_NUMBER],
-                            ): str,
-                            vol.Required(
-                                CONF_PASSWORD, default=self._user_input[CONF_PASSWORD]
-                            ): str,
-                        }
-                    ),
-                    errors=errors,
-                ),
-            )
-
-        return cast(
-            FlowResult,
-            self.async_show_form(
-                step_id="vmoto_soco_login_method",
+                step_id="user",
                 data_schema=vol.Schema(
                     {
                         vol.Required(
                             CONF_LOGIN_METHOD,
-                            default=self._user_input[CONF_LOGIN_METHOD],
+                            default=(
+                                self._user_input.get(CONF_LOGIN_METHOD)
+                                if self._user_input.get(CONF_LOGIN_METHOD)
+                                else LOGIN_METHOD_PHONE
+                            ),
                         ): SelectSelector(
                             SelectSelectorConfig(
                                 options=[LOGIN_METHOD_PHONE, LOGIN_METHOD_EMAIL],
@@ -162,195 +112,308 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    async def async_step_super_soco_credentials(self, user_input=None) -> FlowResult:
-        return await self.async_step_login(user_input)
-
-    async def async_step_vmoto_soco_login_method(self, user_input=None) -> FlowResult:
+    async def async_step_credentials(self, user_input=None) -> FlowResult:
         if user_input:
-            self._user_input.update(user_input)
+            self._user_input |= user_input
+            return await self.async_step_login_code()
 
-        errors = self._errors
-        self._errors = {}
-
-        if self._user_input[CONF_LOGIN_METHOD] == LOGIN_METHOD_EMAIL:
+        if self._user_input.get(CONF_LOGIN_METHOD) == LOGIN_METHOD_EMAIL:
             return cast(
-                FlowResult,
+                "FlowResult",
                 self.async_show_form(
-                    step_id="vmoto_soco_credentials",
+                    step_id="credentials",
                     data_schema=vol.Schema(
                         {
                             vol.Required(
-                                CONF_EMAIL, default=self._user_input[CONF_EMAIL]
+                                CONF_EMAIL,
+                                default=self._user_input.get(
+                                    CONF_EMAIL, DEFAULT_STRING
+                                ),
                             ): str,
                         }
                     ),
-                    errors=errors,
                 ),
             )
 
-        prefix_dict = {code: name for name, code in PHONE_PREFIXES}
+        prefix_options = [
+            SelectOptionDict(value=code, label=f"{name} ({code})")
+            for name, code in PHONE_PREFIXES
+        ]
         return cast(
-            FlowResult,
+            "FlowResult",
             self.async_show_form(
-                step_id="vmoto_soco_credentials",
+                step_id="credentials",
                 data_schema=vol.Schema(
                     {
                         vol.Required(
                             CONF_PHONE_PREFIX,
-                            default=self._user_input[CONF_PHONE_PREFIX],
-                        ): vol.In(prefix_dict),
+                            default=str(
+                                self._user_input.get(
+                                    CONF_PHONE_PREFIX, PHONE_PREFIXES[0][1]
+                                )
+                            ),
+                        ): SelectSelector(SelectSelectorConfig(options=prefix_options)),
                         vol.Required(
                             CONF_PHONE_NUMBER,
-                            default=self._user_input[CONF_PHONE_NUMBER],
+                            default=self._user_input.get(
+                                CONF_PHONE_NUMBER, DEFAULT_STRING
+                            ),
                         ): str,
                     }
                 ),
-                errors=errors,
             ),
         )
 
-    async def async_step_vmoto_soco_credentials(self, user_input=None) -> FlowResult:
+    async def async_step_login_code(self, user_input=None) -> FlowResult:
         if user_input:
-            self._user_input.update(user_input)
+            self._user_input |= user_input
+            return await self.async_step_login()
 
         try:
             await self._get_login_code()
 
             return cast(
-                FlowResult,
+                "FlowResult",
                 self.async_show_form(
-                    step_id="vmoto_soco_login_code",
+                    step_id="login_code",
                     data_schema=vol.Schema(
                         {
                             vol.Required(CONF_LOGIN_CODE): str,
                         }
                     ),
-                    errors={},
                 ),
             )
         except CannotConnect:
             self._errors["base"] = ERROR_CANNOT_CONNECT
-        except InvalidAuth:
-            self._errors["base"] = ERROR_INVALID_AUTH
+        except LoginCodeFailed:
+            self._errors["base"] = ERROR_LOGIN_CODE_FAILED
         except Exception as error:
             _LOGGER.exception(error)
             self._errors["base"] = ERROR_UNKNOWN
 
-        return await self.async_step_user(user_input)
+        return await self.async_step_user()
 
-    async def async_step_vmoto_soco_login_code(self, user_input=None) -> FlowResult:
-        return await self.async_step_login(user_input)
-
-    async def async_step_login(self, user_input=None) -> FlowResult:
-        if user_input:
-            self._user_input.update(user_input)
-
+    async def async_step_login(self) -> FlowResult:
         try:
             self._user_input[CONF_TOKEN] = await self._login()
+            entry_id = self.context.get("entry_id")
 
-            if self._reauth_entry:
-                self.hass.config_entries.async_update_entry(
-                    self._reauth_entry, data=self._user_input
-                )
-                await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
+            if entry_id:
+                entry = self.hass.config_entries.async_get_entry(entry_id)
 
-                return cast(FlowResult, self.async_abort(reason="reauth_successful"))
+                if entry:
+                    self.hass.config_entries.async_update_entry(
+                        entry, data=self._user_input
+                    )
+                    await self.hass.config_entries.async_reload(entry_id)
+
+                return cast("FlowResult", self.async_abort(reason="reauth_successful"))
+
+            # Check whether a device is bound before creating the entry
+            try:
+                client = self._get_vmoto_client()
+                user_res = await client.get_user()
+                if not (user_res.get("data") or {}).get("device"):
+                    return await self.async_step_bind_device()
+            except Exception:
+                pass  # If the check fails, proceed; the coordinator will surface the error
 
             return cast(
-                FlowResult, self.async_create_entry(title=NAME, data=self._user_input)
+                "FlowResult", self.async_create_entry(title=NAME, data=self._user_input)
             )
         except CannotConnect:
             self._errors["base"] = ERROR_CANNOT_CONNECT
-        except InvalidAuth:
-            self._errors["base"] = ERROR_INVALID_AUTH
+        except LoginCodeFailed:
+            self._errors["base"] = ERROR_LOGIN_CODE_FAILED
         except Exception as error:
             _LOGGER.exception(error)
             self._errors["base"] = ERROR_UNKNOWN
 
-        return await self.async_step_user(user_input)
+        return await self.async_step_user()
+
+    async def async_step_bind_device(self, user_input=None) -> FlowResult:
+        if user_input:
+            try:
+                await self._bind_device(user_input[CONF_IMEI])
+            except BindFailed:
+                self._errors["base"] = ERROR_BIND_FAILED
+            except CannotConnect:
+                self._errors["base"] = ERROR_CANNOT_CONNECT
+            except Exception as error:
+                _LOGGER.exception(error)
+                self._errors["base"] = ERROR_UNKNOWN
+            else:
+                return cast(
+                    "FlowResult",
+                    self.async_create_entry(title=NAME, data=self._user_input),
+                )
+
+        errors = self._errors
+        self._errors = {}
+
+        return cast(
+            "FlowResult",
+            self.async_show_form(
+                step_id="bind_device",
+                data_schema=vol.Schema({vol.Required(CONF_IMEI): str}),
+                errors=errors,
+            ),
+        )
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return SuperSocoCustomOptionsFlowHandler(config_entry)
+        return VmotoOptionsFlowHandler(config_entry)
 
     async def _login(self):
         try:
-            if self._user_input[CONF_APP_NAME] == SUPER_SOCO:
-                client = self._get_super_soco_client()
-                await client.login()
-            else:
-                client = self._get_vmoto_soco_client()
-                await client.login(self._user_input[CONF_LOGIN_CODE])
+            client = self._get_vmoto_client()
+            await client.login(self._user_input.get(CONF_LOGIN_CODE, DEFAULT_STRING))
 
-            token = await client.get_token()
+            token = client.get_token()
 
             return token
-        except ServerTimeoutError as exc:
-            raise CannotConnect from exc
+        except ServerTimeoutError as error:
+            raise CannotConnect from error
         except ClientResponseError as error:
             if error.status == 400:
-                raise InvalidAuth from error
+                raise LoginCodeFailed from error
 
             _LOGGER.error(error)
 
             raise error
 
-    async def _get_login_code(self) -> bool:
+    async def _get_login_code(self) -> None:
         try:
-            client = self._get_vmoto_soco_client()
+            client = self._get_vmoto_client()
 
             await client.get_login_code()
-
-            return True
-        except ServerTimeoutError as exc:
-            raise CannotConnect from exc
+        except ServerTimeoutError as error:
+            raise CannotConnect from error
         except ClientResponseError as error:
             if error.status == 400:
-                raise InvalidAuth from error
+                raise LoginCodeFailed from error
+
+            _LOGGER.error(error)
+
+            raise error
+
+    async def _bind_device(self, device_no: str) -> None:
+        try:
+            client = self._get_vmoto_client()
+
+            await client.bind_device(device_no)
+        except ServerTimeoutError as error:
+            raise CannotConnect from error
+        except ClientResponseError as error:
+            if error.status == 400:
+                raise BindFailed from error
 
             _LOGGER.error(error)
 
             raise error
 
     def _get_session(self) -> ClientSession:
-        if not self._session:
+        if not self._session or self._session.closed:
             self._session = async_create_clientsession(self.hass)
 
         return self._session
 
-    def _get_super_soco_client(self) -> SuperSocoAPI:
-        return SuperSocoAPI(
+    def _get_vmoto_client(self) -> VmotoAPI:
+        phone_prefix_raw = self._user_input.get(CONF_PHONE_PREFIX)
+        return VmotoAPI(
             self._get_session(),
-            self._user_input[CONF_PHONE_PREFIX],
-            self._user_input[CONF_PHONE_NUMBER],
-            self._user_input[CONF_PASSWORD],
-        )
-
-    def _get_vmoto_soco_client(self) -> VmotoSocoAPI:
-        return VmotoSocoAPI(
-            self._get_session(),
-            phone_prefix=self._user_input.get(CONF_PHONE_PREFIX),
+            phone_prefix=(
+                int(phone_prefix_raw) if phone_prefix_raw is not None else None
+            ),
             phone_number=self._user_input.get(CONF_PHONE_NUMBER),
             email=self._user_input.get(CONF_EMAIL),
+            token=self._user_input.get(CONF_TOKEN),
         )
 
 
-class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
+class VmotoOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry) -> None:
+        self._config_entry = config_entry
         self.options = dict(config_entry.options)
+        self._errors: dict[str, str] = {}
+
+    def _get_coordinator(self):
+        return self.hass.data.get(DOMAIN, {}).get(self._config_entry.entry_id)
+
+    async def _unbind_device(self) -> None:
+        coordinator = self._get_coordinator()
+        device_no = coordinator._device_no
+
+        try:
+            await coordinator._client.unbind_device(device_no)
+        except ServerTimeoutError as error:
+            raise CannotConnect from error
+        except ClientResponseError as error:
+            _LOGGER.error(error)
+
+            raise error
 
     async def async_step_init(self, user_input=None) -> FlowResult:
-        return await self.async_step_user()
+        return await self.async_step_menu()
+
+    async def async_step_menu(self, user_input=None) -> FlowResult:
+        if user_input is not None:
+            action = user_input[CONF_ACTION]
+
+            if action == CONF_ACTION_CONFIGURE:
+                return await self.async_step_user()
+            if action == CONF_ACTION_UNBIND:
+                return await self.async_step_confirm_unbind()
+
+        return cast(
+            "FlowResult",
+            self.async_show_form(
+                step_id="menu",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(CONF_ACTION): SelectSelector(
+                            SelectSelectorConfig(
+                                options=[CONF_ACTION_CONFIGURE, CONF_ACTION_UNBIND],
+                                translation_key=CONF_ACTION,
+                            )
+                        ),
+                    }
+                ),
+            ),
+        )
+
+    async def async_step_confirm_unbind(self, user_input=None) -> FlowResult:
+        if user_input is not None:
+            try:
+                await self._unbind_device()
+            except Exception as error:
+                _LOGGER.exception(error)
+                self._errors["base"] = ERROR_UNKNOWN
+            else:
+                await self.hass.config_entries.async_remove(self._config_entry.entry_id)
+                return cast("FlowResult", self.async_abort(reason="unbind_successful"))
+
+        errors = self._errors
+        self._errors = {}
+
+        return cast(
+            "FlowResult",
+            self.async_show_form(
+                step_id="confirm_unbind",
+                data_schema=vol.Schema({}),
+                errors=errors,
+            ),
+        )
 
     async def async_step_user(self, user_input=None) -> FlowResult:
         if user_input is not None:
-            self.options.update(user_input)
+            self.options |= user_input
 
             return await self._update_options()
 
         return cast(
-            FlowResult,
+            "FlowResult",
             self.async_show_form(
                 step_id="user",
                 description_placeholders={
@@ -409,4 +472,6 @@ class SuperSocoCustomOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def _update_options(self) -> FlowResult:
-        return cast(FlowResult, self.async_create_entry(title=NAME, data=self.options))
+        return cast(
+            "FlowResult", self.async_create_entry(title=NAME, data=self.options)
+        )

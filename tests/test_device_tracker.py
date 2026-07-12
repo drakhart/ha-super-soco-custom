@@ -1,27 +1,27 @@
-import pytest
-
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 from unittest.mock import create_autospec
 
-from custom_components.super_soco_custom.coordinator import (
-    SuperSocoCustomDataUpdateCoordinator,
-)
-from custom_components.super_soco_custom.device_tracker import (
-    async_setup_entry,
-    SuperSocoCustomDeviceTracker,
-)
+import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from custom_components.super_soco_custom.const import (
-    DOMAIN,
     DEFAULT_FLOAT,
     DEFAULT_INTEGER,
+    DOMAIN,
+)
+from custom_components.super_soco_custom.coordinator import (
+    VmotoDataUpdateCoordinator,
+)
+from custom_components.super_soco_custom.device_tracker import (
+    VmotoDeviceTracker,
+    async_setup_entry,
 )
 
-from .const import MOCK_SUPER_SOCO_CONFIG
+from .const import MOCK_VMOTO_CONFIG
 
 
 @pytest.mark.asyncio
 async def test_async_setup_entry_missing_keys(hass):
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG)
     entry.add_to_hass(hass)
 
     # coordinator with empty data -> no device trackers created
@@ -41,11 +41,11 @@ async def test_async_setup_entry_missing_keys(hass):
 
 
 def test_device_tracker_properties_and_extra_attrs():
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
-    coord = create_autospec(SuperSocoCustomDataUpdateCoordinator, instance=True)
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG)
+    coord = create_autospec(VmotoDataUpdateCoordinator, instance=True)
     coord.data = {"lat_key": 1.23, "lon_key": 4.56, "acc_key": 7, "foo": "bar"}
 
-    device_tracker = SuperSocoCustomDeviceTracker(
+    device_tracker = VmotoDeviceTracker(
         entry,
         coord,
         "myid",
@@ -69,11 +69,11 @@ def test_device_tracker_properties_and_extra_attrs():
 
 
 def test_device_tracker_extra_attrs_not_dict():
-    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_SUPER_SOCO_CONFIG)
-    coord = create_autospec(SuperSocoCustomDataUpdateCoordinator, instance=True)
+    entry = MockConfigEntry(domain=DOMAIN, data=MOCK_VMOTO_CONFIG)
+    coord = create_autospec(VmotoDataUpdateCoordinator, instance=True)
     coord.data = {"lat_key": 1.23, "lon_key": 4.56, "acc_key": 7, "foo": "bar"}
 
-    device_tracker = SuperSocoCustomDeviceTracker(
+    device_tracker = VmotoDeviceTracker(
         entry,
         coord,
         "myid",

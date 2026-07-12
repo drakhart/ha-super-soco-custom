@@ -1,17 +1,16 @@
-"""Tests for super_soco_custom open_street_map_api."""
+"""Tests for vmoto open_street_map_api."""
 
 import json
+
 import pytest
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from pytest_homeassistant_custom_component.common import load_fixture
 
 from custom_components.super_soco_custom.const import OPT_EMAIL
 from custom_components.super_soco_custom.open_street_map_api import (
-    OpenStreetMapAPI,
     BASE_URL,
+    OpenStreetMapAPI,
 )
-
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
-from pytest_homeassistant_custom_component.common import load_fixture
 
 from .const import MOCK_OPTIONS
 
@@ -19,7 +18,6 @@ from .const import MOCK_OPTIONS
 @pytest.mark.asyncio
 async def test_api(hass, aioclient_mock):
     """Test API calls."""
-
     # To test the api submodule, we first create an instance of our API client
     api = OpenStreetMapAPI(
         async_get_clientsession(hass),
