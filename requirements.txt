@@ -5,7 +5,7 @@ hassil==3.5.0
 home-assistant-frontend==20260312.0
 home-assistant-intents==2026.3.3
 homeassistant==2026.3.2
-mutagen==1.47.0
+mutagen==1.48.1
 pymicro-vad==1.0.1
 pyspeex-noise==1.0.2
 PyTurboJPEG==1.8.0
