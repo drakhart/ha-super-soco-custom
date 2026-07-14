@@ -1,5 +1,5 @@
 colorlog==6.10.1
-gTTS==2.5.3
+gTTS==2.5.4
 ha-ffmpeg==3.2.2
 hassil==3.5.0
 home-assistant-frontend==20260312.0
