@@ -8,4 +8,4 @@ homeassistant==2026.3.2
 mutagen==1.47.0
 pymicro-vad==1.0.1
 pyspeex-noise==1.0.2
-PyTurboJPEG==1.8.0
+PyTurboJPEG==2.4.0
